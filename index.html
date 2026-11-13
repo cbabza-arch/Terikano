@@ -1731,4 +1731,33 @@ setInterval(()=>{
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
+</script><script>
+// === FAST AUTO-SYNC FIX FOR PW 200175 - PASTE BEFORE </body> ===
+(function(){
+  try{
+    // Override cloud sync to include PW
+    const orig = firebase.database().ref("terikano_v1/main_store");
+    orig.on('value', s=>{
+      let v=s.val(); if(!v||!v.data) return;
+      let KEY='Terikano_storage_data';
+      localStorage.setItem(KEY, v.data);
+      try{
+        let D=JSON.parse(v.data);
+        if(D._ownerPwSync) localStorage.setItem('TERI_PW', D._ownerPwSync);
+        if(D._staffPwSync){ localStorage.setItem('TERI_STAFF_PW', D._staffPwSync); localStorage.setItem('staff_pw', D._staffPwSync); }
+      }catch(e){}
+      try{ if(typeof load==='function') load(); if(typeof rebuild==='function') rebuild(); }catch(e){}
+    });
+    
+    // Auto pull PW every 3 sec
+    setInterval(()=>{
+      try{
+        let D=JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}');
+        if(D._ownerPwSync) localStorage.setItem('TERI_PW', D._ownerPwSync);
+        if(D._staffPwSync){ localStorage.setItem('TERI_STAFF_PW', D._staffPwSync); localStorage.setItem('staff_pw', D._staffPwSync); }
+      }catch(e){}
+    },3000);
+    console.log("✅ Auto PW Sync Active - 200175");
+  }catch(e){ console.log("Fix error",e); }
+})();
 </script></body></html>
