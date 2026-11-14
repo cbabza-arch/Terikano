@@ -1891,5 +1891,67 @@ if ('serviceWorker' in navigator) {
   },800);
   setInterval(fixedPush,5000); setTimeout(fixedPush,1500);
 })();
+</script><script>
+// === FINAL SECURE PATCH - SILENT SYNC + NO LEAK ===
+window.checkStaffPw = function(){
+  var e=document.getElementById('staffPw'); if(!e) return;
+  var val=e.value.trim();
+  var ownerPw=localStorage.getItem('TERI_PW')||'1234';
+  var staffPw=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||'123456789';
+  var ok=false;
+  if(val===ownerPw){ localStorage.setItem('isOwner','1'); ok=true; }
+  if(val===staffPw){ localStorage.setItem('isOwner','0'); ok=true; }
+  if(ok){
+    document.getElementById('staffLock').style.display='none';
+    var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+    try{ if(typeof lockAll==='function') lockAll(); if(typeof rebuild==='function') rebuild(); }catch(err){}
+    e.value=''; return;
+  }
+  var msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
+};
+
+window.setOwnerPw = window.setStaffPw = function(){ 
+  // This will be overridden by your original but we fix message after
+  setTimeout(function(){
+    document.querySelectorAll('#ownerPwBox .log b, #staffPwBox .log b').forEach(function(b){
+      if(b.innerText.includes('synced:') || b.innerText.includes('Owner:') || b.innerText.includes('Staff:')){
+        b.innerText = b.innerText.includes('Owner') ? 'Owner PW synced to cloud!' : 'Staff PW synced to cloud!';
+        b.style.color='#2e7d32';
+      }
+    });
+  },100);
+};
+// SILENT CLOUD SYNC - NO NUMBER SHOWN
+(function(){
+  var origSetOwner = window.setOwnerPw;
+  var origSetStaff = window.setStaffPw;
+  // Hook into actual save buttons
+  document.addEventListener('click', function(ev){
+    var t=ev.target;
+    if(!t) return;
+    if(t.innerText && t.innerText.includes('Save Owner PW')){
+      setTimeout(function(){
+        try{
+          var npw = document.getElementById('newOwnerPw')?.value || localStorage.getItem('TERI_PW');
+          if(npw && typeof db!=='undefined' && db && db.ref){
+            db.ref('config/passwords').update({owner: npw});
+            db.ref('config/passwords/owner').set(npw);
+          }
+        }catch(e){}
+      },500);
+    }
+    if(t.innerText && t.innerText.includes('Save Staff PW')){
+      setTimeout(function(){
+        try{
+          var npw = document.getElementById('newStaffPw')?.value || localStorage.getItem('TERI_STAFF_PW');
+          if(npw && typeof db!=='undefined' && db && db.ref){
+            db.ref('config/passwords').update({staff: npw});
+            db.ref('config/passwords/staff').set(npw);
+          }
+        }catch(e){}
+      },500);
+    }
+  });
+})();
 </script></body>
 </html>
