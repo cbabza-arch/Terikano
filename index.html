@@ -1287,23 +1287,55 @@ setTimeout(function(){
 (function(){
 const firebaseConfig={databaseURL:"https://terikano-3d137-default-rtdb.firebaseio.com",projectId:"terikano-3d137"};
 try{if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);}catch(e){}
-const db=firebase.database();const PATH="terikano_v1/main_store";const KEY='Terikano_storage_data';const OWNER_PW_KEY='TERI_PW'
+const db=firebase.database();const PATH="terikano_v1/main_store";const KEY='Terikano_storage_data';const OWNER_PW_KEY='TERI_PW';const STAFF_PW_KEY='TERI_PW_STAFF';
 let isSyncing=false;let lastLocal=localStorage.getItem(KEY);
 function ensureBar(){let b=document.getElementById('cloudStatus');if(!b){b=document.createElement('div');b.id='cloudStatus';document.body.prepend(b);}return b;}
 function updateBar(m,c){let b=ensureBar();b.innerHTML=m;b.style.background=c;}
 updateBar("🔴 Checking STORE Cloud...","#c62828");
-function pushReal(){if(isSyncing) return;if(!navigator.onLine){updateBar("🔴 STORE Cloud OFFLINE - No Internet","#c62828");return;}let d=localStorage.getItem(KEY);if(!d) return;db.ref(PATH).set({data:d,ts:Date.now()}).then(()=>{updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ "+new Date().toLocaleTimeString(),"#2e7d32");}).catch(e=>{updateBar("🔴 OFFLINE - "+e.message,"#c62828");});}
+function pushReal(){
+  if(isSyncing) return;
+  if(!navigator.onLine){updateBar("🔴 STORE Cloud OFFLINE - No Internet","#c62828");return;}
+  let d=localStorage.getItem(KEY);
+  if(!d) return;
+  try{
+    let obj=JSON.parse(d);
+    obj._ownerPwSync=localStorage.getItem(OWNER_PW_KEY)||'1234';
+    obj._staffPwSync=localStorage.getItem(STAFF_PW_KEY)||'2001';
+    d=JSON.stringify(obj);
+  }catch(e){}
+  db.ref(PATH).set({data:d,ts:Date.now()}).then(()=>{updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ "+new Date().toLocaleTimeString(),"#2e7d32");}).catch(e=>{updateBar("🔴 OFFLINE - "+e.message,"#c62828");});
+}
 const origSave=window.save;window.save=function(){try{if(origSave) origSave();}catch(e){}setTimeout(pushReal,400);};
 db.ref(".info/connected").on('value',s=>{if(s.val()===true){updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ Connected","#2e7d32");}else{updateBar("🔴 STORE Cloud OFFLINE - No Firebase","#c62828");}});
 let origSetItem=localStorage.setItem.bind(localStorage);localStorage.setItem=function(k,v){origSetItem(k,v);if(k===KEY&&!isSyncing){if(v!==lastLocal){lastLocal=v;setTimeout(pushReal,700);}}};
-db.ref(PATH).on('value',s=>{let v=s.val();if(!v||!v.data) return;let local=localStorage.getItem(KEY);if(v.data!==local){let age=Date.now()-(v.ts||0);if(age<30000&&age>=0){isSyncing=true;localStorage.setItem(KEY,v.data);lastLocal=v.data;isSyncing=false;try{if(typeof load==='function') load();if(typeof rebuild==='function') rebuild();}catch(e){location.reload();}}updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ Synced","#2e7d32");}});
+db.ref(PATH).on('value',s=>{
+  let v=s.val();
+  if(!v||!v.data) return;
+  let local=localStorage.getItem(KEY);
+  if(v.data!==local){
+    let age=Date.now()-(v.ts||0);
+    if(age<30000&&age>=0){
+      isSyncing=true;
+      localStorage.setItem(KEY,v.data);
+      lastLocal=v.data;
+      try{
+        let cloudObj=JSON.parse(v.data);
+        if(cloudObj._ownerPwSync) localStorage.setItem(OWNER_PW_KEY, cloudObj._ownerPwSync);
+        if(cloudObj._staffPwSync) localStorage.setItem(STAFF_PW_KEY, cloudObj._staffPwSync);
+      }catch(e){}
+      isSyncing=false;
+      try{if(typeof load==='function') load();if(typeof rebuild==='function') rebuild();}catch(e){location.reload();}
+    }
+    updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ Synced","#2e7d32");
+  }
+});
 setTimeout(pushReal,2000);setInterval(pushReal,15000);
 window.addEventListener('online',()=>{updateBar("☁️ Back Online - Syncing...","#ff9800");pushReal();});
 window.addEventListener('offline',()=>updateBar("🔴 OFFLINE - No Internet","#c62828"));
 document.body.style.paddingTop="32px";
-})();
-</script><!-- ===== YEAR END CLOSE - CARRY FORWARD - START ===== -->
-<style>
+})()
+</script>
+  <style>
 #yearEndModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;justify-content:center;align-items:center}
 #yearEndModal .box{background:#fff;padding:20px;border-radius:15px;width:90%;max-width:400px;text-align:center}
 .yr-btn{background:#111;color:gold;border:2px solid gold;padding:12px 20px;border-radius:10px;font-weight:bold;width:100%;margin-top:10px;cursor:pointer}
