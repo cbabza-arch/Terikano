@@ -1759,5 +1759,69 @@ if ('serviceWorker' in navigator) {
     console.log("Offline mode:", e);
   }
 </script>
-</body>
+<script>
+// === TERIKANO PASSWORD CLOUD SYNC FIX - PASTE BEFORE </body> ===
+(function(){
+  const ORIGINAL_SET = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k,v){
+    ORIGINAL_SET(k,v);
+    if(k==='TERI_PW' || k==='ownerPassword' || k==='Terikano_storage_data' || k==='TERI_STAFF_PW'){
+      setTimeout(()=>{ try{ pushWithPw(); }catch(e){} }, 300);
+    }
+  };
+
+  window.pushWithPw = function(){
+    try{
+      let str = localStorage.getItem('Terikano_storage_data') || '{}';
+      let obj = JSON.parse(str);
+      obj._ownerPwSync = localStorage.getItem('TERI_PW') || '200175';
+      obj._staffPwSync = localStorage.getItem('TERI_STAFF_PW') || '2001';
+      obj._syncTime = Date.now();
+      const finalStr = JSON.stringify(obj);
+      // Push to your Firebase - terikano_v1/main_store
+      if(window.firebase && firebase.database){
+        firebase.database().ref('terikano_v1/main_store').update({
+          data: finalStr,
+          ts: Date.now()
+        });
+        console.log('✅ PW 200175 pushed to cloud!');
+      }
+    }catch(e){ console.log('push error', e); }
+  };
+
+  window.pullPwFromCloud = function(cloudDataStr){
+    try{
+      const o = JSON.parse(cloudDataStr);
+      if(o._ownerPwSync){
+        ORIGINAL_SET('TERI_PW', o._ownerPwSync);
+        ORIGINAL_SET('ownerPassword', o._ownerPwSync);
+        console.log('✅ PW synced from cloud:', o._ownerPwSync);
+      }
+      if(o._staffPwSync){
+        ORIGINAL_SET('TERI_STAFF_PW', o._staffPwSync);
+      }
+    }catch(e){}
+  };
+
+  // Hook into existing cloud pull
+  const checkFirebase = setInterval(()=>{
+    if(window.firebase && firebase.database){
+      clearInterval(checkFirebase);
+      const ref = firebase.database().ref('terikano_v1/main_store/data');
+      ref.on('value', (snap)=>{
+        const val = snap.val();
+        if(val){
+          window.pullPwFromCloud(val);
+        }
+      });
+    }
+  }, 1000);
+
+  // Push current TAB pw 200175 to cloud after 2 sec
+  setTimeout(()=>{ pushWithPw(); }, 2000);
+  
+  console.log('🔥 Terikano PW Sync Fix Loaded - 200175 will sync!');
+})();
+// === END FIX ===
+</script></body>
 </html>
