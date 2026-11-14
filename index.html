@@ -1731,4 +1731,28 @@ setInterval(()=>{
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
-</script></body></html>
+</script><script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyDemo",
+    authDomain: "terikano-demo.firebaseapp.com",
+    databaseURL: "https://terikano-demo-default-rtdb.firebaseio.com",
+    projectId: "terikano-demo"
+  };
+  
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    console.log("Terikano Online Ready!");
+    window.terikanoDB = db;
+    window.terikanoRef = ref;
+    window.terikanoSet = set;
+    window.terikanoOnValue = onValue;
+  } catch(e) {
+    console.log("Offline mode:", e);
+  }
+</script>
+</body>
+</html>
