@@ -1486,472 +1486,76 @@ setTimeout(()=>{
   });
 },1000);
 </script>
-<script>
-// === TERIKANO FINAL FIX - 1 PW ONLY - EXACT FILE ===
-function getStaffPwFixed(){return localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||localStorage.getItem('terikano_staff_pw')||'123456789';}
-
-function checkStaffPw(){
-  var e=document.getElementById('staffPw'); if(!e) return;
-  var val=e.value.trim();
-  var ownerPw=localStorage.getItem('TERI_PW')||'1234';
-  var staffPw=getStaffPwFixed();
-  // OWNER bypass: 1234 opens owner directly!
-  if(val===ownerPw){
-    localStorage.setItem('isOwner','1');
-    document.getElementById('staffLock').style.display='none';
-    var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild();}catch(err){}
-    e.value='';
-    return;
-  }
-  // STAFF: staff PW opens staff
-  if(val===staffPw){
-    localStorage.setItem('isOwner','0');
-    document.getElementById('staffLock').style.display='none';
-    var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild();}catch(err){}
-    e.value='';
-    return;
-  }
-  var msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong! Owner: '+ownerPw+' | Staff: '+staffPw; msg.style.display='block';}
-}
-
-function doOwnerFix2(){
-  var e=document.getElementById('ownerPass'); var v=e?e.value.trim():'';
-  if(v===(localStorage.getItem('TERI_PW')||'1234')){
-    localStorage.setItem('isOwner','1');
-    document.getElementById('loginBox').style.display='none';
-    document.getElementById('staffLock').style.display='none';
-    try{lockAll(); rebuild();}catch(err){}
-  } else alert("E bure ma Kataia riki - Wrong Owner PW");
-  if(e) e.value='';
-}
-function doStaffFix2(){
-  var e=document.getElementById('ownerPass'); var v=e?e.value.trim():'';
-  var staffPw=getStaffPwFixed();
-  if(v===staffPw){
-    localStorage.setItem('isOwner','0');
-    document.getElementById('loginBox').style.display='none';
-    document.getElementById('staffLock').style.display='none';
-    try{lockAll(); rebuild();}catch(err){}
-  } else alert("Wrong Staff PW! Current: "+staffPw);
-  if(e) e.value='';
-}
-function doLogout(){
-  localStorage.setItem('isOwner','0');
-  document.getElementById('staffLock').style.display='flex';
-  document.getElementById('loginBox').style.display='none';
-  try{lockAll();}catch(err){}
-}
-// Auto hide loginBox on start - use only staffLock as single gate
-window.addEventListener('load', function(){
-  setTimeout(function(){
-    var lb=document.getElementById('loginBox');
-    if(lb && document.getElementById('staffLock').style.display!=='none'){
-      lb.style.display='none';
-    }
-  },200);
-});
-</script>
-<div id="BOTTOM_STAFF_PW" style="background:orange;border:4px solid #000;padding:15px;margin:15px;border-radius:15px;display:none">
-<b>👤 STAFF PW SETTING - OWNER ONLY</b><br>Current Staff PW: <b id="bot_cur">...</b><br><br>
-<input id="bot_new_staff_pw" type="text" placeholder="New Staff PW e.g. 2222" style="width:100%;padding:12px;border:3px solid #000;border-radius:10px"><br><br>
-<button onclick="var v=document.getElementById('bot_new_staff_pw').value.trim();if(!v)return alert('Enter!');localStorage.setItem('TERI_STAFF_PW',v);localStorage.setItem('staff_pw',v);document.getElementById('bot_cur').innerText=v;alert('✅ Staff PW set to: '+v);" style="background:#000;color:orange;width:100%;padding:12px;border-radius:10px;font-weight:bold">💾 SAVE STAFF PW</button>
-</div>
-<script>
-function updateBottomPW(){ var b=document.getElementById('BOTTOM_STAFF_PW'); if(!b) return; var isOwner=localStorage.getItem('isOwner')==='1'; var pwDiv=document.getElementById('pwDiv'); var open=pwDiv && pwDiv.style.display==='block'; if(isOwner && open){b.style.display='block'; var c=document.getElementById('bot_cur'); if(c) c.innerText=getStaffPwFixed();} else {b.style.display='none';}}
-setInterval(updateBottomPW,400);
-</script><script>
-document.addEventListener('DOMContentLoaded', function(){
-  var h2 = document.querySelector('#staffLock h2');
-  if(h2){
-    h2.innerHTML = '🔐 TERIKANO LOGIN';
-    h2.style.color = '#111';
-    h2.style.fontWeight = 'bold';
-  }
-  // Add subtitle
-  var input = document.getElementById('staffPw');
-  if(input && !document.getElementById('loginSub')){
-    var sub = document.createElement('p');
-    sub.id='loginSub';
-    sub.innerText='Enter Owner or Staff Password';
-    sub.style.cssText='font-size:11px;color:#555;margin:6px 0;font-weight:bold';
-    input.parentNode.insertBefore(sub, input);
-  }
-});
-</script><script>
-// === CLOUD SYNC FOR PW ===
+<script><script>
+// === TERIKANO CLEAN FINAL - SECURE + SYNCING ===
 (function(){
-  var origSetStaff = window.setStaffPw;
-  window.setStaffPw = function(){
-    var np=document.getElementById('new_staff_pw')?.value.trim();
-    if(!np) np=document.getElementById('bot_new_staff_pw')?.value.trim();
-    if(!np) return alert('Enter staff PW');
-    localStorage.setItem('TERI_STAFF_PW',np);
-    localStorage.setItem('staff_pw',np);
-    try{
-      var raw=localStorage.getItem('Terikano_storage_data')||'{}';
-      var D=JSON.parse(raw);
-      D._staffPwSync = np;
-      D._ownerPwSync = localStorage.getItem('TERI_PW')||'1234';
-      localStorage.setItem('Terikano_storage_data', JSON.stringify(D));
-      if(typeof save==='function') save();
-      if(typeof pushReal==='function') pushReal();
-    }catch(e){}
-    var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText=np;
-    var bot=document.getElementById('bot_cur'); if(bot) bot.innerText=np;
-    alert('✅ Staff PW synced to cloud!')
-  };
-  var origChangePw = window.changePw;
-  window.changePw = function(){
-    var old=document.getElementById('old_pw')?.value||'';
-    var nw=document.getElementById('new_pw')?.value||'';
-    if(old !== (localStorage.getItem('TERI_PW')||'1234')) return alert('Old wrong');
-    localStorage.setItem('TERI_PW', nw);
-    try{
-      var raw=localStorage.getItem('Terikano_storage_data')||'{}';
-      var D=JSON.parse(raw);
-      D._ownerPwSync = nw;
-      D._staffPwSync = localStorage.getItem('TERI_STAFF_PW')||'123456789';
-      localStorage.setItem('Terikano_storage_data', JSON.stringify(D));
-      if(typeof save==='function') save();
-      if(typeof pushReal==='function') pushReal();
-    }catch(e){}
-    var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=nw;
-    alert('Owner PW synced to cloud!';
-  };
-  function pullPwFromCloud(){
-    try{
-      var raw=localStorage.getItem('Terikano_storage_data')||'{}';
-      var D=JSON.parse(raw);
-      if(D._staffPwSync){
-        localStorage.setItem('TERI_STAFF_PW', D._staffPwSync);
-        localStorage.setItem('staff_pw', D._staffPwSync);
-      }
-      if(D._ownerPwSync){
-        localStorage.setItem('TERI_PW', D._ownerPwSync);
-      }
-    }catch(e){}
-  }
-  pullPwFromCloud();
-  setTimeout(pullPwFromCloud, 2000);
-  setTimeout(pullPwFromCloud, 5000);
-})();
-</script><script>
-// === DEVICE LOCK B - OWNER ANYWHERE, STAFF ONLY APPROVED ===
-(function(){
-  let devId = localStorage.getItem('terikano_device_id');
-  if(!devId){ devId = 'DEV-'+Math.random().toString(36).substr(2,9).toUpperCase(); localStorage.setItem('terikano_device_id', devId); }
-  window.TERI_DEVICE_ID = devId;
-  let allowed = JSON.parse(localStorage.getItem('TERI_ALLOWED_DEVICES')||'[]');
-  if(allowed.length===0){ allowed=[devId]; localStorage.setItem('TERI_ALLOWED_DEVICES', JSON.stringify(allowed)); }
-  window.TERI_ALLOWED = allowed;
-  let lockOn = localStorage.getItem('TERI_DEVICE_LOCK')==='1';
-  window.TERI_LOCK = lockOn;
-  window.refreshDeviceUI = function(){
-    let el=document.getElementById('myDevId'); if(el) el.textContent=devId;
-    let al=document.getElementById('allowedList'); if(al) al.innerHTML='Allowed ('+allowed.length+'): '+allowed.join(', ');
-    let btn=document.getElementById('lockBtn'); if(btn){ if(lockOn){ btn.textContent='🔒 LOCK ON'; btn.style.background='red'; } else { btn.textContent='🔓 LOCK OFF'; btn.style.background='#2e7d32'; } }
-    let st=document.getElementById('devLockStatus'); if(st) st.textContent = lockOn ? 'ON 🔒' : 'OFF 🔓';
-  };
-  window.allowCurrentDevice = function(){
-    allowed = JSON.parse(localStorage.getItem('TERI_ALLOWED_DEVICES')||'[]');
-    if(!allowed.includes(devId)){ allowed.push(devId); localStorage.setItem('TERI_ALLOWED_DEVICES', JSON.stringify(allowed)); }
-    try{
-      let raw=localStorage.getItem('Terikano_storage_data')||'{}'; let D=JSON.parse(raw);
-      D._allowedDevicesSync = allowed; D._deviceLockSync = lockOn;
-      localStorage.setItem('Terikano_storage_data', JSON.stringify(D));
-      if(typeof save==='function') save();
-    }catch(e){}
-    window.TERI_ALLOWED=allowed; refreshDeviceUI();
-    alert('✅ This phone approved! ID:'+devId+' - Synced ☁️');
-  };
-  window.toggleDeviceLock = function(){
-    lockOn=!lockOn; localStorage.setItem('TERI_DEVICE_LOCK', lockOn?'1':'0'); window.TERI_LOCK=lockOn;
-    try{
-      let raw=localStorage.getItem('Terikano_storage_data')||'{}'; let D=JSON.parse(raw);
-      D._deviceLockSync = lockOn; D._allowedDevicesSync = allowed;
-      localStorage.setItem('Terikano_storage_data', JSON.stringify(D));
-      if(typeof save==='function') save();
-    }catch(e){}
-    refreshDeviceUI();
-    alert((lockOn?'🔒 LOCK ON':'🔓 LOCK OFF')+' - Synced ☁️');
-  };
-  window._origCheckStaffPw = window.checkStaffPw;
+  const STORE_KEY='Terikano_storage_data';
+  const FB_PATH='terikano_v1/main_store';
+  const OWNER_KEY='TERI_PW';
+  const STAFF_KEY='TERI_STAFF_PW';
+  let isSyncing=false;
+  function getOwnerPw(){ return localStorage.getItem(OWNER_KEY)||'1234'; }
+  function getStaffPw(){ return localStorage.getItem(STAFF_KEY)||localStorage.getItem('staff_pw')||'123456789'; }
+
   window.checkStaffPw = function(){
-    let e=document.getElementById('staffPw'); if(!e) return;
-    let val=e.value.trim();
-    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    let staffPw=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||'123456789';
-    let isOwner = (val===ownerPw);
-    if(!isOwner && lockOn){
-      allowed = JSON.parse(localStorage.getItem('TERI_ALLOWED_DEVICES')||'[]');
-      if(!allowed.includes(devId)){
-        alert('🚫 DEVICE NOT APPROVED!\nID: '+devId+'\nContact Owner!');
-        let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='🚫 Device not approved! ID:'+devId; msg.style.display='block';}
-        return;
-      }
-    }
-    if(val===ownerPw){
-      localStorage.setItem('isOwner','1');
-      document.getElementById('staffLock').style.display='none';
-      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      try{lockAll(); rebuild();}catch(err){}
-      e.value=''; return;
-    }
-    if(val===staffPw){
-      localStorage.setItem('isOwner','0');
-      document.getElementById('staffLock').style.display='none';
-      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      try{lockAll(); rebuild();}catch(err){}
-      e.value=''; return;
-    }
-    let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong!'; msg.style.display='block';}
+    var e=document.getElementById('staffPw'); if(!e) return;
+    var val=e.value.trim();
+    if(val===getOwnerPw()){ localStorage.setItem('isOwner','1'); document.getElementById('staffLock').style.display='none'; var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; try{lockAll(); rebuild();}catch(err){} e.value=''; return; }
+    if(val===getStaffPw()){ localStorage.setItem('isOwner','0'); document.getElementById('staffLock').style.display='none'; var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; try{lockAll(); rebuild();}catch(err){} e.value=''; return; }
+    var msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
   };
-  window.pullDeviceFromCloud = function(){
-    try{
-      let raw=localStorage.getItem('Terikano_storage_data')||'{}'; let D=JSON.parse(raw);
-      if(D._allowedDevicesSync){ allowed=D._allowedDevicesSync; localStorage.setItem('TERI_ALLOWED_DEVICES', JSON.stringify(allowed)); window.TERI_ALLOWED=allowed; }
-      if(typeof D._deviceLockSync!=='undefined'){ lockOn=!!D._deviceLockSync; localStorage.setItem('TERI_DEVICE_LOCK', lockOn?'1':'0'); window.TERI_LOCK=lockOn; }
-      refreshDeviceUI();
-    }catch(e){}
-  };
-  setTimeout(()=>{ pullDeviceFromCloud(); refreshDeviceUI(); }, 1000);
-  setTimeout(()=>{ pullDeviceFromCloud(); refreshDeviceUI(); }, 3000);
-})();
-</script>
-<div id="deviceLockPanel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-  <div style="background:#fff; width:90%; max-width:360px; padding:20px; border-radius:16px; font-family:system-ui;">
-    <div style="display:flex; justify-content:space-between; margin-bottom:12px;"><b>🔐 Device Security</b><button onclick="toggleDevicePanel()" style="border:none; background:#eee; width:28px; height:28px; border-radius:50%;">✕</button></div>
-    <div style="background:#f9f9f9; padding:10px; border-radius:10px; font-size:12px; margin-bottom:10px;">My ID: <b id="myDeviceIdD">-</b><br>Status: <b id="deviceLockStatus"></b></div>
-    <div id="allowedDevices" style="max-height:180px; overflow:auto; border:1px solid #eee; border-radius:10px; padding:5px; margin-bottom:10px;"></div>
-    <button onclick="authorizeDevice()" style="width:100%; padding:12px; background:#111; color:#fff; border:none; border-radius:10px; font-weight:600;">+ Authorize This Device</button>
-  </div>
-</div>
-<script>
-let myDeviceIdLocal = localStorage.getItem('myDeviceIdLocal') || 'DEV-'+Math.random().toString(36).substr(2,6).toUpperCase();
-localStorage.setItem('myDeviceIdLocal', myDeviceIdLocal);
-function getAllowedDevices(){try{return JSON.parse(localStorage.getItem('allowedDevices')||'[]')}catch(e){return[]}}
-function saveAllowedDevices(d){localStorage.setItem('allowedDevices',JSON.stringify(d))}
-function isDeviceAllowed(){const a=getAllowedDevices();return a.length===0||a.includes(myDeviceIdLocal)}
-function authorizeDevice(){const a=getAllowedDevices();if(!a.includes(myDeviceIdLocal)){a.push(myDeviceIdLocal);saveAllowedDevices(a);alert('Authorized! '+myDeviceIdLocal)} updateLockUI()}
-function deauthorizeDevice(id){let a=getAllowedDevices();a=a.filter(x=>x!==id);saveAllowedDevices(a);updateLockUI()}
-function toggleDevicePanel(){
-  const p=document.getElementById('deviceLockPanel');
-  if(!p) return alert('Panel not found - check bottom paste!');
-  p.style.display=p.style.display==='flex'?'none':'flex';
-}
-document.addEventListener('DOMContentLoaded', function(){
-  const btn=document.getElementById('manageBtn');
-  if(btn) btn.addEventListener('click', toggleDevicePanel);
-  setTimeout(updateLockUI,500);
-});
-function updateLockUI(){const id1=document.getElementById('myDeviceId'); const id2=document.getElementById('myDeviceIdD'); const cnt=document.getElementById('allowedCount'); const dot=document.getElementById('lockDot'); const status=document.getElementById('deviceLockStatus'); const list=document.getElementById('allowedDevices'); if(id1) id1.textContent=myDeviceIdLocal; if(id2) id2.textContent=myDeviceIdLocal; const allowed=getAllowedDevices(); if(cnt) cnt.textContent=allowed.length; const allowedNow=isDeviceAllowed(); if(dot){dot.style.background=allowedNow?'#34c759':'#ff3b30'} if(status){status.textContent=allowedNow?'✅ Allowed':'❌ Blocked'; status.style.color=allowedNow?'#34c759':'#ff3b30'} if(list){list.innerHTML=allowed.length===0?'<div style=text-align:center;padding:20px;color:#888;font-size:12px;>No limit</div>':allowed.map(id=>`<div style=display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f9f9f9;border-radius:8px;margin-bottom:4px;><span style=font-size:12px;>${id}${id===myDeviceIdLocal?' <b>(This)</b>':''}</span><button onclick="deauthorizeDevice('${id}')" style=background:#ff3b30;color:#fff;border:none;padding:4px 8px;border-radius:6px;font-size:10px;>Remove</button></div>`).join('')}}
-setTimeout(updateLockUI,500);
-</script><script>
-setInterval(()=>{
-  var isOwner = localStorage.getItem('terikano_is_owner') || localStorage.getItem('isOwner') || '';
-  var role = localStorage.getItem('terikano_role') || '';
-  var isStaff = (isOwner=='0' || isOwner=='false' || role=='staff' || role=='0');
-  var b=document.getElementById('markupBtn');
-  var m=document.getElementById('manageDevicesBtn') || document.getElementById('manageBtn');
-  if(b) b.style.display = isStaff ? 'none' : '';
-  if(m) m.style.display = isStaff ? 'none' : '';
-},600);
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
-</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-  
-  const firebaseConfig = {
-  apiKey: "AIzaSyCUlQDoaPYSD-ZVFtyc_uBnI9gaIYEq9qs",
-  authDomain: "terikano-3d137.firebaseapp.com",
-  databaseURL: "https://terikano-3d137-default-rtdb.firebaseio.com",
-  projectId: "terikano-3d137",
-  storageBucket: "terikano-3d137.firebasestorage.app",
-  messagingSenderId: "906871391351",
-  appId: "1:906871391351:web:0ceda10b9d72b94dbd3272",
-  measurementId: "G-NV3QC3DP4K"
-};
-  
-  try {
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    console.log("Terikano Online Ready!");
-    window.terikanoDB = db;
-    window.terikanoRef = ref;
-    window.terikanoSet = set;
-    window.terikanoOnValue = onValue;
-  } catch(e) {
-    console.log("Offline mode:", e);
-  }
-</script>
-<script>
-// === FINAL FIX - ONLY THIS ONE - AUTO PW SYNC ===
-(function(){
-  function getPw(){ return localStorage.getItem('TERI_PW') || localStorage.getItem('ownerPassword') || '1234'; }
-  
-  function pushFinal(){
-    try{
-      let s = localStorage.getItem('Terikano_storage_data')||'{"purchases":[]}';
-      let o = JSON.parse(s);
-      o._ownerPwSync = getPw();
-      o._staffPwSync = localStorage.getItem('TERI_STAFF_PW')||'2001';
-      let final = JSON.stringify(o);
-      localStorage.setItem('Terikano_storage_data', final);
-      if(window.firebase && firebase.database){
-        firebase.database().ref('terikano_v1/main_store').set({
-          data: final,
-          ts: Date.now()
-        });
-      }
-      console.log('✅ Pushed with PW:', o._ownerPwSync);
-    }catch(e){ console.error(e); }
-  }
-  
-  // KILL OLD PUSH, REPLACE WITH NEW
-  window.pushReal = pushFinal;
-  window.pushWithPw = pushFinal;
-  
-  // Pull PW from cloud
-  let check = setInterval(()=>{
-    if(window.firebase && firebase.database){
-      clearInterval(check);
-      firebase.database().ref('terikano_v1/main_store/data').on('value', snap=>{
-        let v = snap.val();
-        if(!v) return;
-        try{
-          let o = JSON.parse(v);
-          if(o._ownerPwSync && o._ownerPwSync !== getPw()){
-            localStorage.setItem('TERI_PW', o._ownerPwSync);
-            localStorage.setItem('ownerPassword', o._ownerPwSync);
-            console.log('🔥 Auto-updated PW from cloud');
-            // Auto reload to apply
-            if(confirm('New Owner Password changed from another device! Reload?')) location.reload();
-          }
-        }catch(e){}
-      });
-    }
-  }, 1000);
 
-  // Push every 4 sec - auto sync
-  setInterval(pushFinal, 4000);
-  setTimeout(pushFinal, 2000);
-})();
-</script><script>
-// === TERIKANO FIXED - SINGLE PW SYNC ===
-(function(){
-  const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
-  const STORE_KEY='Terikano_storage_data'; const FB_PATH='terikano_v1/main_store';
-  let isSyncing=false; let lastPushed='';
-  function getOwnerPw(){ return localStorage.getItem('TERI_PW')||'1234'; }
-  function getStaffPw(){ return localStorage.getItem('TERI_STAFF_PW')||'2001'; }
-  function fixedPush(){
+  function pushFinal(){
     if(isSyncing) return;
     try{
       let raw=localStorage.getItem(STORE_KEY)||'{"purchases":[]}';
       let obj=JSON.parse(raw);
       obj._ownerPwSync=getOwnerPw(); obj._staffPwSync=getStaffPw(); obj._ownerPwTs=Date.now();
-      let finalStr=JSON.stringify(obj); lastPushed=finalStr;
-      localStorage.setItem(STORE_KEY,finalStr);
-      if(window.firebase&&firebase.database){
-        firebase.database().ref(FB_PATH).set({data:finalStr,ts:Date.now()}).then(()=>console.log('✅ Pushed PW:',obj._ownerPwSync));
+      let finalStr=JSON.stringify(obj);
+      localStorage.setItem(STORE_KEY, finalStr);
+      if(window.firebase && firebase.database()){
+        firebase.database().ref(FB_PATH).set({data:finalStr, ts:Date.now()});
       }
     }catch(e){}
   }
-  window.pushReal=fixedPush; window.pushWithPw=fixedPush;
-  let initPull=setInterval(()=>{
-    if(window.firebase&&firebase.database){
-      clearInterval(initPull);
-      firebase.database().ref(FB_PATH).on('value',snap=>{
+  window.pushReal = pushFinal;
+
+  window.changePw = function(){
+    var oldV=document.getElementById('old_pw')?.value.trim();
+    var newV=document.getElementById('new_pw')?.value.trim();
+    if(oldV!==getOwnerPw()) return alert('Old PW wrong');
+    if(!newV) return alert('Enter new PW');
+    localStorage.setItem(OWNER_KEY, newV); pushFinal();
+    alert('Owner PW synced to cloud!');
+  };
+
+  window.setStaffPw = function(){
+    var v=document.getElementById('new_staff_pw')?.value.trim() || document.getElementById('bot_new_staff_pw')?.value.trim();
+    if(!v) return alert('Enter!');
+    localStorage.setItem(STAFF_KEY, v); localStorage.setItem('staff_pw', v); pushFinal();
+    alert('Staff PW synced to cloud!');
+  };
+
+  let init=setInterval(()=>{
+    if(window.firebase && firebase.database()){
+      clearInterval(init);
+      firebase.database().ref(FB_PATH).on('value', snap=>{
         let v=snap.val(); if(!v||!v.data) return;
         if(v.data===localStorage.getItem(STORE_KEY)) return;
         isSyncing=true;
         try{
-          let cloudObj=JSON.parse(v.data);
-          if(cloudObj._ownerPwSync&&cloudObj._ownerPwSync!==getOwnerPw()){
-            localStorage.setItem('TERI_PW',cloudObj._ownerPwSync);
-            console.log('🔥 Auto-updated OWNER PW to:',cloudObj._ownerPwSync);
-          }
-          if(cloudObj._staffPwSync&&cloudObj._staffPwSync!==getStaffPw()){
-            localStorage.setItem('TERI_STAFF_PW',cloudObj._staffPwSync);
-            console.log('🔥 Auto-updated STAFF PW to:',cloudObj._staffPwSync);
-          }
-          localStorage.setItem(STORE_KEY,v.data); lastPushed=v.data;
-          try{ if(typeof load==='function') load(); if(typeof rebuild==='function') rebuild(); }catch(e){}
+          let o=JSON.parse(v.data);
+          if(o._ownerPwSync) localStorage.setItem(OWNER_KEY, o._ownerPwSync);
+          if(o._staffPwSync){ localStorage.setItem(STAFF_KEY, o._staffPwSync); localStorage.setItem('staff_pw', o._staffPwSync); }
+          localStorage.setItem(STORE_KEY, v.data);
+          try{load(); rebuild(); lockAll();}catch(e){}
         }catch(e){}
-        setTimeout(()=>{isSyncing=false;},1000);
+        setTimeout(()=>{isSyncing=false;},1200);
       });
     }
   },800);
-  setInterval(fixedPush,5000); setTimeout(fixedPush,1500);
+  setInterval(pushFinal, 6000);
 })();
-</script><script>
-// === FINAL SECURE PATCH - SILENT SYNC + NO LEAK ===
-window.checkStaffPw = function(){
-  var e=document.getElementById('staffPw'); if(!e) return;
-  var val=e.value.trim();
-  var ownerPw=localStorage.getItem('TERI_PW')||'1234';
-  var staffPw=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||'123456789';
-  var ok=false;
-  if(val===ownerPw){ localStorage.setItem('isOwner','1'); ok=true; }
-  if(val===staffPw){ localStorage.setItem('isOwner','0'); ok=true; }
-  if(ok){
-    document.getElementById('staffLock').style.display='none';
-    var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{ if(typeof lockAll==='function') lockAll(); if(typeof rebuild==='function') rebuild(); }catch(err){}
-    e.value=''; return;
-  }
-  var msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
-};
-
-window.setOwnerPw = window.setStaffPw = function(){ 
-  // This will be overridden by your original but we fix message after
-  setTimeout(function(){
-    document.querySelectorAll('#ownerPwBox .log b, #staffPwBox .log b').forEach(function(b){
-      if(b.innerText.includes('synced:') || b.innerText.includes('Owner:') || b.innerText.includes('Staff:')){
-        b.innerText = b.innerText.includes('Owner') ? 'Owner PW synced to cloud!' : 'Staff PW synced to cloud!';
-        b.style.color='#2e7d32';
-      }
-    });
-  },100);
-};
-// SILENT CLOUD SYNC - NO NUMBER SHOWN
-(function(){
-  var origSetOwner = window.setOwnerPw;
-  var origSetStaff = window.setStaffPw;
-  // Hook into actual save buttons
-  document.addEventListener('click', function(ev){
-    var t=ev.target;
-    if(!t) return;
-    if(t.innerText && t.innerText.includes('Save Owner PW')){
-      setTimeout(function(){
-        try{
-          var npw = document.getElementById('newOwnerPw')?.value || localStorage.getItem('TERI_PW');
-          if(npw && typeof db!=='undefined' && db && db.ref){
-            db.ref('config/passwords').update({owner: npw});
-            db.ref('config/passwords/owner').set(npw);
-          }
-        }catch(e){}
-      },500);
-    }
-    if(t.innerText && t.innerText.includes('Save Staff PW')){
-      setTimeout(function(){
-        try{
-          var npw = document.getElementById('newStaffPw')?.value || localStorage.getItem('TERI_STAFF_PW');
-          if(npw && typeof db!=='undefined' && db && db.ref){
-            db.ref('config/passwords').update({staff: npw});
-            db.ref('config/passwords/staff').set(npw);
-          }
-        }catch(e){}
-      },500);
-    }
-  });
-})();
-</script></body>
+</script>
+</body>
 </html>
