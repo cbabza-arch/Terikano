@@ -76,7 +76,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
 function getStaffStoredPw(){return localStorage.getItem('staff_pw');}
 function setStaffPw(){let v=document.getElementById('new_staff_pw').value.trim();if(!v)return alert('Enter!');localStorage.setItem('staff_pw',v);document.getElementById('curStaffPwLabel').innerText=v;document.getElementById('new_staff_pw').value='';alert('SET:'+v);}
 function removeStaffPw(){localStorage.removeItem('staff_pw');document.getElementById('curStaffPwLabel').innerText='Not Set';alert('Removed');}
-function checkStaffPw(){let e=document.getElementById('staffPw').value.trim();let s=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||localStorage.getItem('terikano_staff_pw')||'1234';if(e===s){document.getElementById('staffLock').style.display='none';localStorage.setItem('staffLogged','yes');}else{document.getElementById('pwMsg').style.display='block';}}
+function checkStaffPw(){let e=document.getElementById('staffPw'); let val=e.value.trim(); let ownerPw=localStorage.getItem('TERI_PW')||'1234'; let staffPw=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||'123456789'; if(val===ownerPw){localStorage.setItem('isOwner','1'); document.getElementById('staffLock').style.display='none'; let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; e.value=''; return;} if(val===staffPw){localStorage.setItem('isOwner','0'); document.getElementById('staffLock').style.display='none'; let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; e.value=''; return;} let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}}
 </script><button id="themeBtn" onclick="toggleDark()">🌙 DARK</button>
 <div id="installAppBar" style="background:#000;color:gold;padding:8px;text-align:center;display:block;border:3px solid gold;border-radius:10px;margin:6px"><b>📲 INSTALL TERIKANO APP</b> <button id="installBtn" style="background:gold;color:#000;padding:8px 14px;border-radius:8px;border:2px solid #000;font-weight:bold;margin-left:8px">INSTALL NOW</button> <button onclick="document.getElementById(&#39;installAppBar&#39;).style.display=&#39;none&#39;" style="background:#fff;color:#000;padding:6px;border-radius:6px;border:2px solid #000">X</button><div style="font-size:11px;color:#fff;margin-top:4px">Install to home screen - offline - open like app - V28.2 AVG + Price History</div></div>
 
@@ -1600,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }catch(e){}
     var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText=np;
     var bot=document.getElementById('bot_cur'); if(bot) bot.innerText=np;
-    alert('✅ Staff PW synced to cloud: '+np);
+    alert('✅ Staff PW synced to cloud!')
   };
   var origChangePw = window.changePw;
   window.changePw = function(){
@@ -1618,7 +1618,7 @@ document.addEventListener('DOMContentLoaded', function(){
       if(typeof pushReal==='function') pushReal();
     }catch(e){}
     var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=nw;
-    alert('Owner PW synced to cloud: '+nw);
+    alert('Owner PW synced to cloud!';
   };
   function pullPwFromCloud(){
     try{
@@ -1830,9 +1830,9 @@ if ('serviceWorker' in navigator) {
           if(o._ownerPwSync && o._ownerPwSync !== getPw()){
             localStorage.setItem('TERI_PW', o._ownerPwSync);
             localStorage.setItem('ownerPassword', o._ownerPwSync);
-            console.log('🔥 Auto-updated PW from cloud to:', o._ownerPwSync);
+            console.log('🔥 Auto-updated PW from cloud');
             // Auto reload to apply
-            if(confirm('New Owner Password '+o._ownerPwSync+' from TAB! Reload?')) location.reload();
+            if(confirm('New Owner Password changed from another device! Reload?')) location.reload();
           }
         }catch(e){}
       });
