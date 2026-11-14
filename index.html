@@ -1294,6 +1294,7 @@ function updateBar(m,c){let b=ensureBar();b.innerHTML=m;b.style.background=c;}
 updateBar("🔴 Checking STORE Cloud...","#c62828");
 function pushReal(){
   if(isSyncing) return;
+  if(window._terikano_syncing) return;
   if(!navigator.onLine){updateBar("🔴 STORE Cloud OFFLINE - No Internet","#c62828");return;}
   let d=localStorage.getItem(KEY);
   if(!d) return;
@@ -1536,7 +1537,7 @@ setTimeout(()=>{
     alert('Staff PW synced to cloud!');
   };
 
-      let init=setInterval(()=>{
+         let init=setInterval(()=>{
       if(window.firebase && firebase.database()){
         clearInterval(init);
         firebase.database().ref(FB_PATH).on('value', snap=>{
