@@ -1536,25 +1536,42 @@ setTimeout(()=>{
     alert('Staff PW synced to cloud!');
   };
 
-  let init=setInterval(()=>{
-    if(window.firebase && firebase.database()){
-      clearInterval(init);
-      firebase.database().ref(FB_PATH).on('value', snap=>{
-        let v=snap.val(); if(!v||!v.data) return;
-        if(v.data===localStorage.getItem(STORE_KEY)) return;
-        isSyncing=true;
-        try{
-          let o=JSON.parse(v.data);
-          if(o._ownerPwSync) localStorage.setItem(OWNER_KEY, o._ownerPwSync);
-          if(o._staffPwSync){ localStorage.setItem(STAFF_KEY, o._staffPwSync); localStorage.setItem('staff_pw', o._staffPwSync); }
-          localStorage.setItem(STORE_KEY, v.data);
-          try{load(); rebuild(); lockAll();}catch(e){}
-        }catch(e){}
-        setTimeout(()=>{isSyncing=false;},1200);
-      });
-    }
-  },800);
-})();
+      let init=setInterval(()=>{
+      if(window.firebase && firebase.database()){
+        clearInterval(init);
+        firebase.database().ref(FB_PATH).on('value', snap=>{
+          let v=snap.val(); if(!v||!v.data) return;
+          
+          try{
+            let remoteObj=JSON.parse(v.data);
+            let remoteTs=v.ts || remoteObj._ts || 0;
+            
+            let localRaw=localStorage.getItem(STORE_KEY);
+            let localTs=0;
+            try{ localTs=JSON.parse(localRaw)._ts || 0; }catch(e){}
+            
+            // IF remote is OLDER than local, don't accept! Push local instead!
+            if(remoteTs < localTs){
+              console.log('Remote is older, pushing local');
+              if(typeof pushFinal==='function') pushFinal();
+              return;
+            }
+            
+            if(v.data===localRaw) return;
+            isSyncing=true;
+            try{
+              let o=remoteObj;
+              if(o._ownerPwSync) localStorage.setItem(OWNER_KEY, o._ownerPwSync);
+              if(o._staffPwSync) localStorage.setItem(STAFF_KEY, o._staffPwSync);
+              localStorage.setItem(STORE_KEY, v.data);
+              try{load(); rebuild(); lockAll();}catch(e){}
+            }catch(e){}
+            setTimeout(()=>{isSyncing=false;},1200);
+          }catch(e){}
+        });
+      }
+    },800);
+    })();
 </script>
 </body>
 </html>
