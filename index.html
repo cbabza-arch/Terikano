@@ -1843,5 +1843,53 @@ if ('serviceWorker' in navigator) {
   setInterval(pushFinal, 4000);
   setTimeout(pushFinal, 2000);
 })();
+</script><script>
+// === TERIKANO FIXED - SINGLE PW SYNC ===
+(function(){
+  const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
+  const STORE_KEY='Terikano_storage_data'; const FB_PATH='terikano_v1/main_store';
+  let isSyncing=false; let lastPushed='';
+  function getOwnerPw(){ return localStorage.getItem('TERI_PW')||'1234'; }
+  function getStaffPw(){ return localStorage.getItem('TERI_STAFF_PW')||'2001'; }
+  function fixedPush(){
+    if(isSyncing) return;
+    try{
+      let raw=localStorage.getItem(STORE_KEY)||'{"purchases":[]}';
+      let obj=JSON.parse(raw);
+      obj._ownerPwSync=getOwnerPw(); obj._staffPwSync=getStaffPw(); obj._ownerPwTs=Date.now();
+      let finalStr=JSON.stringify(obj); lastPushed=finalStr;
+      localStorage.setItem(STORE_KEY,finalStr);
+      if(window.firebase&&firebase.database){
+        firebase.database().ref(FB_PATH).set({data:finalStr,ts:Date.now()}).then(()=>console.log('✅ Pushed PW:',obj._ownerPwSync));
+      }
+    }catch(e){}
+  }
+  window.pushReal=fixedPush; window.pushWithPw=fixedPush;
+  let initPull=setInterval(()=>{
+    if(window.firebase&&firebase.database){
+      clearInterval(initPull);
+      firebase.database().ref(FB_PATH).on('value',snap=>{
+        let v=snap.val(); if(!v||!v.data) return;
+        if(v.data===localStorage.getItem(STORE_KEY)) return;
+        isSyncing=true;
+        try{
+          let cloudObj=JSON.parse(v.data);
+          if(cloudObj._ownerPwSync&&cloudObj._ownerPwSync!==getOwnerPw()){
+            localStorage.setItem('TERI_PW',cloudObj._ownerPwSync);
+            console.log('🔥 Auto-updated OWNER PW to:',cloudObj._ownerPwSync);
+          }
+          if(cloudObj._staffPwSync&&cloudObj._staffPwSync!==getStaffPw()){
+            localStorage.setItem('TERI_STAFF_PW',cloudObj._staffPwSync);
+            console.log('🔥 Auto-updated STAFF PW to:',cloudObj._staffPwSync);
+          }
+          localStorage.setItem(STORE_KEY,v.data); lastPushed=v.data;
+          try{ if(typeof load==='function') load(); if(typeof rebuild==='function') rebuild(); }catch(e){}
+        }catch(e){}
+        setTimeout(()=>{isSyncing=false;},1000);
+      });
+    }
+  },800);
+  setInterval(fixedPush,5000); setTimeout(fixedPush,1500);
+})();
 </script></body>
 </html>
