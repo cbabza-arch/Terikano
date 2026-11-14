@@ -1760,68 +1760,56 @@ if ('serviceWorker' in navigator) {
   }
 </script>
 <script>
-// === TERIKANO PASSWORD CLOUD SYNC FIX - PASTE BEFORE </body> ===
+// === FINAL FIX - ONLY THIS ONE - AUTO PW SYNC ===
 (function(){
-  const ORIGINAL_SET = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(k,v){
-    ORIGINAL_SET(k,v);
-    if(k==='TERI_PW' || k==='ownerPassword' || k==='Terikano_storage_data' || k==='TERI_STAFF_PW'){
-      setTimeout(()=>{ try{ pushWithPw(); }catch(e){} }, 300);
-    }
-  };
-
-  window.pushWithPw = function(){
+  function getPw(){ return localStorage.getItem('TERI_PW') || localStorage.getItem('ownerPassword') || '1234'; }
+  
+  function pushFinal(){
     try{
-      let str = localStorage.getItem('Terikano_storage_data') || '{}';
-      let obj = JSON.parse(str);
-      obj._ownerPwSync = localStorage.getItem('TERI_PW') || '200175';
-      obj._staffPwSync = localStorage.getItem('TERI_STAFF_PW') || '2001';
-      obj._syncTime = Date.now();
-      const finalStr = JSON.stringify(obj);
-      // Push to your Firebase - terikano_v1/main_store
+      let s = localStorage.getItem('Terikano_storage_data')||'{"purchases":[]}';
+      let o = JSON.parse(s);
+      o._ownerPwSync = getPw();
+      o._staffPwSync = localStorage.getItem('TERI_STAFF_PW')||'2001';
+      let final = JSON.stringify(o);
+      localStorage.setItem('Terikano_storage_data', final);
       if(window.firebase && firebase.database){
-        firebase.database().ref('terikano_v1/main_store').update({
-          data: finalStr,
+        firebase.database().ref('terikano_v1/main_store').set({
+          data: final,
           ts: Date.now()
         });
-        console.log('✅ PW 200175 pushed to cloud!');
       }
-    }catch(e){ console.log('push error', e); }
-  };
-
-  window.pullPwFromCloud = function(cloudDataStr){
-    try{
-      const o = JSON.parse(cloudDataStr);
-      if(o._ownerPwSync){
-        ORIGINAL_SET('TERI_PW', o._ownerPwSync);
-        ORIGINAL_SET('ownerPassword', o._ownerPwSync);
-        console.log('✅ PW synced from cloud:', o._ownerPwSync);
-      }
-      if(o._staffPwSync){
-        ORIGINAL_SET('TERI_STAFF_PW', o._staffPwSync);
-      }
-    }catch(e){}
-  };
-
-  // Hook into existing cloud pull
-  const checkFirebase = setInterval(()=>{
+      console.log('✅ Pushed with PW:', o._ownerPwSync);
+    }catch(e){ console.error(e); }
+  }
+  
+  // KILL OLD PUSH, REPLACE WITH NEW
+  window.pushReal = pushFinal;
+  window.pushWithPw = pushFinal;
+  
+  // Pull PW from cloud
+  let check = setInterval(()=>{
     if(window.firebase && firebase.database){
-      clearInterval(checkFirebase);
-      const ref = firebase.database().ref('terikano_v1/main_store/data');
-      ref.on('value', (snap)=>{
-        const val = snap.val();
-        if(val){
-          window.pullPwFromCloud(val);
-        }
+      clearInterval(check);
+      firebase.database().ref('terikano_v1/main_store/data').on('value', snap=>{
+        let v = snap.val();
+        if(!v) return;
+        try{
+          let o = JSON.parse(v);
+          if(o._ownerPwSync && o._ownerPwSync !== getPw()){
+            localStorage.setItem('TERI_PW', o._ownerPwSync);
+            localStorage.setItem('ownerPassword', o._ownerPwSync);
+            console.log('🔥 Auto-updated PW from cloud to:', o._ownerPwSync);
+            // Auto reload to apply
+            if(confirm('New Owner Password '+o._ownerPwSync+' from TAB! Reload?')) location.reload();
+          }
+        }catch(e){}
       });
     }
   }, 1000);
 
-  // Push current TAB pw 200175 to cloud after 2 sec
-  setTimeout(()=>{ pushWithPw(); }, 2000);
-  
-  console.log('🔥 Terikano PW Sync Fix Loaded - 200175 will sync!');
+  // Push every 4 sec - auto sync
+  setInterval(pushFinal, 4000);
+  setTimeout(pushFinal, 2000);
 })();
-// === END FIX ===
 </script></body>
 </html>
