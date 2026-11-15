@@ -134,7 +134,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
       }
       // Update count
       let allowedCount = Object.values(devices).filter(d=>d.allowed).length;
-      document.getElementById('allowedCount').innerText=allowedCount+'/8';
+      document.getElementById('allowedCount').innerText=allowedCount;
       checkBlock();
     });
 
