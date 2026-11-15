@@ -64,7 +64,115 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
   <span style="background:#f0f0f0; border:1px solid #ddd; padding:1px 6px; border-radius:10px;"><span id="allowedCount">0</span>/5</span>
   <button id="manageBtn" style="background:#111; color:#fff; border:none; padding:3px 8px; border-radius:10px; cursor:pointer; font-size:10px;">Manage</button>
 </div>
- <!-- END DEVICE LOCK --><div id="staffLock" style="position:fixed;inset:0;background:#111;z-index:99999;display:flex;align-items:center;justify-content:center;">
+ <!-- END DEVICE LOCK -->
+  <script>
+// === DEVICE LOCK V29 - MAIN DEVICE CAN CHANGE ANYTIME ===
+(function(){
+  const DEV_KEY='terikano_device_id';
+  const MAIN_KEY='terikano_main_device_id';
+  let myId = localStorage.getItem(DEV_KEY);
+  if(!myId){ myId='DEV-'+Math.random().toString(36).substr(2,6).toUpperCase(); localStorage.setItem(DEV_KEY, myId); }
+  document.getElementById('myDeviceId').innerText=myId;
+  
+  let isMain = false;
+  let devices = {};
+
+  function checkBlock(){
+    if(!devices[myId]) return; // not loaded yet
+    if(devices[myId].allowed) {
+      document.getElementById('lockDot').style.background='#34c759';
+      document.body.style.pointerEvents='auto';
+      let overlay=document.getElementById('deviceBlockOverlay');
+      if(overlay) overlay.remove();
+    } else {
+      // BLOCKED
+      document.getElementById('lockDot').style.background='red';
+      if(!document.getElementById('deviceBlockOverlay')){
+        let div=document.createElement('div');
+        div.id='deviceBlockOverlay';
+        div.style.cssText='position:fixed;inset:0;background:#111;z-index:9999999;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px';
+        div.innerHTML='<div><h1>⛔ DEVICE BLOCKED</h1><p>ID: '+myId+'</p><p>Waiting for Main Device approval</p><p style="font-size:12px;color:gold">Main Device can authorize in Manage</p><button onclick="location.reload()" style="padding:12px;background:gold;color:#000;border-radius:10px;font-weight:bold">RETRY</button></div>';
+        document.body.appendChild(div);
+      }
+    }
+  }
+
+  // Firebase sync
+  setTimeout(()=>{
+    if(!firebase.database) return;
+    const devRef = firebase.database().ref('config/devices');
+    const mainRef = firebase.database().ref('config/mainDeviceId');
+    
+    // Listen main
+    mainRef.on('value', s=>{
+      let mainId = s.val();
+      if(!mainId){
+        // First device becomes Main
+        mainRef.set(myId);
+        localStorage.setItem(MAIN_KEY, myId);
+        isMain=true;
+      } else {
+        isMain = (mainId===myId);
+        localStorage.setItem(MAIN_KEY, mainId);
+      }
+      document.getElementById('myDeviceId').innerText = myId + (isMain ? ' 👑 MAIN' : '');
+    });
+
+    // Listen devices
+    devRef.on('value', snap=>{
+      devices = snap.val() || {};
+      // If my device not in list, add as BLOCKED by default (except first device)
+      if(!devices[myId]){
+        let isFirst = Object.keys(devices).length===0;
+        devices[myId]={id:myId, name:navigator.userAgent.substr(0,20), allowed:isFirst, time:Date.now(), isMain:isFirst};
+        devRef.set(devices);
+        if(isFirst) mainRef.set(myId);
+      }
+      // Update count
+      let allowedCount = Object.values(devices).filter(d=>d.allowed).length;
+      document.getElementById('allowedCount').innerText=allowedCount+'/5';
+      checkBlock();
+    });
+
+    // Manage button
+    document.getElementById('manageBtn').onclick=function(){
+      if(!isMain){ alert('Only MAIN device 👑 can manage! Current Main: '+localStorage.getItem(MAIN_KEY)); return; }
+      let html='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:400px;max-height:80vh;overflow:auto;border:3px solid #000"><h3>🔒 DEVICE MANAGE - MAIN: '+myId+'</h3><div id="devList"></div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
+      let pop=document.createElement('div');
+      pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center';
+      pop.innerHTML=html;
+      document.body.appendChild(pop);
+      let listHtml='';
+      for(let id in devices){
+        let d=devices[id];
+        listHtml+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:6px 0;border-radius:8px;background:'+(d.allowed?'#e8f5e9':'#ffebee')+'"><b>'+id+(d.isMain?' 👑 MAIN':'')+(id===myId?' (This)':'')+'</b> - '+(d.allowed?'✅ Allowed':'❌ Blocked')+'<br><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap"><button onclick="allowDev(\''+id+'\')" style="background:green;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">✅ Allow</button><button onclick="blockDev(\''+id+'\')" style="background:red;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">❌ Block/Remove</button><button onclick="makeMain(\''+id+'\')" style="background:gold;color:#000;padding:6px 10px;border-radius:6px;border:1px solid #000">👑 Make Main</button></div></div>';
+      }
+      document.getElementById('devList').innerHTML=listHtml||'No devices';
+    };
+
+    window.allowDev=function(id){ devices[id].allowed=true; devRef.set(devices); alert(id+' Allowed ✅'); }
+    window.blockDev=function(id){ 
+      if(id===localStorage.getItem(MAIN_KEY) && Object.keys(devices).length>1){ if(!confirm('Block MAIN device? Make another Main first!')) return; }
+      devices[id].allowed=false; 
+      // If want fully remove: delete devices[id];
+      devRef.set(devices); 
+      alert(id+' Blocked ❌'); 
+    }
+    window.makeMain=function(id){ 
+      if(!devices[id] || !devices[id].allowed){ alert('Allow device first!'); return; }
+      if(confirm('Make '+id+' the new MAIN device? You will lose Main powers!')){
+        firebase.database().ref('config/mainDeviceId').set(id);
+        for(let k in devices) devices[k].isMain=(k===id);
+        devRef.set(devices);
+        alert('New Main: '+id+' 👑 - Reloading');
+        location.reload();
+      }
+    }
+
+  },1000);
+})();
+</script>
+  <div id="staffLock" style="position:fixed;inset:0;background:#111;z-index:99999;display:flex;align-items:center;justify-content:center;">
   <div style="background:white;padding:25px;border-radius:15px;width:300px;text-align:center;">
     <h2>🔒 Staff Login</h2>
     <input id="staffPw" type="password" placeholder="Enter Password" style="width:100%;padding:12px;border-radius:8px;">
