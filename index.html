@@ -92,13 +92,13 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
       let el=document.getElementById('myDeviceId'); if(el) el.innerText=myId+(isMain?' 👑 MAIN':'');
     });
     devRef.on('value', snap=>{
-      devices=snap.val()||{};
+      let v=snap.val(); if(v){ devices=v; localStorage.setItem('terikano_devices_cache', JSON.stringify(v)); } else { let c=localStorage.getItem('terikano_devices_cache'); devices=c?JSON.parse(c):{}; }
       if(!devices[myId]){
         let isFirst=Object.keys(devices).length===0;
         devices[myId]={id:myId, allowed:isFirst||true, time:Date.now(), isMain:isFirst};
         devRef.set(devices); if(isFirst) mainRef.set(myId);
       }
-      let ac=document.getElementById('allowedCount'); if(ac) ac.innerText=Object.values(devices).filter(d=>d.allowed).length+'/8';
+      let ac=document.getElementById('allowedCount'); if(ac) ac.innerText=Object.values(devices).filter(d=>d.allowed).length;
     });
     // FIXED: Manage ALWAYS opens - NO isMain check!
     let mb=document.getElementById('manageBtn');
