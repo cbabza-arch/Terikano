@@ -857,10 +857,7 @@ try{
 var t=todayKIR();
 ['p_date','s_date','cap_date','coll_date','bank_date','bank_withdraw_date','exp_date','close_date','clear_date','p_expiry','waste_date','a_f1','a_f2','draw_date','coco_buy_date','coco_mill_date'].forEach(function(id){var e=document.getElementById(id);if(e&&!e.value)e.value=t;});
 load();rebuild();
-localStorage.setItem('isOwner','0');
-var lb=document.getElementById('loginBox');if(lb)lb.style.display='flex';
-lockAll();
-document.getElementById('loginBtn').onclick=doOwnerFix2;
+  var lb=document.getElementById('loginBox');if(lb){if(localStorage.getItem('isOwner')){lb.style.display='none';}else{lb.style.display='flex';}} lockAll();document.getElementById('loginBtn').onclick=doOwnerFix2;
 document.getElementById('exitBtn').onclick=doStaffFix2;
 // FIX: clear pw after click
 var _origOwner = doOwnerFix2;
