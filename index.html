@@ -65,7 +65,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
   <button id="manageBtn" style="background:#111; color:#fff; border:none; padding:3px 8px; border-radius:10px; cursor:pointer; font-size:10px;">Manage</button>
 </div>
  <!-- END DEVICE LOCK -->
-  <script> // === DEVICE LOCK V30 - BOSS CONTROL - FINAL ===
+<script> // === DEVICE LOCK V31 - ANY PHONE CAN BE MAIN WITH OWNER PW ===
 (function(){
   const DEV_KEY='terikano_device_id';
   const MAIN_KEY='terikano_main_device_id';
@@ -79,18 +79,34 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
     if(devices[myId].allowed){
       document.getElementById('lockDot').style.background='#34c759';
       document.body.style.pointerEvents='auto';
-      let overlay=document.getElementById('deviceBlockOverlay');
-      if(overlay) overlay.remove();
+      let o=document.getElementById('deviceBlockOverlay'); if(o) o.remove();
     } else {
       document.getElementById('lockDot').style.background='red';
       if(!document.getElementById('deviceBlockOverlay')){
         let div=document.createElement('div');
         div.id='deviceBlockOverlay';
         div.style.cssText='position:fixed;inset:0;background:#111;z-index:9999999;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px';
-        div.innerHTML='<div><h1>⛔ DEVICE BLOCKED</h1><p>ID: '+myId+'</p><p>Waiting for Main approval</p><p style="font-size:12px;color:gold">Ask MAIN to Allow</p><button onclick="location.reload()" style="padding:12px;background:gold;color:#000;border-radius:10px;font-weight:bold">RETRY</button><br><br><button onclick="localStorage.clear();location.reload()" style="padding:8px;background:red;color:#fff;border-radius:10px">RESET</button></div>';
+        div.innerHTML='<div><h1>⛔ DEVICE BLOCKED</h1><p>ID: '+myId+'</p><p>Waiting for Main approval</p><button onclick="location.reload()" style="padding:12px;background:gold;color:#000;border-radius:10px;font-weight:bold">RETRY</button><br><br><button onclick="claimMainNow()" style="padding:12px;background:green;color:#fff;border-radius:10px;font-weight:bold">👑 CLAIM MAIN - I AM BOSS</button><br><br><button onclick="localStorage.clear();location.reload()" style="padding:8px;background:red;color:#fff;border-radius:10px">RESET</button></div>';
         document.body.appendChild(div);
       }
     }
+  }
+  function getOwnerPw(){ return localStorage.getItem('TERI_PW')||'1234'; }
+  window.claimMainNow=function(){
+    let pw=prompt('Enter OWNER Password to CLAIM MAIN:');
+    if(!pw) return;
+    if(pw!==getOwnerPw()){ alert('Wrong Owner PW!'); return; }
+    if(!firebase.database){ alert('No internet!'); return; }
+    firebase.database().ref('config/mainDeviceId').set(myId);
+    let devRef=firebase.database().ref('config/devices');
+    devRef.once('value', snap=>{
+      let devs=snap.val()||{};
+      if(!devs[myId]) devs[myId]={id:myId, allowed:true, time:Date.now()};
+      devs[myId].allowed=true; devs[myId].isMain=true;
+      for(let k in devs) if(k!==myId) devs[k].isMain=false;
+      devRef.set(devs);
+      alert('YOU ARE NOW MAIN 👑 '+myId); location.reload();
+    });
   }
   setTimeout(()=>{
     if(!firebase.database) return;
@@ -115,18 +131,21 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
       checkBlock();
     });
     document.getElementById('manageBtn').onclick=function(){
-      if(!isMain){ alert('Only MAIN 👑 can manage! Main: '+localStorage.getItem(MAIN_KEY)); return; }
-      let html='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:400px;max-height:80vh;overflow:auto;border:3px solid #000"><h3>🔒 DEVICE MANAGE - YOU ARE MAIN: '+myId+'</h3><p style="font-size:11px;background:#fff9c4;padding:6px">New devices need your Allow. You can Logout any phone anytime!</p><div id="devList"></div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
+      // ANY OWNER CAN MANAGE NOW, NOT ONLY MAIN
+      let isOwner = localStorage.getItem('isOwner')==='1';
+      if(!isMain && !isOwner){ alert('Only MAIN or OWNER can manage! Ask Boss to Allow or Claim Main!'); return; }
+      let html='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:400px;max-height:80vh;overflow:auto;border:3px solid #000"><h3>🔒 DEVICE MANAGE - '+(isMain?'YOU ARE MAIN 👑 ':'')+myId+'</h3><button onclick="claimMainNow()" style="width:100%;padding:8px;background:gold;color:#000;border-radius:8px;border:2px solid #000;font-weight:bold;margin-bottom:8px">👑 CLAIM MAIN WITH OWNER PW</button><p style="font-size:11px;background:#fff9c4;padding:6px">Any phone with Owner PW can be Main! New devices need Allow.</p><div id="devList"></div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
       let pop=document.createElement('div'); pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999999;display:flex;align-items:center;justify-content:center'; pop.innerHTML=html; document.body.appendChild(pop);
-      let listHtml=''; for(let id in devices){ let d=devices[id]; listHtml+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:6px 0;border-radius:8px;background:'+(d.allowed?'#e8f5e9':'#ffebee')+'"><b>'+id+(d.isMain?' 👑 MAIN':'')+(id===myId?' (This)':'')+'</b> - '+(d.allowed?'✅ Allowed':'❌ Blocked')+'<br><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap"><button onclick="allowDev(\''+id+'\')" style="background:green;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">✅ Allow</button><button onclick="blockDev(\''+id+'\')" style="background:red;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">🚪 Logout/Block</button><button onclick="makeMain(\''+id+'\')" style="background:gold;color:#000;padding:6px 10px;border-radius:6px;border:1px solid #000">👑 Make Main</button></div></div>'; }
+      let listHtml=''; for(let id in devices){ let d=devices[id]; listHtml+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:6px 0;border-radius:8px;background:'+(d.allowed?'#e8f5e9':'#ffebee')+'"><b>'+id+(d.isMain?' 👑 MAIN':'')+(id===myId?' (This)':'')+'</b> - '+(d.allowed?'✅ Allowed':'❌ Blocked')+'<br><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap"><button onclick="allowDev(\''+id+'\')" style="background:green;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">✅ Allow</button><button onclick="blockDev(\''+id+'\')" style="background:red;color:#fff;padding:6px 10px;border-radius:6px;border:1px solid #000">🚪 Block</button><button onclick="makeMain(\''+id+'\')" style="background:gold;color:#000;padding:6px 10px;border-radius:6px;border:1px solid #000">👑 Make Main</button></div></div>'; }
       document.getElementById('devList').innerHTML=listHtml||'No devices';
     };
     window.allowDev=function(id){ devices[id].allowed=true; devRef.set(devices); alert(id+' Allowed ✅'); }
-    window.blockDev=function(id){ if(id===myId){ alert('Cannot block yourself!'); return; } if(confirm('Logout & Block '+id+'?')){ devices[id].allowed=false; devRef.set(devices); alert(id+' Logged out ❌'); } }
+    window.blockDev=function(id){ if(id===myId){ alert('Cannot block yourself! Use other phone to block this.'); return; } if(confirm('Block '+id+'?')){ devices[id].allowed=false; devRef.set(devices); alert(id+' Blocked ❌'); } }
     window.makeMain=function(id){ if(!devices[id] || !devices[id].allowed){ alert('Allow first!'); return; } if(confirm('Make '+id+' new MAIN?')){ firebase.database().ref('config/mainDeviceId').set(id); for(let k in devices) devices[k].isMain=(k===id); devRef.set(devices); alert('New Main: '+id+' 👑'); location.reload(); } }
   },1000);
 })();
-</script><button id="themeBtn" onclick="toggleDark()">🌙 DARK</button>
+</script>
+  <button id="themeBtn" onclick="toggleDark()">🌙 DARK</button>
 <div id="installAppBar" style="background:#000;color:gold;padding:8px;text-align:center;display:block;border:3px solid gold;border-radius:10px;margin:6px"><b>📲 INSTALL TERIKANO APP</b> <button id="installBtn" style="background:gold;color:#000;padding:8px 14px;border-radius:8px;border:2px solid #000;font-weight:bold;margin-left:8px">INSTALL NOW</button> <button onclick="document.getElementById(&#39;installAppBar&#39;).style.display=&#39;none&#39;" style="background:#fff;color:#000;padding:6px;border-radius:6px;border:2px solid #000">X</button><div style="font-size:11px;color:#fff;margin-top:4px">Install to home screen - offline - open like app - V28.2 AVG + Price History</div></div>
 
 <div id="bizHeader" style="background:#000;color:gold;padding:12px;text-align:center;font-weight:bold;border-radius:12px;margin:8px;font-size:16px;border:2px solid gold">🏪 TERIKANO V28.2 AVERAGE COST + Price History - Double Checked</div>
