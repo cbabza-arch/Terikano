@@ -380,7 +380,7 @@ Amt Paid <input type="number" id="coll_amt" style="width:80px;border:2px solid #
 
 <div id="renameDiv" class="owner-only-div" style="background:#fff3e0;padding:12px;border:3px solid #795548;border-radius:12px;display:none;margin:8px 6px"><div class="window-header"><b>✏️ RENAME - Owner Only</b><button class="hide-btn" onclick="hideWin(&#39;renameDiv&#39;)">❌ HIDE</button></div><b>RENAME SEARCH</b><br><input id="renameSearch" placeholder="🔍 Type..." oninput="filterRenameList()" style="width:100%;padding:8px;border:2px solid #000;margin:4px 0"><select id="oldNameSel" size="6" style="width:100%;padding:8px;border:2px solid #000;height:120px"><option value="Argentina">Argentina</option><option value="Flour">Flour</option><option value="Moko">Moko</option><option value="Rice">Rice</option></select><input id="newName" placeholder="New name" style="width:100%;padding:8px;border:2px solid #000;margin:4px 0"><button onclick="renameItemStock()" style="background:#795548;color:#fff;padding:12px;width:100%;border:2px solid #000;border-radius:10px;font-weight:bold">✅ RENAME NOW Avg</button></div>
 
-<div id="loginBox" style="position: fixed; inset: 0px; background: rgb(17, 17, 17); z-index: 99999; display: none; align-items: center; justify-content: center;"><div style="background:white;padding:22px;border-radius:14px;text-align:center;width:280px;border:3px solid gold"><h3 id="bizLogin">🏪 TERIKANO V28.2 AVERAGE</h3><div style="font-size:11px;background:#00c853;color:#fff;padding:6px;border-radius:6px;margin-bottom:10px;font-weight:bold">Staff: SALE, STOCK LIMITED, CREDITORS, COLLECT, COCO BUY, LEDGER LIMITED + LOGOUT | Dashboard Hidden | Avg Cost | Price History</div><input id="ownerPass" type="password" placeholder="Owner PW Enter pin" style="padding:12px;width:85%;border-radius:10px;border:3px solid #000"><div style="margin-top:12px;display:flex;gap:8px"><button id="loginBtn" style="flex:1;padding:12px;background:#2e7d32;color:white;font-weight:bold;border-radius:10px;border:2px solid #000">👑 OWNER</button><button id="exitBtn" style="flex:1;padding:12px;background:orange;color:#000;font-weight:bold;border-radius:10px;border:2px solid #000">👤 STAFF</button></div><p id="lockStatus" style="padding: 8px; background: lightgreen; margin-top: 12px; font-weight: bold; border-radius: 8px; font-size: 12px; border: 2px solid rgb(0, 0, 0);">👑 OWNER V28.2 AVERAGE - Dashboard + Cash + Bank + Coco Owner Only + Avg + History</p></div></div>
+
 <script>
 function todayKIR(){return new Date().toLocaleDateString('en-CA', {timeZone:'Pacific/Tarawa'});}
 var NEW_KEY='Terikano_storage_data';
@@ -410,13 +410,13 @@ function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function doLogout(){localStorage.setItem('isOwner','0');document.getElementById('loginBox').style.display='flex';lockAll();}
-function doOwnerFix2(){var e=document.getElementById('ownerPass');var v=e?e.value.trim():'';if(v===getOwnerPw()){localStorage.setItem('isOwner','1');document.getElementById('loginBox').style.display='none';lockAll();rebuild();}else alert("E bure ma Kataia riki");}
-function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('loginBox').style.display='none';lockAll();rebuild();}function todayKIR(){
-  // Kiribati Tarawa = UTC+12, if you are Kiritimati (Christmas) change to Pacific/Kiritimati
+function doLogout(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='flex';document.body.classList.remove('authenticated');location.reload();}
+function doOwnerFix2(){localStorage.setItem('isOwner','1');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
+function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
+function todayKIR(){
   return new Date().toLocaleDateString('en-CA', {timeZone: 'Pacific/Tarawa'});
 }
-function save(){try{
+  function save(){try{
 // FIX: Ensure purchases (your stock) is always saved
 localStorage.setItem('Terikano_storage_data',JSON.stringify({
   purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts
