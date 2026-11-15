@@ -123,6 +123,10 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
       devices = snap.val() || {};
       // If my device not in list, add as BLOCKED by default (except first device)
       if(!devices[myId]){
+        if(Object.keys(devices).length >= 8){
+          alert('Max 8 devices reached! Remove one in Manage Devices.');
+          return;
+        }
         let isFirst = Object.keys(devices).length===0;
         devices[myId]={id:myId, name:navigator.userAgent.substr(0,20), allowed:isFirst, time:Date.now(), isMain:isFirst};
         devRef.set(devices);
@@ -130,7 +134,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
       }
       // Update count
       let allowedCount = Object.values(devices).filter(d=>d.allowed).length;
-      document.getElementById('allowedCount').innerText=allowedCount+'/5';
+      document.getElementById('allowedCount').innerText=allowedCount+'/8';
       checkBlock();
     });
 
