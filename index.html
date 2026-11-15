@@ -1552,5 +1552,17 @@ setTimeout(()=>{
     },800);
     })();
 </script>
+<script>
+// === FORCE CLOUD PW - OLD PW NEVER WORKS ===
+firebase.database().ref('config/passwords').on('value', (snap)=>{
+  const c = snap.val();
+  if(c){
+    if(c.owner) localStorage.setItem('TERI_PW', c.owner);
+    if(c.owner) localStorage.setItem('ownerPassword', c.owner);
+    if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff);
+    console.log('🔒 Cloud PW is boss:', c);
+  }
+});
+</script>
 </body>
 </html>
