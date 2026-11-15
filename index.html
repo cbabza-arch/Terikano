@@ -1615,24 +1615,48 @@ window.setStaffPw = function(){
    if(typeof pushReal==='function') pushReal();
    alert('✅ STAFF PW '+v+' synced ALL devices!');
  };
- // NIKIRA/KAKORO SYNC
- let dailySyncing=false;
- window.saveDailyNotes = function(){
-   localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
-   if(dailySyncing || !navigator.onLine) return;
-   FB.ref('config/dailyNotes_v13').set({data: JSON.stringify(dailyNotesArr), ts: Date.now()});
- };
- FB.ref('config/dailyNotes_v13').on('value', snap=>{
-   let val=snap.val(); if(!val || !val.data) return;
-   if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
-   try{
-     dailySyncing=true;
-     dailyNotesArr=JSON.parse(val.data);
-     localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data);
-     renderDailyNotes();
-     setTimeout(()=>{dailySyncing=false;},1000);
-   }catch(e){}
- });
+ // NIKIRA/KAKORO SYNC WITH LATEST WINS
+let dailySyncing=false;
+let pendingNote=null;
+
+window.saveDailyNotes = function(){
+  localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
+  let payload = {data: JSON.stringify(dailyNotesArr), ts: Date.now()};
+  
+  if(!navigator.onLine){
+    pendingNote = payload; // queue with time
+    console.log('Offline - queued');
+    return;
+  }
+  FB.ref('config/dailyNotes_v13').set(payload);
+};
+
+// When wifi comes back, push queued
+window.addEventListener('online', ()=>{
+  if(pendingNote){
+    FB.ref('config/dailyNotes_v13').set(pendingNote);
+    pendingNote=null;
+  }
+});
+
+FB.ref('config/dailyNotes_v13').on('value', snap=>{
+  let val=snap.val(); if(!val || !val.data) return;
+  // LATEST WINS - check timestamp
+  let localTS = parseInt(localStorage.getItem('dailyNotes_TS')||'0');
+  if(val.ts && val.ts < localTS) {
+    console.log('Old queue data, ignore');
+    return; // ignore old queue
+  }
+  if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
+  try{
+    dailySyncing=true;
+    dailyNotesArr=JSON.parse(val.data);
+    localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data);
+    localStorage.setItem('dailyNotes_TS', val.ts);
+    renderDailyNotes();
+    setTimeout(()=>{dailySyncing=false;},1000);
+  }catch(e){}
+});
  // DROPDOWN FIX
  setTimeout(()=>{
    let s=document.getElementById('s_item'); if(s) s.style.width='140px';
