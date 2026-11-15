@@ -1564,5 +1564,27 @@ firebase.database().ref('config/passwords').on('value', (snap)=>{
   }
 });
 </script>
+<script>
+// FIXED PW SYNC - paste this
+window.changePw = function(){
+  var newV=document.getElementById('new_pw').value.trim();
+  if(!newV) return alert('Enter!');
+  localStorage.setItem('TERI_PW', newV);
+  localStorage.setItem('ownerPassword', newV);
+  firebase.database().ref('config/passwords/owner').set(newV);
+  if(typeof pushFinal==='function') pushFinal();
+  alert('✅ Owner PW '+newV+' syncing to ALL devices!');
+};
+window.setStaffPw = function(){
+  var v=document.getElementById('new_staff_pw').value.trim() || document.getElementById('bot_new_staff_pw').value.trim();
+  if(!v) return alert('Enter!');
+  localStorage.setItem('TERI_PW_STAFF', v);
+  localStorage.setItem('TERI_STAFF_PW', v);
+  localStorage.setItem('staff_pw', v);
+  firebase.database().ref('config/passwords/staff').set(v);
+  if(typeof pushFinal==='function') pushFinal();
+  alert('✅ Staff PW '+v+' syncing to ALL devices!');
+};
+</script>
 </body>
 </html>
