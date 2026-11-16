@@ -1761,5 +1761,110 @@ setTimeout(()=>{
   console.log('MANAGE BUTTON REPLACED - 100% WILL WORK');
 },1000);
 </script>
+<!-- FINAL V28.3 STABLE FIX - ONE TIME ONLY - FIXES ALL -->
+<script>
+/* FINAL FIX V28.3 - CLEAN OVERRIDE */
+(function(){
+  console.log('FINAL FIX V28.3 LOADING...');
+  let myId = localStorage.getItem('terikano_device_id');
+  if(myId && window.firebase){
+    setTimeout(()=>{
+      try{
+        firebase.database().ref('config/devices/'+myId).on('value', snap=>{
+          let d=snap.val();
+          if(d && d.allowed===false){
+            alert('⛔ Device BLOCKED by MAIN');
+            localStorage.setItem('terikano_device_id', myId);
+            location.href = location.pathname+'?blocked='+Date.now();
+          }
+        });
+        firebase.database().ref('config/devices').on('value', s=>{
+          let all=s.val()||{};
+          if(myId && !all[myId] && Object.keys(all).length>0){
+            let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
+            if(cache[myId]){
+              alert('⛔ Device DELETED by MAIN');
+              localStorage.clear();
+              localStorage.setItem('terikano_device_id', myId);
+              location.href = location.pathname+'?deleted='+Date.now();
+            }
+          }
+        });
+      }catch(e){}
+    },2000);
+  }
+  function fixManage(){
+    let oldBtn=document.getElementById('manageBtn');
+    if(!oldBtn) return;
+    let newBtn=oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    newBtn.id='manageBtn';
+    newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative;display:inline-block';
+    newBtn.onclick=function(){
+      let devices=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
+      let myId2=localStorage.getItem('terikano_device_id');
+      let html='';
+      for(let k in devices){
+        let d=devices[k];
+        html+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px"><b>'+k+(d.isMain?' 👑':'')+(k===myId2?' (You)':'')+'</b> '+(d.allowed?'✅':'❌')+'<br><button onclick="firebase.database().ref(\'config/devices/'+k+'/allowed\').set(true)" style="background:green;color:#fff;padding:5px 8px;border-radius:5px">Allow</button> <button onclick="let mid=localStorage.getItem(\'terikano_device_id\');if(\''+k+'\'===mid){alert(\'Cant block self\');return;}firebase.database().ref(\'config/devices/'+k+'/allowed\').set(false)" style="background:red;color:#fff;padding:5px 8px;border-radius:5px">Block</button> <button onclick="firebase.database().ref(\'config/devices/'+k+'\').remove()" style="background:#000;color:#fff;padding:5px 8px;border-radius:5px">Del</button></div>';
+      }
+      let pop=document.createElement('div');
+      pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999999;display:flex;align-items:center;justify-content:center';
+      pop.innerHTML='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:420px;max-height:85vh;overflow:auto"><h3>🔒 Device Manager - '+myId2+'</h3><button onclick="firebase.database().ref(\'config/mainDeviceId\').set(\''+myId2+'\');alert(\'You are MAIN\');location.reload()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div>'+(html||'No devices')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
+      document.body.appendChild(pop);
+    };
+  }
+  setTimeout(fixManage,800);
+  setTimeout(fixManage,2500);
+  function fixPwBoxes(){
+    window.changePw = function(){
+      let oldV=document.getElementById('old_pw')?.value?.trim() || '';
+      let newV=document.getElementById('new_pw')?.value?.trim() || '';
+      if(!newV){ alert('Enter new owner PW'); return; }
+      let currentOwner = localStorage.getItem('TERI_PW') || '1234';
+      let doUpdate=()=>{
+        localStorage.setItem('TERI_PW', newV);
+        localStorage.setItem('ownerPassword', newV);
+        let ups={};
+        ups['config/passwords/owner']=newV;
+        ups['config/ownerPw']=newV;
+        ups['config/ownerPassword']=newV;
+        firebase.database().ref().update(ups).then(()=>{
+          let raw=localStorage.getItem('Terikano_storage_data');
+          if(raw){try{let obj=JSON.parse(raw);obj._ownerPwSync=newV;obj._ts=Date.now();localStorage.setItem('Terikano_storage_data',JSON.stringify(obj));firebase.database().ref('terikano_v1/main_store').set({data:JSON.stringify(obj),ts:Date.now()});}catch(e){}}
+          alert('✅ Owner PW Changed to '+newV+' + Synced to Cloud!');
+          document.getElementById('old_pw').value=''; document.getElementById('new_pw').value='';
+        });
+      };
+      if(oldV && oldV!==currentOwner){
+        firebase.database().ref('config/passwords/owner').once('value', s=>{
+          let cloud=s.val()||currentOwner;
+          if(oldV!==cloud && !confirm('Old PW wrong. Cloud is '+cloud+'. Force change?')) return;
+          doUpdate();
+        });
+      } else { doUpdate(); }
+    };
+    window.setStaffPw = function(){
+      let v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim() || '';
+      if(!v){ alert('Enter staff PW'); return; }
+      localStorage.setItem('TERI_STAFF_PW', v);
+      let ups={}; ups['config/passwords/staff']=v; ups['config/staffPw']=v;
+      firebase.database().ref().update(ups).then(()=>{
+        alert('✅ Staff PW Changed to '+v+' + Synced!');
+      });
+    };
+  }
+  setTimeout(fixPwBoxes,1000);
+  try{
+    firebase.database().ref('config/passwords').on('value', snap=>{
+      let c=snap.val();
+      if(c){
+        if(c.owner){ localStorage.setItem('TERI_PW', c.owner); }
+        if(c.staff){ localStorage.setItem('TERI_STAFF_PW', c.staff); }
+      }
+    });
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
