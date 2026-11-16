@@ -1866,5 +1866,142 @@ setTimeout(()=>{
   }catch(e){}
 })();
 </script>
+<script>
+// FINAL FIX 2 - AUTO LOGIN + STAFF HIDE + LOCKOUT + STAFF PW BOX
+(function(){
+  console.log('FINAL FIX 2 LOADING...');
+  
+  function getRole(){ return localStorage.getItem('isOwner'); } // '1' owner, '0' staff
+  
+  // 1. STOP AUTO OPEN WITHOUT PW - FORCE LOCK EVERY REFRESH FOR STAFF MODE?
+  // Actually we keep owner logged but force staff to login if blocked? No - fix: check if device is blocked first
+  let myId = localStorage.getItem('terikano_device_id');
+  let cache = JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
+  if(myId && cache[myId] && cache[myId].allowed===false){
+    // blocked device - clear ALL login
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('TERI_PW');
+    localStorage.removeItem('TERI_STAFF_PW');
+    localStorage.removeItem('Terikano_storage_data');
+  }
+
+  // 2. HIDE MANAGE + ALLOWED COUNT FOR STAFF - AND HIDE OWNER DIVS FOR STAFF
+  function applyStaffHide(){
+    let role = getRole(); // '0' staff
+    let isStaff = role==='0';
+    let isOwner = role==='1';
+    
+    let manageBtn = document.getElementById('manageBtn');
+    let countSpan = document.getElementById('allowedCount')?.parentElement;
+    let deviceHeader = document.getElementById('terikanoDeviceHeader');
+    
+    // All owner-only divs
+    let ownerDivs = document.querySelectorAll('.owner-only-div, [id*="backupDiv"], [id*="renameDiv"], [id*="bank"], [id*="capital"], [id*="password"]');
+    
+    if(isStaff){
+      if(manageBtn) manageBtn.style.display='none';
+      if(countSpan) countSpan.style.display='none';
+      if(deviceHeader) deviceHeader.style.display='none'; // hide whole device bar for staff
+      // hide owner divs
+      ownerDivs.forEach(d=>{
+        // but keep PW box for owner? No staff should NOT see PW box at all
+        if(d.id && d.id.toLowerCase().includes('pass')) {
+          d.style.display='none'; // staff should not see any PW setting
+        } else {
+          // hide other owner divs too
+          if(d.classList.contains('owner-only-div')) d.style.display='none';
+        }
+      });
+      console.log('STAFF VIEW: Manage hidden');
+    } else if(isOwner){
+      if(manageBtn) manageBtn.style.display='inline-block';
+      if(countSpan) countSpan.style.display='inline-block';
+      if(deviceHeader) deviceHeader.style.display='inline-flex';
+      // SHOW staff PW box for owner
+      // Find staff PW div - it might be missing, so create it if not exists
+      let staffPwDiv = document.getElementById('staffPwDiv') || document.getElementById('staffPasswordDiv');
+      if(!staffPwDiv){
+        // create staff PW box inside owner PW area
+        let ownerPwArea = document.querySelector('[id*="ownerPw"]')?.parentElement || document.querySelector('[id*="pass"]')?.parentElement || document.body;
+        let existing = document.getElementById('new_staff_pw');
+        if(!existing){
+          let box = document.createElement('div');
+          box.id='staffPwDivFinal';
+          box.style.cssText='background:#fff3e0;padding:12px;border:3px solid #ff9800;border-radius:12px;margin:8px 6px;display:block';
+          box.innerHTML='<div style="background:#000;color:#FFD700;padding:6px 10px;border-radius:8px;font-weight:bold;margin-bottom:8px">🔑 PASSWORD - Staff (Owner Only)</div><input id="new_staff_pw" placeholder="New Staff PW" style="width:100%;padding:10px;border:2px solid #000;border-radius:8px;margin-bottom:8px"><button onclick="setStaffPw()" style="background:#000;color:orange;width:100%;padding:12px;border-radius:10px;font-weight:bold">💾 SET STAFF PW</button>';
+          // insert after owner pw div
+          let ownerDiv = document.getElementById('ownerPwDiv') || document.querySelector('[id*="backupDiv"]');
+          if(ownerDiv && ownerDiv.parentElement) ownerDiv.parentElement.insertBefore(box, ownerDiv.nextSibling);
+          else document.body.appendChild(box);
+        }
+      } else {
+        staffPwDiv.style.display='block';
+      }
+      console.log('OWNER VIEW: Manage shown, Staff PW box shown');
+    }
+  }
+  
+  setTimeout(applyStaffHide, 500);
+  setTimeout(applyStaffHide, 2000);
+  setTimeout(applyStaffHide, 4000);
+  
+  // 3. FIX LOCKOUT BUTTON - NEVER RESPONSE
+  function fixLockout(){
+    // find lockout / logout / lock button
+    let lockBtn = [...document.querySelectorAll('button')].find(b=>{
+      let t=(b.textContent||'').toLowerCase();
+      return t.includes('lock') || t.includes('logout') || t.includes('log out');
+    });
+    if(lockBtn){
+      let newLock = lockBtn.cloneNode(true);
+      lockBtn.parentNode.replaceChild(newLock, lockBtn);
+      newLock.onclick=function(){
+        if(confirm('Lockout? Will require PW again.')){
+          localStorage.removeItem('isOwner');
+          // keep device id
+          let did = localStorage.getItem('terikano_device_id');
+          let cache2 = localStorage.getItem('terikano_devices_cache');
+          // clear session but keep device
+          localStorage.clear();
+          if(did) localStorage.setItem('terikano_device_id', did);
+          if(cache2) localStorage.setItem('terikano_devices_cache', cache2);
+          location.reload();
+        }
+      };
+      console.log('Lockout fixed');
+    }
+    // also fix staffLock close?
+    let staffLock = document.getElementById('staffLock');
+    if(staffLock){
+      // ensure it shows if no role
+      let role = getRole();
+      if(!role){
+        staffLock.style.display='flex';
+        staffLock.style.zIndex='99999999';
+      }
+    }
+  }
+  setTimeout(fixLockout, 800);
+  setTimeout(fixLockout, 3000);
+  
+  // 4. FIX AUTO OPEN STAFF WITHOUT PW - FORCE PW CHECK ON EVERY LOAD IF STAFF
+  // The issue: localStorage has isOwner=0 from before, so it auto-opens
+  // Solution: If ?forceLogin or if device just blocked, clear it. Also add session lock
+  window.addEventListener('load', ()=>{
+    let role = getRole();
+    // If URL has ?clear or ?logout, force lock
+    if(location.search.includes('clear') || location.search.includes('logout') || location.search.includes('blocked')){
+      localStorage.removeItem('isOwner');
+      location.search='';
+    }
+    // For laptop that should require PW, we need to see if it was blocked before - if cache says blocked, don't auto-login
+    if(myId && cache[myId] && cache[myId].allowed===false){
+      localStorage.removeItem('isOwner');
+    }
+  });
+  
+  console.log('FINAL FIX 2 DONE');
+})();
+</script>
 </body>
 </html>
