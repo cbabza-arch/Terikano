@@ -1452,180 +1452,122 @@ function filterProfit(year){
     console.log(e);
   }
 }
-</script><script>
-<!-- TERIKANO FINAL - FIXED - OFFLINE + NO AUTO + LOCK POPULATE -->
+</script>
+<!-- TERIKANO FINAL - FIXED - AUTO OWNER -->
 <script>
-// === TERIKANO FINAL 1 - OFFLINE DATA CHECK ===
 (function(){
   window.addEventListener('load', function(){
     var k='Terikano_storage_data';
     var raw=localStorage.getItem(k);
-    if(!raw){
-      console.log('NO DATA - first time');
-      return;
-    }
+    if(!raw){console.log('NO DATA - first time');return;}
     try{
       var D=JSON.parse(raw);
-      if(D && (D.sales||D.purchases||D.banks)){
-        console.log('DATA OK:', (D.sales||[]).length, 'sales');
-      }else{
-        console.log('EMPTY DATA OBJECT');
-      }
+      if(!D.sales && !D.purchases && !D.banks)console.log('EMPTY DATA');
     }catch(e){
-      console.error('STORAGE CORRUPTED! Clearing to prevent crash');
-      localStorage.removeItem(k);
-      alert('Storage corrupted - cleared! Please re-login and re-enter data.');
-      location.reload();
+      console.error('CORRUPTED');localStorage.removeItem(k);
+      alert('Storage corrupted - cleared! Reloading');location.reload();
     }
   });
 })();
 </script>
 
 <script>
-// === TERIKANO FINAL 2 - SUPER LOCK + SAFE POPULATE ===
 (function(){
   var CFG={
     OWNER_KEY:'Terikano_2026',
     STAFF_KEY:'Terikano_2005',
     FLAG:'isOwner',
-    SESSION_KEY:'terikano_session_auth',
-    STAFF_SALE_INPUTS:['s_item','s_qty','s_rate','s_price','s_pay','s_ib','s_kg','s_date','s_notes'],
-    STAFF_HIDE_BTNS:['purgeBtn','resetBtn','backupBtn','restoreBtn','clearAllBtn'],
-    STAFF_TABS:['bank','exp','banks','settings','stock','purchase','capital','collection','report','coco'],
-    OWNER_TABS:['dashboard','sales','bank','exp','banks','settings','stock','purchase','capital','collection','report','coco','mill','purchase_coco']
+    SESSION_KEY:'terikano_session_auth'
   };
-
   function $(id){return document.getElementById(id);}
 
   function safePopulateDatalist(){
     try{
-      var p=$('itemsList');
-      if(!p)return;
-      p.innerHTML='';
-      var seen={};
-      if(typeof items!=='undefined'){
-        items.forEach(function(name){
-          if(!name)return;
-          name=name.trim();
-          if(!name||seen[name])return;
-          seen[name]=1;
-          var o=document.createElement('option');
-          o.value=name;
-          p.appendChild(o);
-        });
-      }
-    }catch(e){console.log('populateDatalist skip',e);}
+      var p=$('itemsList');if(!p)return;p.innerHTML='';
+      var seen={};if(typeof items!=='undefined'){items.forEach(function(n){
+        if(!n)return;n=n.trim();if(!n||seen[n])return;seen[n]=1;
+        var o=document.createElement('option');o.value=n;p.appendChild(o);
+      });}
+    }catch(e){}
   }
-
   function safePopulateRenameList(){
     try{
-      var r=$('renameList');
-      if(!r)return;
-      r.innerHTML='';
-      var seen={};
-      if(typeof items!=='undefined'){
-        items.forEach(function(name){
-          if(!name)return;
-          name=name.trim();
-          if(!name||seen[name])return;
-          seen[name]=1;
-          var o=document.createElement('option');
-          o.value=name;
-          r.appendChild(o);
-        });
-      }
-    }catch(e){console.log('populateRenameList skip',e);}
+      var r=$('renameList');if(!r)return;r.innerHTML='';
+      var seen={};if(typeof items!=='undefined'){items.forEach(function(n){
+        if(!n)return;n=n.trim();if(!n||seen[n])return;seen[n]=1;
+        var o=document.createElement('option');o.value=n;r.appendChild(o);
+      });}
+    }catch(e){}
   }
-
   window.populateDatalist=safePopulateDatalist;
   window.populateRenameList=safePopulateRenameList;
 
-  function clearLoginInputs(){
-    var op=$('ownerPass');
-    if(op){op.value='';op.blur();}
-  }
-
-  function showStaffView(){
-    try{localStorage.setItem(CFG.FLAG,'0');}catch(e){}
-    try{sessionStorage.setItem(CFG.SESSION_KEY,'staff');}catch(e){}
+  function forceOwner(){
+    try{
+      localStorage.setItem(CFG.FLAG,'1');
+      localStorage.setItem('isOwner','1');
+      localStorage.setItem('owner','1');
+      sessionStorage.setItem(CFG.SESSION_KEY,'owner');
+    }catch(e){}
     var lb=$('loginBox');if(lb)lb.style.display='none';
     var sl=$('staffLock');if(sl)sl.style.display='none';
-    if(typeof lockAll==='function')lockAll();
-    CFG.STAFF_SALE_INPUTS.forEach(function(id){
-      var el=$(id);
-      if(!el)return;
-      el.removeAttribute('readonly');
-      el.removeAttribute('disabled');
-      el.style.pointerEvents='auto';
-      el.style.opacity='1';
-      el.style.background='#fff';
-    });
-    var saleSec=$('sales');
-    if(saleSec){
-      saleSec.querySelectorAll('input,select,button,textarea').forEach(function(el){
-        if(CFG.STAFF_SALE_INPUTS.indexOf(el.id)===-1 && el.id!=='saleBtn' && el.id!=='printSaleBtn'){
-        }else{
-          el.removeAttribute('disabled');
-          el.style.pointerEvents='auto';
-          el.style.opacity='1';
-        }
+    // WAIT then FORCE ALL TABS
+    setTimeout(function(){
+      document.querySelectorAll('[data-tab]').forEach(function(b){
+        b.style.display='';b.style.visibility='visible';b.style.opacity='1';
+        b.removeAttribute('disabled');
       });
-    }
-    CFG.STAFF_HIDE_BTNS.forEach(function(id){
-      var b=$(id);if(b)b.style.display='none';
-    });
-    CFG.STAFF_TABS.forEach(function(t){
-      var btn=document.querySelector('[data-tab="'+t+'"]');
-      if(btn)btn.style.display='none';
-    });
-    CFG.OWNER_TABS.forEach(function(t){
-      if(t==='sales'||t==='dashboard')return;
-      if(CFG.STAFF_TABS.indexOf(t)!==-1)return;
-      var btn=document.querySelector('[data-tab="'+t+'"]');
-      if(btn)btn.style.display='';
-    });
-    var dash=document.querySelector('[data-tab="dashboard"]');
-    var salesTab=document.querySelector('[data-tab="sales"]');
-    if(dash)dash.style.display='';
-    if(salesTab)salesTab.style.display='';
-    console.log('STAFF VIEW ACTIVE - 2005 - SALES ONLY');
+      document.querySelectorAll('button, [id*="Btn"]').forEach(function(b){
+        b.style.display='';b.style.visibility='visible';
+      });
+      document.querySelectorAll('input,select,textarea').forEach(function(el){
+        el.removeAttribute('readonly');el.removeAttribute('disabled');
+        el.style.pointerEvents='auto';el.style.opacity='1';
+      });
+      if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
+      // FORCE AGAIN AFTER lockAll
+      setTimeout(function(){
+        document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
+      },100);
+      console.log('OWNER FORCED - ALL TABS');
+    },50);
   }
 
-  function showOwnerView(){
-    try{localStorage.setItem(CFG.FLAG,'1');}catch(e){}
-    try{sessionStorage.setItem(CFG.SESSION_KEY,'owner');}catch(e){}
+  function forceStaff(){
+    try{
+      localStorage.setItem(CFG.FLAG,'0');
+      localStorage.setItem('isOwner','0');
+      sessionStorage.setItem(CFG.SESSION_KEY,'staff');
+    }catch(e){}
     var lb=$('loginBox');if(lb)lb.style.display='none';
     var sl=$('staffLock');if(sl)sl.style.display='none';
-    if(typeof lockAll==='function')lockAll();
-    document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
-    CFG.STAFF_HIDE_BTNS.forEach(function(id){
-      var b=$(id);if(b)b.style.display='';
-    });
-    document.querySelectorAll('input,select,button,textarea').forEach(function(el){
-      el.removeAttribute('readonly');
-      el.removeAttribute('disabled');
-      el.style.pointerEvents='auto';
-      el.style.opacity='1';
-    });
-    console.log('OWNER VIEW ACTIVE - 2026 - ALL ACCESS');
+    if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
+    setTimeout(function(){
+      var keep=['dashboard','sales'];
+      document.querySelectorAll('[data-tab]').forEach(function(b){
+        var t=b.getAttribute('data-tab');
+        if(keep.indexOf(t)===-1){b.style.display='none';}
+        else{b.style.display='';}
+      });
+      console.log('STAFF FORCED');
+    },100);
   }
+
+  function clearPw(){var op=$('ownerPass');if(op){op.value='';}}
 
   function doOwnerLogin(){
-    var pass=($('ownerPass')?$('ownerPass').value:'').trim();
-    if(pass===CFG.OWNER_KEY){showOwnerView();clearLoginInputs();return;}
-    if(pass===CFG.STAFF_KEY){showStaffView();clearLoginInputs();return;}
-    if(pass===''){alert('Enter password!');return;}
-    alert('WRONG PASSWORD!');
-    clearLoginInputs();
+    var p=($('ownerPass')?$('ownerPass').value:'').trim();
+    if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
+    if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
+    if(p===''){alert('Enter password!');return;}
+    alert('WRONG PASSWORD!');clearPw();
   }
-
   function doStaffLogin(){
-    var pass=($('ownerPass')?$('ownerPass').value:'').trim();
-    if(pass===CFG.STAFF_KEY){showStaffView();clearLoginInputs();return;}
-    if(pass===CFG.OWNER_KEY){showOwnerView();clearLoginInputs();return;}
-    if(pass===''){try{sessionStorage.removeItem(CFG.SESSION_KEY);}catch(e){} var sl=$('staffLock');if(sl)sl.style.display='flex'; var lb=$('loginBox');if(lb)lb.style.display='none'; clearLoginInputs(); return;}
-    alert('WRONG! Use 2005 for STAFF');
-    clearLoginInputs();
+    var p=($('ownerPass')?$('ownerPass').value:'').trim();
+    if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
+    if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
+    if(p===''){var sl=$('staffLock');if(sl)sl.style.display='flex';var lb=$('loginBox');if(lb)lb.style.display='none';clearPw();return;}
+    alert('WRONG! Use 2005');clearPw();
   }
 
   window.doOwnerFix2=doOwnerLogin;
@@ -1633,17 +1575,15 @@ function filterProfit(year){
 
   window.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
-      var lb=$('loginBox');
-      var sl=$('staffLock');
       var sess=null;try{sess=sessionStorage.getItem(CFG.SESSION_KEY);}catch(e){}
-      if(sess==='owner'){showOwnerView();return;}
-      if(sess==='staff'){showStaffView();return;}
-      if(lb)lb.style.display='flex';
-      if(sl)sl.style.display='none';
-    },200);
+      var flag=null;try{flag=localStorage.getItem(CFG.FLAG);}catch(e){}
+      // AUTO FIX - if owner flag, force owner, no console!
+      if(sess==='owner' || flag==='1'){forceOwner();return;}
+      if(sess==='staff' || flag==='0'){forceStaff();return;}
+      var lb=$('loginBox');if(lb)lb.style.display='flex';
+    },300);
   });
-
-  console.log('FINAL LOCK LOADED - FIXED POPULATE - 2026/2005');
+  console.log('FINAL AUTO FIX LOADED - NO CONSOLE NEEDED');
 })();
 </script>
 </body>
