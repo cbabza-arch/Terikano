@@ -1620,179 +1620,29 @@ setTimeout(()=>{
     },800);
     })();
 </script>
+<!-- FINAL CLEAN V29 - SINGLE FIX FOR ALL -->
 <script>
-// === FORCE CLOUD PW - OLD PW NEVER WORKS ===
-firebase.database().ref('config/passwords').on('value', (snap)=>{
-  const c = snap.val();
-  if(c){
-    if(c.owner) localStorage.setItem('TERI_PW', c.owner);
-    if(c.owner) localStorage.setItem('ownerPassword', c.owner);
-    if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff);
-    console.log('🔒 Cloud PW is boss:', c);
-  }
-});
-</script>
-<script>
-// FIXED PW SYNC - paste this
-window.changePw = function(){
-  var newV=document.getElementById('new_pw').value.trim();
-  if(!newV) return alert('Enter!');
-  localStorage.setItem('TERI_PW', newV);
-  localStorage.setItem('ownerPassword', newV);
-  firebase.database().ref('config/passwords/owner').set(newV);
-  if(typeof pushFinal==='function') pushFinal();
-  alert('✅ Owner PW '+newV+' syncing to ALL devices!');
-};
-window.setStaffPw = function(){
-  var v=document.getElementById('new_staff_pw').value.trim() || document.getElementById('bot_new_staff_pw').value.trim();
-  if(!v) return alert('Enter!');
-  localStorage.setItem('TERI_PW_STAFF', v);
-  localStorage.setItem('TERI_STAFF_PW', v);
-  localStorage.setItem('staff_pw', v);
-  firebase.database().ref('config/passwords/staff').set(v);
-  if(typeof pushFinal==='function') pushFinal();
-  alert('✅ Staff PW '+v+' syncing to ALL devices!');
-};
-</script>
-<script>
-// === V1014 FIX - PW + NIKIRA/KAKORO + DROPDOWN ===
 (function(){
- const FB = firebase.database();
- // OWNER PW SYNC TO CLOUD BOSS
- window.changePw = function(){
-   var newV=document.getElementById('new_pw')?.value?.trim();
-   if(!newV) return alert('Enter!');
-   localStorage.setItem('TERI_PW', newV);
-   localStorage.setItem('ownerPassword', newV);
-   FB.ref('config/passwords/owner').set(newV);
-   FB.ref('config/passwords').update({owner:newV});
-   if(typeof pushFinal==='function') pushFinal();
-   if(typeof pushReal==='function') pushReal();
-   alert('✅ OWNER PW '+newV+' synced ALL devices!');
- };
- // STAFF PW SYNC TO CLOUD BOSS
- window.setStaffPw = function(){
-   var v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim();
-   if(!v) return alert('Enter Staff PW!');
-   localStorage.setItem('TERI_PW_STAFF', v);
-   localStorage.setItem('TERI_STAFF_PW', v);
-   localStorage.setItem('staff_pw', v);
-   FB.ref('config/passwords/staff').set(v);
-   FB.ref('config/passwords').update({staff:v});
-   if(typeof pushFinal==='function') pushFinal();
-   if(typeof pushReal==='function') pushReal();
-   alert('✅ STAFF PW '+v+' synced ALL devices!');
- };
- // NIKIRA/KAKORO SYNC WITH LATEST WINS
-let dailySyncing=false;
-let pendingNote=null;
-
-window.saveDailyNotes = function(){
-  localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
-  let payload = {data: JSON.stringify(dailyNotesArr), ts: Date.now()};
-  
-  if(!navigator.onLine){
-    pendingNote = payload; // queue with time
-    console.log('Offline - queued');
-    return;
-  }
-  FB.ref('config/dailyNotes_v13').set(payload);
-};
-
-// When wifi comes back, push queued
-window.addEventListener('online', ()=>{
-  if(pendingNote){
-    FB.ref('config/dailyNotes_v13').set(pendingNote);
-    pendingNote=null;
-  }
-});
-
-FB.ref('config/dailyNotes_v13').on('value', snap=>{
-  let val=snap.val(); if(!val || !val.data) return;
-  // LATEST WINS - check timestamp
-  let localTS = parseInt(localStorage.getItem('dailyNotes_TS')||'0');
-  if(val.ts && val.ts < localTS) {
-    console.log('Old queue data, ignore');
-    return; // ignore old queue
-  }
-  if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
-  try{
-    dailySyncing=true;
-    dailyNotesArr=JSON.parse(val.data);
-    localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data);
-    localStorage.setItem('dailyNotes_TS', val.ts);
-    renderDailyNotes();
-    setTimeout(()=>{dailySyncing=false;},1000);
-  }catch(e){}
-});
- // DROPDOWN FIX
- setTimeout(()=>{
-   let s=document.getElementById('s_item'); if(s) s.style.width='140px';
-   let p=document.getElementById('p_item'); if(p) p.style.width='140px';
- },1500);
-})();
-</script>
-<script>
-// FORCE REPLACE MANAGE BUTTON - NO FIGHT
-setTimeout(()=>{
-  const oldBtn = document.getElementById('manageBtn');
-  if(!oldBtn) { alert('manageBtn not found'); return; }
-  
-  // Clone = removes ALL old clicks
-  const newBtn = oldBtn.cloneNode(true);
-  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-  newBtn.id='manageBtn';
-  newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative';
-  
-  newBtn.addEventListener('click', function(){
-    // YOUR REAL MANAGE POPUP HERE
-    let devices = JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-    let myId = localStorage.getItem('terikano_device_id');
-    let listHtml='';
-    for(let k in devices){
-      listHtml+=`<div style="padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><b>${k} ${devices[k].isMain?'👑':''}</b> <button onclick="let d=JSON.parse(localStorage.getItem('terikano_devices_cache')); delete d['${k}']; localStorage.setItem('terikano_devices_cache',JSON.stringify(d)); firebase.database().ref('config/devices').set(d); alert('Deleted'); location.reload()" style="background:red;color:#fff;border:none;padding:2px 6px;border-radius:5px">X</button></div>`;
-    }
-    let overlay=document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999999;display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML=`<div style="background:#fff;width:90%;max-width:380px;border-radius:15px;padding:15px;max-height:80vh;overflow:auto"><h3 style="margin:0 0 10px">🔒 Manage Devices</h3><div style="background:#f5f5f5;padding:8px;border-radius:8px;margin-bottom:10px;font-size:12px">Your ID: <b>${myId}</b></div>${listHtml||'No devices'}<button onclick="firebase.database().ref('config/mainDeviceId').set('${myId}'); alert('You are MAIN now'); location.reload()" style="width:100%;background:gold;border:2px solid #000;padding:10px;border-radius:8px;font-weight:bold;margin-top:10px">👑 CLAIM MAIN</button><button onclick="this.parentElement.parentElement.remove()" style="width:100%;background:#000;color:#fff;padding:10px;border-radius:8px;margin-top:8px">CLOSE</button></div>`;
-    document.body.appendChild(overlay);
-  });
-  
-  console.log('MANAGE BUTTON REPLACED - 100% WILL WORK');
-},1000);
-</script>
-<!-- FINAL V28.3 STABLE FIX - ONE TIME ONLY - FIXES ALL -->
-<script>
-/* FINAL FIX V28.3 - CLEAN OVERRIDE */
-(function(){
-  console.log('FINAL FIX V28.3 LOADING...');
+  console.log('FINAL CLEAN V29 - ONE FIX ONLY');
   let myId = localStorage.getItem('terikano_device_id');
+  
+  // 1. DEVICE BLOCK LISTENER
   if(myId && window.firebase){
     setTimeout(()=>{
       try{
-        firebase.database().ref('config/devices/'+myId).on('value', snap=>{
-          let d=snap.val();
-          if(d && d.allowed===false){
+        firebase.database().ref('config/devices/'+myId+'/allowed').on('value', snap=>{
+          if(snap.val()===false){
             alert('⛔ Device BLOCKED by MAIN');
-            localStorage.setItem('terikano_device_id', myId);
+            localStorage.removeItem('isOwner');
+            sessionStorage.removeItem('terikano_session_auth');
             location.href = location.pathname+'?blocked='+Date.now();
           }
         });
-        firebase.database().ref('config/devices').on('value', s=>{
-          let all=s.val()||{};
-          if(myId && !all[myId] && Object.keys(all).length>0){
-            let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-            if(cache[myId]){
-              alert('⛔ Device DELETED by MAIN');
-              localStorage.clear();
-              localStorage.setItem('terikano_device_id', myId);
-              location.href = location.pathname+'?deleted='+Date.now();
-            }
-          }
-        });
       }catch(e){}
-    },2000);
+    },1500);
   }
+  
+  // 2. MANAGE BUTTON - SINGLE VERSION
   function fixManage(){
     let oldBtn=document.getElementById('manageBtn');
     if(!oldBtn) return;
@@ -1802,205 +1652,113 @@ setTimeout(()=>{
     newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative;display:inline-block';
     newBtn.onclick=function(){
       let devices=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-      let myId2=localStorage.getItem('terikano_device_id');
       let html='';
       for(let k in devices){
-        let d=devices[k];
-        html+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px"><b>'+k+(d.isMain?' 👑':'')+(k===myId2?' (You)':'')+'</b> '+(d.allowed?'✅':'❌')+'<br><button onclick="firebase.database().ref(\'config/devices/'+k+'/allowed\').set(true)" style="background:green;color:#fff;padding:5px 8px;border-radius:5px">Allow</button> <button onclick="let mid=localStorage.getItem(\'terikano_device_id\');if(\''+k+'\'===mid){alert(\'Cant block self\');return;}firebase.database().ref(\'config/devices/'+k+'/allowed\').set(false)" style="background:red;color:#fff;padding:5px 8px;border-radius:5px">Block</button> <button onclick="firebase.database().ref(\'config/devices/'+k+'\').remove()" style="background:#000;color:#fff;padding:5px 8px;border-radius:5px">Del</button></div>';
+        html+='<div style="border:2px solid '+(devices[k].allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px"><b>'+k+(devices[k].isMain?' 👑':'')+(k===myId?' (You)':'')+'</b> '+(devices[k].allowed?'✅':'❌')+'<br><button onclick="firebase.database().ref(\'config/devices/'+k+'/allowed\').set(true)" style="background:green;color:#fff;padding:5px 8px;border-radius:5px">Allow</button> <button onclick="if(\''+k+'\'!==\''+myId+'\')firebase.database().ref(\'config/devices/'+k+'/allowed\').set(false)" style="background:red;color:#fff;padding:5px 8px;border-radius:5px">Block</button> <button onclick="firebase.database().ref(\'config/devices/'+k+'\').remove()" style="background:#000;color:#fff;padding:5px 8px;border-radius:5px">Del</button></div>';
       }
       let pop=document.createElement('div');
       pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999999;display:flex;align-items:center;justify-content:center';
-      pop.innerHTML='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:420px;max-height:85vh;overflow:auto"><h3>🔒 Device Manager - '+myId2+'</h3><button onclick="firebase.database().ref(\'config/mainDeviceId\').set(\''+myId2+'\');alert(\'You are MAIN\');location.reload()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div>'+(html||'No devices')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
+      pop.innerHTML='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:420px;max-height:85vh;overflow:auto"><h3>🔒 Manager - '+myId+'</h3><button onclick="firebase.database().ref(\'config/mainDeviceId\').set(\''+myId+'\');alert(\'You are MAIN\');location.reload()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div>'+(html||'No devices')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
       document.body.appendChild(pop);
     };
   }
-  setTimeout(fixManage,800);
-  setTimeout(fixManage,2500);
-  function fixPwBoxes(){
-    window.changePw = function(){
-      let oldV=document.getElementById('old_pw')?.value?.trim() || '';
-      let newV=document.getElementById('new_pw')?.value?.trim() || '';
-      if(!newV){ alert('Enter new owner PW'); return; }
-      let currentOwner = localStorage.getItem('TERI_PW') || '1234';
-      let doUpdate=()=>{
-        localStorage.setItem('TERI_PW', newV);
-        localStorage.setItem('ownerPassword', newV);
-        let ups={};
-        ups['config/passwords/owner']=newV;
-        ups['config/ownerPw']=newV;
-        ups['config/ownerPassword']=newV;
-        firebase.database().ref().update(ups).then(()=>{
-          let raw=localStorage.getItem('Terikano_storage_data');
-          if(raw){try{let obj=JSON.parse(raw);obj._ownerPwSync=newV;obj._ts=Date.now();localStorage.setItem('Terikano_storage_data',JSON.stringify(obj));firebase.database().ref('terikano_v1/main_store').set({data:JSON.stringify(obj),ts:Date.now()});}catch(e){}}
-          alert('✅ Owner PW Changed to '+newV+' + Synced to Cloud!');
-          document.getElementById('old_pw').value=''; document.getElementById('new_pw').value='';
-        });
-      };
-      if(oldV && oldV!==currentOwner){
-        firebase.database().ref('config/passwords/owner').once('value', s=>{
-          let cloud=s.val()||currentOwner;
-          if(oldV!==cloud && !confirm('Old PW wrong. Cloud is '+cloud+'. Force change?')) return;
-          doUpdate();
-        });
-      } else { doUpdate(); }
-    };
-    window.setStaffPw = function(){
-      let v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim() || '';
-      if(!v){ alert('Enter staff PW'); return; }
-      localStorage.setItem('TERI_STAFF_PW', v);
-      let ups={}; ups['config/passwords/staff']=v; ups['config/staffPw']=v;
-      firebase.database().ref().update(ups).then(()=>{
-        alert('✅ Staff PW Changed to '+v+' + Synced!');
-      });
-    };
-  }
-  setTimeout(fixPwBoxes,1000);
+  
+  // 3. PW FIX
+  window.changePw = function(){
+    let newV=document.getElementById('new_pw')?.value?.trim();
+    if(!newV) return alert('Enter new owner PW');
+    localStorage.setItem('TERI_PW', newV);
+    firebase.database().ref('config/passwords/owner').set(newV);
+    firebase.database().ref('config/passwords').update({owner:newV});
+    alert('✅ Owner PW '+newV+' synced to cloud!');
+  };
+  window.setStaffPw = function(){
+    let v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim();
+    if(!v) return alert('Enter staff PW');
+    localStorage.setItem('TERI_STAFF_PW', v);
+    firebase.database().ref('config/passwords/staff').set(v);
+    alert('✅ Staff PW '+v+' synced!');
+  };
   try{
     firebase.database().ref('config/passwords').on('value', snap=>{
       let c=snap.val();
       if(c){
-        if(c.owner){ localStorage.setItem('TERI_PW', c.owner); }
-        if(c.staff){ localStorage.setItem('TERI_STAFF_PW', c.staff); }
+        if(c.owner) localStorage.setItem('TERI_PW', c.owner);
+        if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff);
       }
     });
   }catch(e){}
-})();
-</script>
-<script>
-// FINAL FIX 2 - AUTO LOGIN + STAFF HIDE + LOCKOUT + STAFF PW BOX
-(function(){
-  console.log('FINAL FIX 2 LOADING...');
   
-  function getRole(){ return localStorage.getItem('isOwner'); } // '1' owner, '0' staff
-  
-  // 1. STOP AUTO OPEN WITHOUT PW - FORCE LOCK EVERY REFRESH FOR STAFF MODE?
-  // Actually we keep owner logged but force staff to login if blocked? No - fix: check if device is blocked first
-  let myId = localStorage.getItem('terikano_device_id');
-  let cache = JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-  if(myId && cache[myId] && cache[myId].allowed===false){
-    // blocked device - clear ALL login
-    localStorage.removeItem('isOwner');
-    localStorage.removeItem('TERI_PW');
-    localStorage.removeItem('TERI_STAFF_PW');
-    localStorage.removeItem('Terikano_storage_data');
-  }
-
-  // 2. HIDE MANAGE + ALLOWED COUNT FOR STAFF - AND HIDE OWNER DIVS FOR STAFF
+  // 4. STAFF HIDE + NO AUTO-OPEN
   function applyStaffHide(){
-    let role = getRole(); // '0' staff
-    let isStaff = role==='0';
-    let isOwner = role==='1';
-    
-    let manageBtn = document.getElementById('manageBtn');
-    let countSpan = document.getElementById('allowedCount')?.parentElement;
-    let deviceHeader = document.getElementById('terikanoDeviceHeader');
-    
-    // All owner-only divs
-    let ownerDivs = document.querySelectorAll('.owner-only-div, [id*="backupDiv"], [id*="renameDiv"], [id*="bank"], [id*="capital"], [id*="password"]');
-    
-    if(isStaff){
-      if(manageBtn) manageBtn.style.display='none';
-      if(countSpan) countSpan.style.display='none';
-      if(deviceHeader) deviceHeader.style.display='none'; // hide whole device bar for staff
-      // hide owner divs
-      ownerDivs.forEach(d=>{
-        // but keep PW box for owner? No staff should NOT see PW box at all
-        if(d.id && d.id.toLowerCase().includes('pass')) {
-          d.style.display='none'; // staff should not see any PW setting
-        } else {
-          // hide other owner divs too
-          if(d.classList.contains('owner-only-div')) d.style.display='none';
-        }
-      });
-      console.log('STAFF VIEW: Manage hidden');
-    } else if(isOwner){
-      if(manageBtn) manageBtn.style.display='inline-block';
-      if(countSpan) countSpan.style.display='inline-block';
-      if(deviceHeader) deviceHeader.style.display='inline-flex';
-      // SHOW staff PW box for owner
-      // Find staff PW div - it might be missing, so create it if not exists
-      let staffPwDiv = document.getElementById('staffPwDiv') || document.getElementById('staffPasswordDiv');
-      if(!staffPwDiv){
-        // create staff PW box inside owner PW area
-        let ownerPwArea = document.querySelector('[id*="ownerPw"]')?.parentElement || document.querySelector('[id*="pass"]')?.parentElement || document.body;
-        let existing = document.getElementById('new_staff_pw');
-        if(!existing){
-          let box = document.createElement('div');
-          box.id='staffPwDivFinal';
-          box.style.cssText='background:#fff3e0;padding:12px;border:3px solid #ff9800;border-radius:12px;margin:8px 6px;display:block';
-          box.innerHTML='<div style="background:#000;color:#FFD700;padding:6px 10px;border-radius:8px;font-weight:bold;margin-bottom:8px">🔑 PASSWORD - Staff (Owner Only)</div><input id="new_staff_pw" placeholder="New Staff PW" style="width:100%;padding:10px;border:2px solid #000;border-radius:8px;margin-bottom:8px"><button onclick="setStaffPw()" style="background:#000;color:orange;width:100%;padding:12px;border-radius:10px;font-weight:bold">💾 SET STAFF PW</button>';
-          // insert after owner pw div
-          let ownerDiv = document.getElementById('ownerPwDiv') || document.querySelector('[id*="backupDiv"]');
-          if(ownerDiv && ownerDiv.parentElement) ownerDiv.parentElement.insertBefore(box, ownerDiv.nextSibling);
-          else document.body.appendChild(box);
-        }
-      } else {
-        staffPwDiv.style.display='block';
-      }
-      console.log('OWNER VIEW: Manage shown, Staff PW box shown');
+    let role=localStorage.getItem('isOwner');
+    let manageBtn=document.getElementById('manageBtn');
+    if(role==='0' && manageBtn) manageBtn.style.display='none';
+    if(role==='1' && manageBtn) manageBtn.style.display='inline-block';
+  }
+  function killAutoOpen(){
+    if(!sessionStorage.getItem('terikano_session_auth')){
+      let sl=document.getElementById('staffLock');
+      let lb=document.getElementById('loginBox');
+      if(sl) sl.style.display='flex';
+      if(lb){ lb.style.display='flex'; lb.style.zIndex='99999999'; lb.style.position='fixed'; lb.style.inset='0'; lb.style.background='rgba(0,0,0,0.92)'; lb.style.alignItems='center'; lb.style.justifyContent='center'; }
     }
   }
+  window.doOwnerFix2 = function(){
+    let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
+    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
+    if(val!=='' && val!==ownerPw){ let m=document.getElementById('pwMsg'); if(m){m.innerText='Wrong!'; m.style.display='block';} return; }
+    localStorage.setItem('isOwner','1');
+    sessionStorage.setItem('terikano_session_auth','1');
+    document.getElementById('staffLock').style.display='none';
+    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+    try{lockAll(); rebuild(); applyStaffHide();}catch(e){}
+  };
+  window.doStaffFix2 = function(){
+    let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
+    let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
+    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
+    if(val!==staffPw && val!==ownerPw && val!==''){ let m=document.getElementById('pwMsg'); if(m){m.innerText='Wrong!'; m.style.display='block';} return; }
+    localStorage.setItem('isOwner','0');
+    sessionStorage.setItem('terikano_session_auth','1');
+    document.getElementById('staffLock').style.display='none';
+    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+    try{lockAll(); rebuild(); applyStaffHide();}catch(e){}
+  };
+  window.doLogout = function(){
+    localStorage.removeItem('isOwner');
+    sessionStorage.removeItem('terikano_session_auth');
+    location.href = location.pathname + '?logout=' + Date.now();
+  };
+  window.checkStaffPw = function(){
+  let e=document.getElementById('staffPw') || document.getElementById('ownerPass');
+  if(!e) return;
+  let val=e.value.trim();
+  let ownerPw=localStorage.getItem('TERI_PW')||'1234';
+  let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
+  if(val===ownerPw){
+    localStorage.setItem('isOwner','1');
+    sessionStorage.setItem('terikano_session_auth','1');
+    document.getElementById('staffLock').style.display='none';
+    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+    try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
+    e.value=''; return;
+  }
+  if(val===staffPw){
+    localStorage.setItem('isOwner','0');
+    sessionStorage.setItem('terikano_session_auth','1');
+    document.getElementById('staffLock').style.display='none';
+    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+    try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
+    e.value=''; return;
+  }
+  let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
+};
   
+  setTimeout(fixManage, 800);
   setTimeout(applyStaffHide, 500);
-  setTimeout(applyStaffHide, 2000);
-  setTimeout(applyStaffHide, 4000);
-  
-  // 3. FIX LOCKOUT BUTTON - NEVER RESPONSE
-  function fixLockout(){
-    // find lockout / logout / lock button
-    let lockBtn = [...document.querySelectorAll('button')].find(b=>{
-      let t=(b.textContent||'').toLowerCase();
-      return t.includes('lock') || t.includes('logout') || t.includes('log out');
-    });
-    if(lockBtn){
-      let newLock = lockBtn.cloneNode(true);
-      lockBtn.parentNode.replaceChild(newLock, lockBtn);
-      newLock.onclick=function(){
-        if(confirm('Lockout? Will require PW again.')){
-          localStorage.removeItem('isOwner');
-          // keep device id
-          let did = localStorage.getItem('terikano_device_id');
-          let cache2 = localStorage.getItem('terikano_devices_cache');
-          // clear session but keep device
-          localStorage.clear();
-          if(did) localStorage.setItem('terikano_device_id', did);
-          if(cache2) localStorage.setItem('terikano_devices_cache', cache2);
-          location.reload();
-        }
-      };
-      console.log('Lockout fixed');
-    }
-    // also fix staffLock close?
-    let staffLock = document.getElementById('staffLock');
-    if(staffLock){
-      // ensure it shows if no role
-      let role = getRole();
-      if(!role){
-        staffLock.style.display='flex';
-        staffLock.style.zIndex='99999999';
-      }
-    }
-  }
-  setTimeout(fixLockout, 800);
-  setTimeout(fixLockout, 3000);
-  
-  // 4. FIX AUTO OPEN STAFF WITHOUT PW - FORCE PW CHECK ON EVERY LOAD IF STAFF
-  // The issue: localStorage has isOwner=0 from before, so it auto-opens
-  // Solution: If ?forceLogin or if device just blocked, clear it. Also add session lock
-  window.addEventListener('load', ()=>{
-    let role = getRole();
-    // If URL has ?clear or ?logout, force lock
-    if(location.search.includes('clear') || location.search.includes('logout') || location.search.includes('blocked')){
-      localStorage.removeItem('isOwner');
-      location.search='';
-    }
-    // For laptop that should require PW, we need to see if it was blocked before - if cache says blocked, don't auto-login
-    if(myId && cache[myId] && cache[myId].allowed===false){
-      localStorage.removeItem('isOwner');
-    }
-  });
-  
-  console.log('FINAL FIX 2 DONE');
+  setTimeout(killAutoOpen, 100);
+  setTimeout(killAutoOpen, 1500);
 })();
 </script>
 </body>
