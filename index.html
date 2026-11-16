@@ -1453,100 +1453,57 @@ function filterProfit(year){
   }
 }
 </script>
-<!-- TERIKANO V4 FINAL - AUTO CLEAR - NO CONSOLE NEEDED -->
+<!-- LOGIN BOX V5 - SINGLE LOGIN - FIXED -->
+<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
+  <div style="background:#111; border:3px solid gold; border-radius:15px; padding:25px; width:90%; max-width:320px; text-align:center;">
+    <h2 style="color:gold;">TERIKANO LOGIN</h2>
+    <input id="ownerPass" type="password" placeholder="Enter Password" style="width:100%; padding:12px; font-size:18px; border:2px solid gold; border-radius:10px; text-align:center; background:#000; color:#fff; margin-bottom:10px;">
+    <button id="loginBtn" onclick="doOwnerFix2()" style="width:100%; padding:12px; background:gold; color:#000; font-weight:bold; border-radius:10px;">LOGIN</button>
+    <button id="exitBtn" onclick="doStaffFix2()" style="width:100%; padding:8px; background:#333; color:#fff; border-radius:8px; margin-top:8px;">EXIT</button>
+    <div style="color:#aaa; font-size:11px; margin-top:10px;">Owner: Terikano_2026<br>Staff: Terikano_2005</div>
+    <div id="onlineStatus" style="margin-top:10px; padding:6px; border-radius:20px; background:#000; color:#0f0; border:1px solid #0f0; font-size:12px;">● Online</div>
+  </div>
+</div>
+<div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold;">LOGIN</button></div></div>
+
 <script>
+// V5 FINAL - AUTO CLEAR - NO CONSOLE
 (function(){
-  const OWNER='Terikano_2026'; const STAFF='Terikano_2005';
-  const SESS='terikano_session_auth'; const FLAG='isOwner';
+  const OWNER='Terikano_2026'; const STAFF='Terikano_2005'; const SESS='terikano_session_auth'; const FLAG='isOwner';
   function $id(i){return document.getElementById(i);}
-
-  // AUTO CLEAR OLD STAFF LOGIN - NO CONSOLE!
   try{
-    // If page loaded without session, clear old isOwner
-    if(!sessionStorage.getItem(SESS)){
-      localStorage.removeItem(FLAG);
-      localStorage.removeItem('isOwner');
+    if(location.search.includes('logout')||location.search.includes('blocked')){
+      localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); sessionStorage.removeItem(SESS);
     }
-    // If logout in URL, clear all
-    if(location.search.includes('logout')){
-      localStorage.removeItem(FLAG);
-      localStorage.removeItem('isOwner');
-      sessionStorage.removeItem(SESS);
-    }
+    if(!sessionStorage.getItem(SESS)){ localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); }
   }catch(e){}
-
-  function showLogin(){
-    try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){}
-    let lb=$id('loginBox'); let sl=$id('staffLock');
-    if(sl)sl.style.display='none';
-    if(lb){lb.style.cssText='display:flex !important; position:fixed !important; inset:0 !important; z-index:99999999 !important; background:rgba(0,0,0,0.92) !important; align-items:center !important; justify-content:center !important;'; lb.style.visibility='visible';}
-  }
-
-  function updateOnline(){
-    let el=document.getElementById('onlineStatus');
-    if(!el){el=document.createElement('div'); el.id='onlineStatus'; el.style.cssText='position:fixed;top:10px;right:10px;z-index:9999999;padding:6px 12px;border-radius:20px;background:#000;color:#0f0;border:1px solid #0f0;font-weight:bold;font-size:12px'; document.body.appendChild(el);}
-    el.style.display='block'; el.textContent=navigator.onLine?'● Online':'● Offline'; el.style.color=navigator.onLine?'#0f0':'red';
-  }
-
-  window.isOwner=function(){return localStorage.getItem('isOwner')==='1' || localStorage.getItem(FLAG)==='1';};
-
+  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb){lb.style.display='flex';} }
+  function updateOnline(){ let el=$id('onlineStatus'); if(el){ el.style.display='block'; el.textContent=navigator.onLine?'● Online':'● Offline'; el.style.color=navigator.onLine?'#0f0':'red'; } }
+  window.isOwner=function(){return localStorage.getItem('isOwner')==='1'||localStorage.getItem(FLAG)==='1';};
   function forceOwnerTabs(){
     document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.visibility='visible'; b.style.opacity='1'; b.style.pointerEvents='auto';});
-    let dash=document.querySelector('.dashboard'); if(dash) dash.style.display='block';
     let cash=$id('cashBoxIsolated'); if(cash) cash.style.display='flex';
+    let dash=document.querySelector('.dashboard'); if(dash) dash.style.display='block';
     let target=$id('targetTopBar'); if(target) target.style.display='block';
     document.querySelectorAll('.owner-only-btn').forEach(b=>b.style.display='inline-block');
   }
-
   function doOwnerAllTabs(){
     try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(SESS,'owner');}catch(e){}
-    let lb=$id('loginBox'); if(lb)lb.style.display='none';
-    let sl=$id('staffLock'); if(sl)sl.style.display='none';
+    let lb=$id('loginBox'); if(lb)lb.style.display='none'; let sl=$id('staffLock'); if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    setTimeout(forceOwnerTabs,150); setTimeout(forceOwnerTabs,600); updateOnline();
+    setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,500); updateOnline();
   }
-
   function doStaffLimited(){
     try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
-    let lb=$id('loginBox'); if(lb)lb.style.display='none';
-    let sl=$id('staffLock'); if(sl)sl.style.display='none';
+    let lb=$id('loginBox'); if(lb)lb.style.display='none'; let sl=$id('staffLock'); if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
     updateOnline();
   }
-
-  window.doOwnerFix2=function(){
-    let v=($id('ownerPass')?.value||'').trim();
-    if(!v){alert('Enter password!');return;}
-    if(v===OWNER){doOwnerAllTabs();$id('ownerPass').value='';return;}
-    if(v===STAFF){doStaffLimited();$id('ownerPass').value='';return;}
-    alert('WRONG!');$id('ownerPass').value='';
-  };
-
-  window.doStaffFix2=window.doOwnerFix2;
-
-  window.doLogout=function(){
-    try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){}
-    location.href=location.pathname+'?logout='+Date.now();
-  };
-
-  window.checkStaffPw=window.doOwnerFix2;
-
-  function init(){
-    if(!sessionStorage.getItem(SESS)){
-      showLogin();
-    } else {
-      if(localStorage.getItem('isOwner')==='1'){
-        setTimeout(forceOwnerTabs,300);
-      }
-    }
-    updateOnline();
-  }
-
-  window.addEventListener('DOMContentLoaded',init);
-  window.addEventListener('load',init);
-  setTimeout(init,50);
-  setTimeout(init,800);
-
+  window.doOwnerFix2=function(){ let el=$id('ownerPass'); let v=(el?.value||'').trim(); if(!v){alert('Enter password!');return;} if(v===OWNER){doOwnerAllTabs(); el.value='';return;} if(v===STAFF){doStaffLimited(); el.value='';return;} alert('WRONG!'); el.value=''; };
+  window.doStaffFix2=window.doOwnerFix2; window.checkStaffPw=window.doOwnerFix2;
+  window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
+  function init(){ updateOnline(); if(!sessionStorage.getItem(SESS)){ showLogin(); } else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); } let lb=$id('loginBox'); if(lb)lb.style.display='none'; } }
+  window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); setTimeout(init,100); setTimeout(init,800);
 })();
 </script>
 </body>
