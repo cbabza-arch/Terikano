@@ -1534,7 +1534,8 @@ setTimeout(()=>{
 },1000);
 </script>
 <script>
-// === TERIKANO CLEAN FINAL - SECURE + SYNCING ===
+<!-- TERIKANO CLEAN FINAL - OFFLINE + SECURE + NO AUTO SWITCH -->
+<script>
 (function(){
   const STORE_KEY='Terikano_storage_data';
   const FB_PATH='terikano_v1/main_store';
@@ -1542,13 +1543,36 @@ setTimeout(()=>{
   const STAFF_KEY='TERI_STAFF_PW';
   let isSyncing=false;
   function getOwnerPw(){ return localStorage.getItem(OWNER_KEY)||'1234'; }
-  function getStaffPw(){ return localStorage.getItem(STAFF_KEY)||localStorage.getItem('staff_pw')||'123456789'; }
+  function getStaffPw(){ return localStorage.getItem(STAFF_KEY)||localStorage.getItem('staff_pw')||'2001'; }
+
+  // FORCE CLEAR ON LOGOUT - FIX AUTO STAFF
+  if(location.search.includes('logout') || location.search.includes('blocked')){
+    localStorage.removeItem('isOwner');
+    sessionStorage.removeItem('terikano_session_auth');
+  }
+
+  let pendingMain = JSON.parse(localStorage.getItem('pending_main_queue')||'[]');
+  let pendingNotes = JSON.parse(localStorage.getItem('pending_notes_queue')||'[]');
+  let myId = localStorage.getItem('terikano_device_id');
+  const FB = firebase.database();
 
   window.checkStaffPw = function(){
-    var e=document.getElementById('staffPw'); if(!e) return;
+    var e=document.getElementById('staffPw') || document.getElementById('ownerPass'); if(!e) return;
     var val=e.value.trim();
-    if(val===getOwnerPw()){ localStorage.setItem('isOwner','1'); document.getElementById('staffLock').style.display='none'; var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; try{lockAll(); rebuild();}catch(err){} e.value=''; return; }
-    if(val===getStaffPw()){ localStorage.setItem('isOwner','0'); document.getElementById('staffLock').style.display='none'; var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; try{lockAll(); rebuild();}catch(err){} e.value=''; return; }
+    if(val===getOwnerPw()){ 
+      localStorage.setItem('isOwner','1'); 
+      sessionStorage.setItem('terikano_session_auth','1');
+      document.getElementById('staffLock').style.display='none'; 
+      var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; 
+      try{lockAll(); rebuild(); applyStaffHide();}catch(err){} e.value=''; return; 
+    }
+    if(val===getStaffPw()){ 
+      localStorage.setItem('isOwner','0'); 
+      sessionStorage.setItem('terikano_session_auth','1');
+      document.getElementById('staffLock').style.display='none'; 
+      var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; 
+      try{lockAll(); rebuild(); applyStaffHide();}catch(err){} e.value=''; return; 
+    }
     var msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
   };
 
@@ -1557,163 +1581,48 @@ setTimeout(()=>{
     try{
       let raw=localStorage.getItem(STORE_KEY)||'{"purchases":[]}';
       let obj=JSON.parse(raw);
-      obj._ownerPwSync=getOwnerPw(); obj._staffPwSync=getStaffPw(); obj._ownerPwTs=Date.now();
+      obj._ownerPwSync=getOwnerPw(); obj._staffPwSync=getStaffPw(); obj._ts=Date.now(); obj._ownerPwTs=Date.now();
       let finalStr=JSON.stringify(obj);
       localStorage.setItem(STORE_KEY, finalStr);
-      if(window.firebase && firebase.database()){
-        firebase.database().ref(FB_PATH).set({data:finalStr, ts:Date.now()});
+      let payload={data:finalStr, ts:Date.now()};
+      if(!navigator.onLine || !window.firebase){
+        pendingMain.push(payload);
+        localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
+        console.log('OFFLINE - queued main', pendingMain.length);
+        return;
       }
+      firebase.database().ref(FB_PATH).set(payload);
     }catch(e){}
   }
   window.pushReal = pushFinal;
 
   window.changePw = function(){
-    var oldV=document.getElementById('old_pw')?.value.trim();
-    var newV=document.getElementById('new_pw')?.value.trim();
-    if(oldV!==getOwnerPw()) return alert('Old PW wrong');
-    if(!newV) return alert('Enter new PW');
-    localStorage.setItem(OWNER_KEY, newV); pushFinal();
-    alert('Owner PW synced to cloud!');
-  };
-
-  window.setStaffPw = function(){
-    var v=document.getElementById('new_staff_pw')?.value.trim() || document.getElementById('bot_new_staff_pw')?.value.trim();
-    if(!v) return alert('Enter!');
-    localStorage.setItem(STAFF_KEY, v); localStorage.setItem('staff_pw', v); pushFinal();
-    alert('Staff PW synced to cloud!');
-  };
-
-         let init=setInterval(()=>{
-      if(window.firebase && firebase.database()){
-        clearInterval(init);
-        firebase.database().ref(FB_PATH).on('value', snap=>{
-          let v=snap.val(); if(!v||!v.data) return;
-          
-          try{
-            let remoteObj=JSON.parse(v.data);
-            let remoteTs=v.ts || remoteObj._ts || 0;
-            
-            let localRaw=localStorage.getItem(STORE_KEY);
-            let localTs=0;
-            try{ localTs=JSON.parse(localRaw)._ts || 0; }catch(e){}
-            
-            // IF remote is OLDER than local, don't accept! Push local instead!
-            if(remoteTs < localTs){
-              console.log('Remote is older, pushing local');
-              if(typeof pushFinal==='function') pushFinal();
-              return;
-            }
-            
-            if(v.data===localRaw) return;
-            isSyncing=true;
-            try{
-              let o=remoteObj;
-              if(o._ownerPwSync) localStorage.setItem(OWNER_KEY, o._ownerPwSync);
-              if(o._staffPwSync) localStorage.setItem(STAFF_KEY, o._staffPwSync);
-              localStorage.setItem(STORE_KEY, v.data);
-              try{load(); rebuild(); lockAll();}catch(e){}
-            }catch(e){}
-            setTimeout(()=>{isSyncing=false;},1200);
-          }catch(e){}
-        });
-      }
-    },800);
-    })();
-</script>
-<!-- FINAL CLEAN V29 - AUTO SWITCH FIX + OFFLINE QUEUE FIX -->
-<script>
-(function(){
-  console.log('FINAL CLEAN V29 - COMBINED FIX');
-
-  // FORCE CLEAR ON LOGOUT PARAM - FIX AUTO STAFF
-  if(location.search.includes('logout') || location.search.includes('blocked')){
-    localStorage.removeItem('isOwner');
-    sessionStorage.removeItem('terikano_session_auth');
-  }
-
-  let myId = localStorage.getItem('terikano_device_id');
-  const STORE_KEY='Terikano_storage_data';
-  const FB_PATH='terikano_v1/main_store';
-  const FB = firebase.database();
-  
-  // OFFLINE QUEUES
-  let pendingMain = JSON.parse(localStorage.getItem('pending_main_queue')||'[]');
-  let pendingNotes = JSON.parse(localStorage.getItem('pending_notes_queue')||'[]');
-
-  // 1. DEVICE BLOCK LISTENER
-  if(myId && window.firebase){
-    setTimeout(()=>{
-      try{
-        firebase.database().ref('config/devices/'+myId+'/allowed').on('value', snap=>{
-          if(snap.val()===false){
-            alert('⛔ Device BLOCKED by MAIN');
-            localStorage.removeItem('isOwner');
-            sessionStorage.removeItem('terikano_session_auth');
-            location.href = location.pathname+'?blocked='+Date.now();
-          }
-        });
-      }catch(e){}
-    },1500);
-  }
-  
-  // 2. MANAGE BUTTON
-  function fixManage(){
-    let oldBtn=document.getElementById('manageBtn');
-    if(!oldBtn) return;
-    let newBtn=oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-    newBtn.id='manageBtn';
-    newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative;display:inline-block';
-    newBtn.onclick=function(){
-      let devices=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-      let html='';
-      for(let k in devices){
-        html+='<div style="border:2px solid '+(devices[k].allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px"><b>'+k+(devices[k].isMain?' 👑':'')+(k===myId?' (You)':'')+'</b> '+(devices[k].allowed?'✅':'❌')+'<br><button onclick="firebase.database().ref(\'config/devices/'+k+'/allowed\').set(true)" style="background:green;color:#fff;padding:5px 8px;border-radius:5px">Allow</button> <button onclick="if(\''+k+'\'!==\''+myId+'\')firebase.database().ref(\'config/devices/'+k+'/allowed\').set(false)" style="background:red;color:#fff;padding:5px 8px;border-radius:5px">Block</button> <button onclick="firebase.database().ref(\'config/devices/'+k+'\').remove()" style="background:#000;color:#fff;padding:5px 8px;border-radius:5px">Del</button></div>';
-      }
-      let pop=document.createElement('div');
-      pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999999;display:flex;align-items:center;justify-content:center';
-      pop.innerHTML='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:420px;max-height:85vh;overflow:auto"><h3>🔒 Manager - '+myId+'</h3><button onclick="firebase.database().ref(\'config/mainDeviceId\').set(\''+myId+'\');alert(\'You are MAIN\');location.reload()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div>'+(html||'No devices')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
-      document.body.appendChild(pop);
-    };
-  }
-  
-  // 3. PW FIX WITH OFFLINE QUEUE
-  window.changePw = function(){
-    let newV=document.getElementById('new_pw')?.value?.trim();
+    var newV=document.getElementById('new_pw')?.value?.trim();
     if(!newV) return alert('Enter new owner PW');
-    localStorage.setItem('TERI_PW', newV);
-    let p={owner:newV, ts:Date.now()};
+    localStorage.setItem(OWNER_KEY, newV);
     if(!navigator.onLine){
-      pendingMain.push(p);
+      pendingMain.push({owner:newV, ts:Date.now(), data: localStorage.getItem(STORE_KEY)});
       localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
     } else {
       firebase.database().ref('config/passwords/owner').set(newV);
       firebase.database().ref('config/passwords').update({owner:newV});
     }
-    if(typeof pushFinal==='function') pushFinal();
-    alert('✅ Owner PW '+newV+' synced!');
+    pushFinal(); alert('✅ Owner PW '+newV+' saved! Will sync when online!');
   };
+
   window.setStaffPw = function(){
-    let v=document.getElementById('new_staff_pw')?.value?.trim();
-    if(!v) return alert('Enter staff PW');
-    localStorage.setItem('TERI_STAFF_PW', v);
+    var v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim();
+    if(!v) return alert('Enter!');
+    localStorage.setItem(STAFF_KEY, v); localStorage.setItem('staff_pw', v);
     if(!navigator.onLine){
       pendingMain.push({staff:v, ts:Date.now()});
       localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
     } else {
       firebase.database().ref('config/passwords/staff').set(v);
     }
-    if(typeof pushFinal==='function') pushFinal();
-    alert('✅ Staff PW '+v+' synced!');
+    pushFinal(); alert('✅ Staff PW '+v+' saved! Will sync when online!');
   };
-  try{
-    firebase.database().ref('config/passwords').on('value', snap=>{
-      let c=snap.val();
-      if(c){ if(c.owner) localStorage.setItem('TERI_PW', c.owner); if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff); }
-    });
-  }catch(e){}
-  
-  // 4. DAILY NOTES WITH OFFLINE QUEUE - LATEST WINS
+
   window.saveDailyNotes = function(){
     localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
     localStorage.setItem('dailyNotes_TS', Date.now());
@@ -1726,118 +1635,99 @@ setTimeout(()=>{
     }
     FB.ref('config/dailyNotes_v13').set(payload);
   };
+
   window.addEventListener('online', ()=>{
     console.log('Online! Pushing queued...');
     try{
       if(pendingMain.length>0){
         let last = pendingMain[pendingMain.length-1];
         if(last.data) firebase.database().ref(FB_PATH).set(last);
-        pendingMain=[];
-        localStorage.setItem('pending_main_queue', '[]');
+        else if(last.owner || last.staff) {} // pw already saved
+        else firebase.database().ref(FB_PATH).set(last);
+        pendingMain=[]; localStorage.setItem('pending_main_queue', '[]');
       }
       if(pendingNotes.length>0){
         let last = pendingNotes[pendingNotes.length-1];
         FB.ref('config/dailyNotes_v13').set(last);
-        pendingNotes=[];
-        localStorage.setItem('pending_notes_queue', '[]');
+        pendingNotes=[]; localStorage.setItem('pending_notes_queue', '[]');
       }
     }catch(e){}
   });
-  FB.ref('config/dailyNotes_v13').on('value', snap=>{
-    let val=snap.val(); if(!val || !val.data) return;
-    let localTS = parseInt(localStorage.getItem('dailyNotes_TS')||'0');
-    if(val.ts && val.ts < localTS) return;
-    if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
-    try{
-      dailyNotesArr=JSON.parse(val.data);
-      localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data);
-      localStorage.setItem('dailyNotes_TS', val.ts);
-      renderDailyNotes();
-    }catch(e){}
-  });
 
-  // 5. STAFF HIDE + NO AUTO-OPEN FIX
+  // LISTENERS - LATEST WINS, DON'T OVERWRITE NEWER LOCAL
+  let init=setInterval(()=>{
+    if(window.firebase && firebase.database()){
+      clearInterval(init);
+      firebase.database().ref(FB_PATH).on('value', snap=>{
+        let v=snap.val(); if(!v||!v.data) return;
+        try{
+          let remoteObj=JSON.parse(v.data);
+          let remoteTs=v.ts || remoteObj._ts || 0;
+          let localRaw=localStorage.getItem(STORE_KEY);
+          let localTs=0; try{ localTs=JSON.parse(localRaw)._ts || 0; }catch(e){}
+          if(remoteTs < localTs){ console.log('Remote older, pushing local'); pushFinal(); return; }
+          if(v.data===localRaw) return;
+          isSyncing=true;
+          let o=remoteObj;
+          if(o._ownerPwSync) localStorage.setItem(OWNER_KEY, o._ownerPwSync);
+          if(o._staffPwSync) localStorage.setItem(STAFF_KEY, o._staffPwSync);
+          localStorage.setItem(STORE_KEY, v.data);
+          try{load(); rebuild(); lockAll();}catch(e){}
+          setTimeout(()=>{isSyncing=false;},1200);
+        }catch(e){}
+      });
+      firebase.database().ref('config/passwords').on('value', snap=>{
+        let c=snap.val(); if(c){ if(c.owner) localStorage.setItem(OWNER_KEY, c.owner); if(c.staff) localStorage.setItem(STAFF_KEY, c.staff); }
+      });
+      FB.ref('config/dailyNotes_v13').on('value', snap=>{
+        let val=snap.val(); if(!val || !val.data) return;
+        let localTS = parseInt(localStorage.getItem('dailyNotes_TS')||'0');
+        if(val.ts && val.ts < localTS) return;
+        if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
+        try{ dailyNotesArr=JSON.parse(val.data); localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data); localStorage.setItem('dailyNotes_TS', val.ts); renderDailyNotes(); }catch(e){}
+      });
+    }
+  },800);
+
+  // NO AUTO SWITCH + HIDE
   function applyStaffHide(){
     let role=localStorage.getItem('isOwner');
     let manageBtn=document.getElementById('manageBtn');
     if(role==='0' && manageBtn) manageBtn.style.display='none';
     if(role==='1' && manageBtn) manageBtn.style.display='inline-block';
-    // HIDE BANK SETTINGS FOR STAFF
     if(role==='0'){
       document.querySelectorAll('*').forEach(el=>{
         let txt=(el.innerText||'').trim().toLowerCase();
         if(txt==='bank settings' || txt.includes('bank settings')){
-          if(el.tagName==='BUTTON' || el.tagName==='DIV' || el.tagName==='SPAN'){
-            el.style.display='none';
-          }
+          if(el.tagName==='BUTTON' || el.tagName==='DIV' || el.tagName==='SPAN'){ el.style.display='none'; }
         }
       });
     }
   }
   function killAutoOpen(){
     if(location.search.includes('logout') || location.search.includes('blocked')){
-      localStorage.removeItem('isOwner');
-      sessionStorage.removeItem('terikano_session_auth');
+      localStorage.removeItem('isOwner'); sessionStorage.removeItem('terikano_session_auth');
     }
     if(!sessionStorage.getItem('terikano_session_auth')){
       localStorage.removeItem('isOwner');
-      let sl=document.getElementById('staffLock');
-      let lb=document.getElementById('loginBox');
+      let sl=document.getElementById('staffLock'); let lb=document.getElementById('loginBox');
       if(sl) sl.style.display='flex';
       if(lb){ lb.style.display='flex'; lb.style.zIndex='99999999'; lb.style.position='fixed'; lb.style.inset='0'; lb.style.background='rgba(0,0,0,0.92)'; lb.style.alignItems='center'; lb.style.justifyContent='center'; }
     }
   }
-  window.doOwnerFix2 = function(){
-    let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
-    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    if(val!=='' && val!==ownerPw){ return alert('Wrong Owner PW! Cloud is '+ownerPw); }
-    localStorage.setItem('isOwner','1');
-    sessionStorage.setItem('terikano_session_auth','1');
-    document.getElementById('staffLock').style.display='none';
-    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild(); applyStaffHide();}catch(e){}
-  };
-  window.doStaffFix2 = function(){
-    let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
-    let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
-    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    if(val!==staffPw && val!==ownerPw && val!==''){ return alert('Wrong Staff PW!'); }
-    localStorage.setItem('isOwner','0');
-    sessionStorage.setItem('terikano_session_auth','1');
-    document.getElementById('staffLock').style.display='none';
-    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild(); applyStaffHide();}catch(e){}
-  };
-  window.doLogout = function(){
-    localStorage.removeItem('isOwner');
-    sessionStorage.removeItem('terikano_session_auth');
-    location.href = location.pathname + '?logout=' + Date.now();
-  };
-  window.checkStaffPw = function(){
-    let e=document.getElementById('staffPw') || document.getElementById('ownerPass');
-    if(!e) return;
-    let val=e.value.trim();
-    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
-    if(val===ownerPw){
-      localStorage.setItem('isOwner','1');
-      sessionStorage.setItem('terikano_session_auth','1');
-      document.getElementById('staffLock').style.display='none';
-      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
-      e.value=''; return;
-    }
-    if(val===staffPw){
-      localStorage.setItem('isOwner','0');
-      sessionStorage.setItem('terikano_session_auth','1');
-      document.getElementById('staffLock').style.display='none';
-      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
-      e.value=''; return;
-    }
-    let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
-  };
+  window.doLogout = function(){ localStorage.removeItem('isOwner'); sessionStorage.removeItem('terikano_session_auth'); location.href = location.pathname + '?logout=' + Date.now(); };
   
+  function fixManage(){
+    let oldBtn=document.getElementById('manageBtn'); if(!oldBtn) return;
+    let newBtn=oldBtn.cloneNode(true); oldBtn.parentNode.replaceChild(newBtn, oldBtn); newBtn.id='manageBtn';
+    newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative;display:inline-block';
+    newBtn.onclick=function(){
+      let devices=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
+      let html=''; for(let k in devices){ html+='<div style="border:2px solid '+(devices[k].allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px"><b>'+k+(devices[k].isMain?' 👑':'')+(k===myId?' (You)':'')+'</b> '+(devices[k].allowed?'✅':'❌')+'<br><button onclick="firebase.database().ref(\'config/devices/'+k+'/allowed\').set(true)" style="background:green;color:#fff;padding:5px 8px;border-radius:5px">Allow</button> <button onclick="if(\''+k+'\'!==\''+myId+'\')firebase.database().ref(\'config/devices/'+k+'/allowed\').set(false)" style="background:red;color:#fff;padding:5px 8px;border-radius:5px">Block</button> <button onclick="firebase.database().ref(\'config/devices/'+k+'\').remove()" style="background:#000;color:#fff;padding:5px 8px;border-radius:5px">Del</button></div>'; }
+      let pop=document.createElement('div'); pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999999;display:flex;align-items:center;justify-content:center';
+      pop.innerHTML='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:420px;max-height:85vh;overflow:auto"><h3>🔒 Manager - '+myId+'</h3><button onclick="firebase.database().ref(\'config/mainDeviceId\').set(\''+myId+'\');alert(\'You are MAIN\');location.reload()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div>'+(html||'No devices')+'</div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>'; document.body.appendChild(pop);
+    };
+  }
   setTimeout(fixManage, 800);
   setTimeout(applyStaffHide, 500);
   setTimeout(killAutoOpen, 100);
