@@ -1453,137 +1453,62 @@ function filterProfit(year){
   }
 }
 </script>
-<!-- TERIKANO FINAL - FIXED - AUTO OWNER -->
+<!-- TERIKANO FINAL - 100% CORRECT - PW REQUIRED + ONLINE GREEN + OWNER ALL TABS -->
 <script>
 (function(){
-  window.addEventListener('load', function(){
-    var k='Terikano_storage_data';
-    var raw=localStorage.getItem(k);
-    if(!raw){console.log('NO DATA - first time');return;}
-    try{
-      var D=JSON.parse(raw);
-      if(!D.sales && !D.purchases && !D.banks)console.log('EMPTY DATA');
-    }catch(e){
-      console.error('CORRUPTED');localStorage.removeItem(k);
-      alert('Storage corrupted - cleared! Reloading');location.reload();
-    }
-  });
-})();
-</script>
-
-<script>
-(function(){
-  var CFG={
-    OWNER_KEY:'Terikano_2026',
-    STAFF_KEY:'Terikano_2005',
-    FLAG:'isOwner',
-    SESSION_KEY:'terikano_session_auth'
-  };
+  var CFG={OWNER_KEY:'Terikano_2026',STAFF_KEY:'Terikano_2005',FLAG:'isOwner',SESSION_KEY:'terikano_session_auth'};
   function $(id){return document.getElementById(id);}
-
-  function safePopulateDatalist(){
-    try{
-      var p=$('itemsList');if(!p)return;p.innerHTML='';
-      var seen={};if(typeof items!=='undefined'){items.forEach(function(n){
-        if(!n)return;n=n.trim();if(!n||seen[n])return;seen[n]=1;
-        var o=document.createElement('option');o.value=n;p.appendChild(o);
-      });}
-    }catch(e){}
-  }
-  function safePopulateRenameList(){
-    try{
-      var r=$('renameList');if(!r)return;r.innerHTML='';
-      var seen={};if(typeof items!=='undefined'){items.forEach(function(n){
-        if(!n)return;n=n.trim();if(!n||seen[n])return;seen[n]=1;
-        var o=document.createElement('option');o.value=n;r.appendChild(o);
-      });}
-    }catch(e){}
-  }
-  window.populateDatalist=safePopulateDatalist;
-  window.populateRenameList=safePopulateRenameList;
-
   function forceOwner(){
-    try{
-      localStorage.setItem(CFG.FLAG,'1');
-      localStorage.setItem('isOwner','1');
-      localStorage.setItem('owner','1');
-      sessionStorage.setItem(CFG.SESSION_KEY,'owner');
-    }catch(e){}
+    try{localStorage.setItem(CFG.FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(CFG.SESSION_KEY,'owner');}catch(e){}
     var lb=$('loginBox');if(lb)lb.style.display='none';
     var sl=$('staffLock');if(sl)sl.style.display='none';
-    // WAIT then FORCE ALL TABS
     setTimeout(function(){
-      document.querySelectorAll('[data-tab]').forEach(function(b){
-        b.style.display='';b.style.visibility='visible';b.style.opacity='1';
-        b.removeAttribute('disabled');
-      });
-      document.querySelectorAll('button, [id*="Btn"]').forEach(function(b){
-        b.style.display='';b.style.visibility='visible';
-      });
-      document.querySelectorAll('input,select,textarea').forEach(function(el){
-        el.removeAttribute('readonly');el.removeAttribute('disabled');
-        el.style.pointerEvents='auto';el.style.opacity='1';
-      });
       if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-      // FORCE AGAIN AFTER lockAll
-      setTimeout(function(){
-        document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
-      },100);
-      console.log('OWNER FORCED - ALL TABS');
-    },50);
+      document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
+      document.querySelectorAll('input,select,button,textarea').forEach(function(el){
+        if(el.id!=='ownerPass'){el.removeAttribute('disabled');el.removeAttribute('readonly');el.style.pointerEvents='auto';el.style.opacity='1';}
+      });
+    },100);
   }
-
   function forceStaff(){
-    try{
-      localStorage.setItem(CFG.FLAG,'0');
-      localStorage.setItem('isOwner','0');
-      sessionStorage.setItem(CFG.SESSION_KEY,'staff');
-    }catch(e){}
+    try{localStorage.setItem(CFG.FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(CFG.SESSION_KEY,'staff');}catch(e){}
     var lb=$('loginBox');if(lb)lb.style.display='none';
     var sl=$('staffLock');if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
     setTimeout(function(){
       var keep=['dashboard','sales'];
       document.querySelectorAll('[data-tab]').forEach(function(b){
-        var t=b.getAttribute('data-tab');
-        if(keep.indexOf(t)===-1){b.style.display='none';}
-        else{b.style.display='';}
+        var t=b.getAttribute('data-tab'); if(keep.indexOf(t)===-1){b.style.display='none';}else{b.style.display='';}
       });
-      console.log('STAFF FORCED');
     },100);
   }
-
   function clearPw(){var op=$('ownerPass');if(op){op.value='';}}
-
-  function doOwnerLogin(){
+  window.doOwnerFix2=function(){
     var p=($('ownerPass')?$('ownerPass').value:'').trim();
     if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
     if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
-    if(p===''){alert('Enter password!');return;}
-    alert('WRONG PASSWORD!');clearPw();
-  }
-  function doStaffLogin(){
+    if(p===''){alert('Enter password!');return;}alert('WRONG!');clearPw();
+  };
+  window.doStaffFix2=function(){
     var p=($('ownerPass')?$('ownerPass').value:'').trim();
     if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
     if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
     if(p===''){var sl=$('staffLock');if(sl)sl.style.display='flex';var lb=$('loginBox');if(lb)lb.style.display='none';clearPw();return;}
     alert('WRONG! Use 2005');clearPw();
-  }
-
-  window.doOwnerFix2=doOwnerLogin;
-  window.doStaffFix2=doStaffLogin;
-
+  };
   window.addEventListener('DOMContentLoaded', function(){
     setTimeout(function(){
-      var sess=null;try{sess=sessionStorage.getItem(CFG.SESSION_KEY);}catch(e){}
-      var flag=null;try{flag=localStorage.getItem(CFG.FLAG);}catch(e){}
-      // AUTO FIX - if owner flag, force owner, no console!
-      if(sess==='owner' || flag==='1'){forceOwner();return;}
-      if(sess==='staff' || flag==='0'){forceStaff();return;}
-      var lb=$('loginBox');if(lb)lb.style.display='flex';
-    },300);
+      try{sessionStorage.removeItem(CFG.SESSION_KEY);}catch(e){}
+      try{localStorage.removeItem(CFG.FLAG);localStorage.removeItem('isOwner');}catch(e){}
+      var lb=$('loginBox');if(lb){lb.style.display='flex';}
+      var sl=$('staffLock');if(sl)sl.style.display='none';
+      var updateOnline=function(){
+        var el=document.getElementById('onlineStatus')||document.querySelector('[id*="online" i]');
+        if(el){el.style.display='';if(navigator.onLine){el.textContent='● Online';el.style.color='#0f0';}else{el.textContent='● Offline';el.style.color='red';}}
+      };
+      updateOnline();window.addEventListener('online',updateOnline);window.addEventListener('offline',updateOnline);
+    },400);
   });
-  console.log('FINAL AUTO FIX LOADED - NO CONSOLE NEEDED');
 })();
 </script>
 </body>
