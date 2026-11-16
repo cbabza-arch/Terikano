@@ -1453,39 +1453,46 @@ function filterProfit(year){
   }
 }
 </script>
-<!-- LOGIN BOX V5 - SINGLE LOGIN - FIXED -->
+<!-- LOGIN BOX V6 - NO PW DISPLAY -->
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
   <div style="background:#111; border:3px solid gold; border-radius:15px; padding:25px; width:90%; max-width:320px; text-align:center;">
-    <h2 style="color:gold;">TERIKANO LOGIN</h2>
+    <h2 style="color:gold;">🔒 TERIKANO LOGIN</h2>
     <input id="ownerPass" type="password" placeholder="Enter Password" style="width:100%; padding:12px; font-size:18px; border:2px solid gold; border-radius:10px; text-align:center; background:#000; color:#fff; margin-bottom:10px;">
     <button id="loginBtn" onclick="doOwnerFix2()" style="width:100%; padding:12px; background:gold; color:#000; font-weight:bold; border-radius:10px;">LOGIN</button>
     <button id="exitBtn" onclick="doStaffFix2()" style="width:100%; padding:8px; background:#333; color:#fff; border-radius:8px; margin-top:8px;">EXIT</button>
-    <div style="color:#aaa; font-size:11px; margin-top:10px;">Owner: Terikano_2026<br>Staff: Terikano_2005</div>
-    <div id="onlineStatus" style="margin-top:10px; padding:6px; border-radius:20px; background:#000; color:#0f0; border:1px solid #0f0; font-size:12px;">● Online</div>
+    <div id="onlineStatus" style="margin-top:12px; padding:6px; border-radius:20px; background:#000; color:#0f0; border:1px solid #0f0; font-size:12px;">● Online</div>
   </div>
 </div>
-<div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold;">LOGIN</button></div></div>
+<div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold; border-radius:8px;">LOGIN</button></div></div>
 
 <script>
-// V5 FINAL - AUTO CLEAR - NO CONSOLE
+// V6 - FIX DEVICE MANAGE + PW SYNC
 (function(){
-  const OWNER='Terikano_2026'; const STAFF='Terikano_2005'; const SESS='terikano_session_auth'; const FLAG='isOwner';
+  const DEFAULT_OWNER='Terikano_2026'; const DEFAULT_STAFF='Terikano_2005';
+  const SESS='terikano_session_auth'; const FLAG='isOwner';
+  const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
   function $id(i){return document.getElementById(i);}
+  function getOwnerPw(){ return localStorage.getItem(OWNER_KEY) || DEFAULT_OWNER; }
+  function getStaffPw(){ return localStorage.getItem(STAFF_KEY) || localStorage.getItem('staff_pw') || DEFAULT_STAFF; }
   try{
     if(location.search.includes('logout')||location.search.includes('blocked')){
       localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); sessionStorage.removeItem(SESS);
     }
     if(!sessionStorage.getItem(SESS)){ localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); }
   }catch(e){}
-  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb){lb.style.display='flex';} }
+  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb)lb.style.display='flex'; }
   function updateOnline(){ let el=$id('onlineStatus'); if(el){ el.style.display='block'; el.textContent=navigator.onLine?'● Online':'● Offline'; el.style.color=navigator.onLine?'#0f0':'red'; } }
   window.isOwner=function(){return localStorage.getItem('isOwner')==='1'||localStorage.getItem(FLAG)==='1';};
+  window.getOwnerPw=getOwnerPw; window.getStaffPw=getStaffPw;
   function forceOwnerTabs(){
-    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.visibility='visible'; b.style.opacity='1'; b.style.pointerEvents='auto';});
+    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.visibility='visible'; b.style.opacity='1';});
     let cash=$id('cashBoxIsolated'); if(cash) cash.style.display='flex';
-    let dash=document.querySelector('.dashboard'); if(dash) dash.style.display='block';
-    let target=$id('targetTopBar'); if(target) target.style.display='block';
-    document.querySelectorAll('.owner-only-btn').forEach(b=>b.style.display='inline-block');
+    let mb=$id('manageBtn'); if(mb) mb.style.display='inline-block';
+    let countSpan=document.getElementById('allowedCount')?.parentElement; if(countSpan) countSpan.style.display='inline-flex';
+  }
+  function hideForStaff(){
+    let mb=$id('manageBtn'); if(mb) mb.style.display='none';
+    let countSpan=document.getElementById('allowedCount')?.parentElement; if(countSpan) countSpan.style.display='none';
   }
   function doOwnerAllTabs(){
     try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(SESS,'owner');}catch(e){}
@@ -1497,13 +1504,27 @@ function filterProfit(year){
     try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
     let lb=$id('loginBox'); if(lb)lb.style.display='none'; let sl=$id('staffLock'); if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    updateOnline();
+    updateOnline(); setTimeout(hideForStaff,200);
   }
-  window.doOwnerFix2=function(){ let el=$id('ownerPass'); let v=(el?.value||'').trim(); if(!v){alert('Enter password!');return;} if(v===OWNER){doOwnerAllTabs(); el.value='';return;} if(v===STAFF){doStaffLimited(); el.value='';return;} alert('WRONG!'); el.value=''; };
+  window.doOwnerFix2=function(){
+    let el=$id('ownerPass'); let v=(el?.value||'').trim();
+    if(!v){alert('Enter password!');return;}
+    if(v===getOwnerPw() || v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
+    if(v===getStaffPw() || v===DEFAULT_STAFF){doStaffLimited(); el.value='';return;}
+    alert('WRONG!'); el.value='';
+  };
   window.doStaffFix2=window.doOwnerFix2; window.checkStaffPw=window.doOwnerFix2;
   window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
-  function init(){ updateOnline(); if(!sessionStorage.getItem(SESS)){ showLogin(); } else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); } let lb=$id('loginBox'); if(lb)lb.style.display='none'; } }
+  window.setStaffPw=function(){ let el=$id('new_staff_pw'); let v=(el?.value||'').trim(); if(!v){alert('Enter Staff PW!');return;} localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); alert('Staff PW Saved: '+v); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; if(el) el.value=''; };
+  window.setOwnerPw=function(){ let el=$id('new_owner_pw'); let v=(el?.value||'').trim(); if(!v){alert('Enter Owner PW!');return;} localStorage.setItem(OWNER_KEY,v); alert('Owner PW Saved: '+v); let lbl=$id('curOwnerPwLabel'); if(lbl) lbl.textContent=v; if(el) el.value=''; };
+  function init(){
+    updateOnline();
+    let oLbl=$id('curOwnerPwLabel'); if(oLbl) oLbl.textContent=getOwnerPw();
+    let sLbl=$id('curStaffPwLabel'); if(sLbl) sLbl.textContent=getStaffPw();
+    if(!sessionStorage.getItem(SESS)){ showLogin(); } else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); } else { hideForStaff(); } let lb=$id('loginBox'); if(lb)lb.style.display='none'; }
+  }
   window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); setTimeout(init,100); setTimeout(init,800);
+  setInterval(function(){ let role=localStorage.getItem('isOwner'); let mb=$id('manageBtn'); if(!mb) return; if(role==='0'){ mb.style.display='none'; let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='none'; } else { if(sessionStorage.getItem(SESS)){ mb.style.display='inline-block'; let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='inline-flex'; } } },1000);
 })();
 </script>
 </body>
