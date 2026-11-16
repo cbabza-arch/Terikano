@@ -1453,89 +1453,197 @@ function filterProfit(year){
   }
 }
 </script><script>
-// HIDE ONLY BANK SETTINGS FOR STAFF - FINAL
-setTimeout(()=>{
-  document.querySelectorAll('*').forEach(el=>{
-    let txt = (el.innerText||'').trim().toLowerCase();
-    // find bank settings button/text in stock window
-    if(txt === 'bank settings' || txt.includes('bank settings')){
-      // check if it's in stock window or is a button
-      if(el.tagName==='BUTTON' || el.tagName==='DIV' || el.tagName==='SPAN'){
-        // hide it
-        el.style.display='none';
-        // also hide its parent if it's a small wrapper
-        if(el.parentElement && el.parentElement.children.length <= 2){
-          el.parentElement.style.display='none';
-        }
-        console.log('BANK SETTINGS HIDDEN FROM STAFF');
+<!-- TERIKANO FINAL - FIXED - OFFLINE + NO AUTO + LOCK POPULATE -->
+<script>
+// === TERIKANO FINAL 1 - OFFLINE DATA CHECK ===
+(function(){
+  window.addEventListener('load', function(){
+    var k='Terikano_storage_data';
+    var raw=localStorage.getItem(k);
+    if(!raw){
+      console.log('NO DATA - first time');
+      return;
+    }
+    try{
+      var D=JSON.parse(raw);
+      if(D && (D.sales||D.purchases||D.banks)){
+        console.log('DATA OK:', (D.sales||[]).length, 'sales');
+      }else{
+        console.log('EMPTY DATA OBJECT');
       }
+    }catch(e){
+      console.error('STORAGE CORRUPTED! Clearing to prevent crash');
+      localStorage.removeItem(k);
+      alert('Storage corrupted - cleared! Please re-login and re-enter data.');
+      location.reload();
     }
   });
-},1000);
+})();
 </script>
-<!-- TERIKANO FINAL - FIXED - NO AUTO, OFFLINE OK -->
+
 <script>
+// === TERIKANO FINAL 2 - SUPER LOCK + SAFE POPULATE ===
 (function(){
-  const STORE_KEY='Terikano_storage_data';
-  const FB_PATH='terikano_v1/main_store';
-  const OWNER_KEY='TERI_PW';
-  const STAFF_KEY='TERI_STAFF_PW';
-  function getOwnerPw(){ return localStorage.getItem(OWNER_KEY)||'1234'; }
-  function getStaffPw(){ return localStorage.getItem(STAFF_KEY)||localStorage.getItem('staff_pw')||'2001'; }
-  const FB = firebase.database();
-  let pendingMain = JSON.parse(localStorage.getItem('pending_main_queue')||'[]');
-  let pendingNotes = JSON.parse(localStorage.getItem('pending_notes_queue')||'[]');
-
-  window.checkStaffPw = function(){
-    var e=document.getElementById('staffPw') || document.getElementById('ownerPass'); if(!e) return;
-    var val=e.value.trim();
-    if(val===getOwnerPw()){
-      localStorage.setItem('isOwner','1');
-      sessionStorage.setItem('terikano_session_auth','1');
-      document.getElementById('staffLock').style.display='none';
-      var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      e.value=''; try{rebuild();}catch(err){} return;
-    }
-    if(val===getStaffPw()){
-      localStorage.setItem('isOwner','0');
-      sessionStorage.setItem('terikano_session_auth','1');
-      document.getElementById('staffLock').style.display='none';
-      var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-      e.value=''; try{rebuild();}catch(err){} return;
-    }
-    alert('Wrong password!');
+  var CFG={
+    OWNER_KEY:'Terikano_2026',
+    STAFF_KEY:'Terikano_2005',
+    FLAG:'isOwner',
+    SESSION_KEY:'terikano_session_auth',
+    STAFF_SALE_INPUTS:['s_item','s_qty','s_rate','s_price','s_pay','s_ib','s_kg','s_date','s_notes'],
+    STAFF_HIDE_BTNS:['purgeBtn','resetBtn','backupBtn','restoreBtn','clearAllBtn'],
+    STAFF_TABS:['bank','exp','banks','settings','stock','purchase','capital','collection','report','coco'],
+    OWNER_TABS:['dashboard','sales','bank','exp','banks','settings','stock','purchase','capital','collection','report','coco','mill','purchase_coco']
   };
 
-  window.doLogout = function(){
-    localStorage.removeItem('isOwner');
-    sessionStorage.removeItem('terikano_session_auth');
-    location.href = location.pathname + '?logout=' + Date.now();
-  };
+  function $(id){return document.getElementById(id);}
 
-  function pushFinal(){
+  function safePopulateDatalist(){
     try{
-      let raw=localStorage.getItem(STORE_KEY)||'{"purchases":[]}';
-      let obj=JSON.parse(raw);
-      obj._ownerPwSync=getOwnerPw(); obj._staffPwSync=getStaffPw(); obj._ts=Date.now();
-      let finalStr=JSON.stringify(obj);
-      localStorage.setItem(STORE_KEY, finalStr);
-      let payload={data:finalStr, ts:Date.now()};
-      if(!navigator.onLine){
-        pendingMain.push(payload);
-        localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
-        return;
+      var p=$('itemsList');
+      if(!p)return;
+      p.innerHTML='';
+      var seen={};
+      if(typeof items!=='undefined'){
+        items.forEach(function(name){
+          if(!name)return;
+          name=name.trim();
+          if(!name||seen[name])return;
+          seen[name]=1;
+          var o=document.createElement('option');
+          o.value=name;
+          p.appendChild(o);
+        });
       }
-      firebase.database().ref(FB_PATH).set(payload);
-    }catch(e){}
+    }catch(e){console.log('populateDatalist skip',e);}
   }
-  window.pushReal = pushFinal; window.pushFinal = pushFinal;
 
-  window.saveDailyNotes = function(){
-    localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
-    let payload = {data: JSON.stringify(dailyNotesArr), ts: Date.now()};
-    if(!navigator.onLine){ pendingNotes.push(payload); localStorage.setItem('pending_notes_queue', JSON.stringify(pendingNotes)); return; }
-    FB.ref('config/dailyNotes_v13').set(payload);
-  };
+  function safePopulateRenameList(){
+    try{
+      var r=$('renameList');
+      if(!r)return;
+      r.innerHTML='';
+      var seen={};
+      if(typeof items!=='undefined'){
+        items.forEach(function(name){
+          if(!name)return;
+          name=name.trim();
+          if(!name||seen[name])return;
+          seen[name]=1;
+          var o=document.createElement('option');
+          o.value=name;
+          r.appendChild(o);
+        });
+      }
+    }catch(e){console.log('populateRenameList skip',e);}
+  }
+
+  window.populateDatalist=safePopulateDatalist;
+  window.populateRenameList=safePopulateRenameList;
+
+  function clearLoginInputs(){
+    var op=$('ownerPass');
+    if(op){op.value='';op.blur();}
+  }
+
+  function showStaffView(){
+    try{localStorage.setItem(CFG.FLAG,'0');}catch(e){}
+    try{sessionStorage.setItem(CFG.SESSION_KEY,'staff');}catch(e){}
+    var lb=$('loginBox');if(lb)lb.style.display='none';
+    var sl=$('staffLock');if(sl)sl.style.display='none';
+    if(typeof lockAll==='function')lockAll();
+    CFG.STAFF_SALE_INPUTS.forEach(function(id){
+      var el=$(id);
+      if(!el)return;
+      el.removeAttribute('readonly');
+      el.removeAttribute('disabled');
+      el.style.pointerEvents='auto';
+      el.style.opacity='1';
+      el.style.background='#fff';
+    });
+    var saleSec=$('sales');
+    if(saleSec){
+      saleSec.querySelectorAll('input,select,button,textarea').forEach(function(el){
+        if(CFG.STAFF_SALE_INPUTS.indexOf(el.id)===-1 && el.id!=='saleBtn' && el.id!=='printSaleBtn'){
+        }else{
+          el.removeAttribute('disabled');
+          el.style.pointerEvents='auto';
+          el.style.opacity='1';
+        }
+      });
+    }
+    CFG.STAFF_HIDE_BTNS.forEach(function(id){
+      var b=$(id);if(b)b.style.display='none';
+    });
+    CFG.STAFF_TABS.forEach(function(t){
+      var btn=document.querySelector('[data-tab="'+t+'"]');
+      if(btn)btn.style.display='none';
+    });
+    CFG.OWNER_TABS.forEach(function(t){
+      if(t==='sales'||t==='dashboard')return;
+      if(CFG.STAFF_TABS.indexOf(t)!==-1)return;
+      var btn=document.querySelector('[data-tab="'+t+'"]');
+      if(btn)btn.style.display='';
+    });
+    var dash=document.querySelector('[data-tab="dashboard"]');
+    var salesTab=document.querySelector('[data-tab="sales"]');
+    if(dash)dash.style.display='';
+    if(salesTab)salesTab.style.display='';
+    console.log('STAFF VIEW ACTIVE - 2005 - SALES ONLY');
+  }
+
+  function showOwnerView(){
+    try{localStorage.setItem(CFG.FLAG,'1');}catch(e){}
+    try{sessionStorage.setItem(CFG.SESSION_KEY,'owner');}catch(e){}
+    var lb=$('loginBox');if(lb)lb.style.display='none';
+    var sl=$('staffLock');if(sl)sl.style.display='none';
+    if(typeof lockAll==='function')lockAll();
+    document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
+    CFG.STAFF_HIDE_BTNS.forEach(function(id){
+      var b=$(id);if(b)b.style.display='';
+    });
+    document.querySelectorAll('input,select,button,textarea').forEach(function(el){
+      el.removeAttribute('readonly');
+      el.removeAttribute('disabled');
+      el.style.pointerEvents='auto';
+      el.style.opacity='1';
+    });
+    console.log('OWNER VIEW ACTIVE - 2026 - ALL ACCESS');
+  }
+
+  function doOwnerLogin(){
+    var pass=($('ownerPass')?$('ownerPass').value:'').trim();
+    if(pass===CFG.OWNER_KEY){showOwnerView();clearLoginInputs();return;}
+    if(pass===CFG.STAFF_KEY){showStaffView();clearLoginInputs();return;}
+    if(pass===''){alert('Enter password!');return;}
+    alert('WRONG PASSWORD!');
+    clearLoginInputs();
+  }
+
+  function doStaffLogin(){
+    var pass=($('ownerPass')?$('ownerPass').value:'').trim();
+    if(pass===CFG.STAFF_KEY){showStaffView();clearLoginInputs();return;}
+    if(pass===CFG.OWNER_KEY){showOwnerView();clearLoginInputs();return;}
+    if(pass===''){try{sessionStorage.removeItem(CFG.SESSION_KEY);}catch(e){} var sl=$('staffLock');if(sl)sl.style.display='flex'; var lb=$('loginBox');if(lb)lb.style.display='none'; clearLoginInputs(); return;}
+    alert('WRONG! Use 2005 for STAFF');
+    clearLoginInputs();
+  }
+
+  window.doOwnerFix2=doOwnerLogin;
+  window.doStaffFix2=doStaffLogin;
+
+  window.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      var lb=$('loginBox');
+      var sl=$('staffLock');
+      var sess=null;try{sess=sessionStorage.getItem(CFG.SESSION_KEY);}catch(e){}
+      if(sess==='owner'){showOwnerView();return;}
+      if(sess==='staff'){showStaffView();return;}
+      if(lb)lb.style.display='flex';
+      if(sl)sl.style.display='none';
+    },200);
+  });
+
+  console.log('FINAL LOCK LOADED - FIXED POPULATE - 2026/2005');
 })();
 </script>
 </body>
