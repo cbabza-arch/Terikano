@@ -1556,5 +1556,39 @@ setTimeout(()=>{
   setTimeout(killAutoOpen, 1500);
 })();
 </script>
+  <script>
+// SUPER LOCK - FORCE PW EVERY TIME - FINAL FIX
+(function(){
+  function forceLock(){
+    if(!sessionStorage.getItem('terikano_session_auth')){
+      let sl=document.getElementById('staffLock');
+      let lb=document.getElementById('loginBox');
+      if(sl){ sl.style.display='flex'; sl.style.zIndex='99999999'; }
+      if(lb){ 
+        lb.style.display='flex'; 
+        lb.style.zIndex='99999999'; 
+        lb.style.position='fixed';
+        lb.style.inset='0';
+        lb.style.background='rgba(0,0,0,0.92)';
+        lb.style.alignItems='center';
+        lb.style.justifyContent='center';
+      }
+    }
+  }
+  // Override lockAll so it can't auto-open staff
+  let oldLockAll = window.lockAll;
+  window.lockAll = function(){
+    if(!sessionStorage.getItem('terikano_session_auth')){
+      forceLock();
+      return;
+    }
+    if(oldLockAll) oldLockAll();
+  };
+  setInterval(forceLock, 500);
+  setTimeout(forceLock, 100);
+  setTimeout(forceLock, 1000);
+  setTimeout(forceLock, 2000);
+})();
+</script>
 </body>
 </html>
