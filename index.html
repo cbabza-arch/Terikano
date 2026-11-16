@@ -1465,30 +1465,62 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:9999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V10 - LIKE BEFORE + STAFF PW FIX
+<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
+  <div style="background:#111; border:3px solid gold; border-radius:15px; padding:25px; width:90%; max-width:320px; text-align:center;">
+    <h2 style="color:gold;">TERIKANO LOGIN</h2>
+    <input id="ownerPass" type="password" placeholder="Enter Password" style="width:100%; padding:12px; font-size:18px; border:2px solid gold; border-radius:10px; text-align:center; background:#000; color:#fff; margin-bottom:10px;">
+    <button id="loginBtn" onclick="doOwnerFix2()" style="width:100%; padding:12px; background:gold; color:#000; font-weight:bold; border-radius:10px;">LOGIN</button>
+    <button id="exitBtn" onclick="doStaffFix2()" style="width:100%; padding:8px; background:#333; color:#fff; border-radius:8px; margin-top:8px;">EXIT</button>
+  </div>
+</div>
+<div id="terikanoBlockedScreen" style="display:none; position:fixed; inset:0; z-index:999999999; background:#000; color:#fff; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:20px;">
+  <h1 style="color:red;">🚫 DEVICE BLOCKED</h1>
+  <p>Your device has been blocked by Main Owner.</p>
+  <p>Contact Owner for approval.</p>
+  <button onclick="localStorage.clear(); location.href=location.pathname+'?blocked='+Date.now()" style="padding:10px 20px; background:gold; color:#000; border-radius:10px; font-weight:bold; margin-top:20px;">LOGOUT</button>
+</div>
+
+<div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:9999999; box-shadow:0 0 8px #0f0;">● Online</div>
+
+<script>
+// V12 - DEVICE APPROVAL + BLOCK/REMOVE + COUNT FIX
 (function(){
   const DEFAULT_OWNER='Terikano_2026'; const DEFAULT_STAFF='Terikano_2005';
-  const SESS='terikano_session_auth'; const FLAG='isOwner';
-  const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
+  const SESS='terikano_session_auth'; const FLAG='isOwner'; const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
+  const DEVICE_ID_KEY='terikano_device_id'; const DEVICES_CACHE='terikano_devices_cache';
   function $id(i){return document.getElementById(i);}
   function getOwnerPw(){ return localStorage.getItem(OWNER_KEY) || localStorage.getItem('owner_pw') || DEFAULT_OWNER; }
-  function getStaffPw(){ return localStorage.getItem(STAFF_KEY) || localStorage.getItem('staff_pw') || localStorage.getItem('staffPw') || localStorage.getItem('TERI_STAFF_PW') || DEFAULT_STAFF; }
+  function getStaffPw(){ return localStorage.getItem(STAFF_KEY) || localStorage.getItem('staff_pw') || localStorage.getItem('staffPw') || DEFAULT_STAFF; }
+
   try{
     if(location.search.includes('logout')||location.search.includes('blocked')){
       localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); sessionStorage.removeItem(SESS);
     }
     if(!sessionStorage.getItem(SESS)){ localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); }
   }catch(e){}
-  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb)lb.style.display='flex'; }
+
+  // --- DEVICE ID ---
+  function getDeviceId(){
+    let id=localStorage.getItem(DEVICE_ID_KEY);
+    if(!id){ id='DEV_'+Math.random().toString(36).substr(2,6).toUpperCase()+'_'+Date.now().toString().slice(-4); localStorage.setItem(DEVICE_ID_KEY,id); }
+    return id;
+  }
+  function getDeviceName(){ return navigator.userAgent.includes('Mobile') ? 'Phone-'+getDeviceId().slice(-4) : 'PC-'+getDeviceId().slice(-4); }
+
+  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); if(lb)lb.style.display='flex'; }
   function updateOnline(){
     let el=$id('terikanoOnlineMain'); if(!el) return;
     el.style.display='inline-flex';
-    if(navigator.onLine){ el.textContent='● Online - Sync OK'; el.style.color='#0f0'; el.style.borderColor='#0f0'; }
-    else{ el.textContent='● Offline - Working OK'; el.style.color='#ff9800'; el.style.borderColor='#ff9800'; }
-    el.onclick=function(){ alert((navigator.onLine?'✅ ONLINE':'✅ OFFLINE')+'\nOwner: '+getOwnerPw()+'\nStaff: '+getStaffPw()); };
+    let countEl=document.getElementById('allowedCount');
+    let total=0; try{ let cache=JSON.parse(localStorage.getItem(DEVICES_CACHE)||'{}'); total=Object.keys(cache).length; }catch(e){}
+    if(navigator.onLine){ el.textContent='● Online - '+total+' Devices'; el.style.color='#0f0'; el.style.borderColor='#0f0'; }
+    else{ el.textContent='● Offline'; el.style.color='#ff9800'; el.style.borderColor='#ff9800'; }
+    el.onclick=function(){ if(localStorage.getItem('isOwner')==='1'){ alert('Owner: '+getOwnerPw()+'\nStaff: '+getStaffPw()+'\nID: '+getDeviceId()); } else { alert('Working '+(navigator.onLine?'Online':'Offline')+' - '+total+' devices'); } };
   }
+
   window.isOwner=function(){return localStorage.getItem('isOwner')==='1'||localStorage.getItem(FLAG)==='1';};
   window.getOwnerPw=getOwnerPw; window.getStaffPw=getStaffPw;
+
   function forceOwnerTabs(){
     document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display='';});
     let mb=$id('manageBtn'); if(mb) mb.style.display='inline-block';
@@ -1503,57 +1535,179 @@ function filterProfit(year){
   }
   function doOwnerAllTabs(){
     try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(SESS,'owner');}catch(e){}
-    $id('loginBox').style.display='none'; $id('staffLock').style.display='none';
+    $id('loginBox').style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,600); updateOnline();
+    setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,600); updateOnline(); registerDevice();
   }
   function doStaffLimited(){
     try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
-    $id('loginBox').style.display='none'; $id('staffLock').style.display='none';
+    $id('loginBox').style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    updateOnline(); setTimeout(hideForStaff,200);
+    updateOnline(); setTimeout(hideForStaff,200); registerDevice();
   }
   window.doOwnerFix2=function(){
     let el=$id('ownerPass'); let v=(el?.value||'').trim();
     if(!v){alert('Enter password!');return;}
     if(v===getOwnerPw() || v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
     if(v===getStaffPw() || v===DEFAULT_STAFF){doStaffLimited(); el.value='';return;}
-    alert('WRONG! Owner:'+getOwnerPw()+' Staff:'+getStaffPw()); el.value='';
+    alert('WRONG PASSWORD!'); el.value='';
   };
   window.doStaffFix2=window.doOwnerFix2;
   window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
-  
-  // STAFF PW FIX - SAVE TO ALL KEYS + FIREBASE
+
+  // --- PW CHANGE ---
   window.setStaffPw=function(){
-    let el=$id('new_staff_pw'); if(!el){ alert('Open 🔑 PW first! Scroll down orange box!'); return; }
+    let el=$id('new_staff_pw'); if(!el){ alert('Open 🔑 PW first!'); return; }
     let v=(el.value||'').trim(); if(!v){alert('Enter Staff PW!');return;}
-    localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); localStorage.setItem('staffPw',v); localStorage.setItem('TERI_STAFF_PW',v);
-    try{ if(typeof firebase!=='undefined' && firebase.database && navigator.onLine){ firebase.database().ref('config/staffPw').set(v); firebase.database().ref('config/TERI_STAFF_PW').set(v); } }catch(e){}
-    alert('✅ Staff PW Saved Everywhere: '+v+'\nLogout and test staff login!\nLaptop will sync when online!');
-    let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; el.value='';
+    localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); localStorage.setItem('staffPw',v);
+    try{ if(typeof firebase!=='undefined' && firebase.database) firebase.database().ref('config/staffPw').set(v); }catch(e){}
+    alert('Staff PW Saved: '+v); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; el.value=''; updateOnline();
   };
-  window.removeStaffPw=function(){ if(!confirm('Reset Staff PW to Terikano_2005?')) return; localStorage.removeItem(STAFF_KEY); localStorage.removeItem('staff_pw'); localStorage.removeItem('staffPw'); try{ if(typeof firebase!=='undefined' && firebase.database) firebase.database().ref('config/staffPw').set(DEFAULT_STAFF); }catch(e){} alert('Reset to Terikano_2005'); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=DEFAULT_STAFF; };
-  window.changePw=function(){ let oldEl=$id('old_pw'); let newEl=$id('new_pw'); let oldV=(oldEl?.value||'').trim(); let newV=(newEl?.value||'').trim(); let cur=getOwnerPw(); if(oldV!==cur && oldV!==DEFAULT_OWNER && oldV!=='1234' && oldV!==''){ if(!confirm('Old "'+oldV+'" != Current "'+cur+'". Continue?')) return; } if(!newV){alert('Enter New Owner PW!');return;} localStorage.setItem(OWNER_KEY,newV); localStorage.setItem('owner_pw',newV); try{ if(typeof firebase!=='undefined' && firebase.database) firebase.database().ref('config/ownerPw').set(newV); }catch(e){} alert('Owner PW Changed to: '+newV+' Staff still: '+getStaffPw()); let lbl=$id('curPwLabel'); if(lbl) lbl.textContent=newV; oldEl.value=''; newEl.value=''; };
-  
+  window.removeStaffPw=function(){ if(!confirm('Reset to Terikano_2005?')) return; localStorage.removeItem(STAFF_KEY); localStorage.removeItem('staff_pw'); localStorage.removeItem('staffPw'); try{ if(typeof firebase!=='undefined' && firebase.database) firebase.database().ref('config/staffPw').set(DEFAULT_STAFF); }catch(e){} alert('Reset'); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=DEFAULT_STAFF; };
+  window.changePw=function(){ let oldEl=$id('old_pw'); let newEl=$id('new_pw'); let oldV=(oldEl?.value||'').trim(); let newV=(newEl?.value||'').trim(); let cur=getOwnerPw(); if(oldV!==cur && oldV!==DEFAULT_OWNER && oldV!=='1234' && oldV!==''){ if(!confirm('Wrong old PW. Continue?')) return; } if(!newV){alert('Enter New PW!');return;} localStorage.setItem(OWNER_KEY,newV); localStorage.setItem('owner_pw',newV); try{ if(typeof firebase!=='undefined' && firebase.database) firebase.database().ref('config/ownerPw').set(newV); }catch(e){} alert('Owner PW Changed: '+newV); let lbl=$id('curPwLabel'); if(lbl) lbl.textContent=newV; oldEl.value=''; newEl.value=''; };
+
+  // --- DEVICE APPROVAL SYSTEM ---
+  function registerDevice(){
+    let myId=getDeviceId();
+    if(typeof firebase==='undefined' || !firebase.database || !navigator.onLine) return;
+    let ref=firebase.database().ref('devices/'+myId);
+    ref.once('value').then(snap=>{
+      let data=snap.val();
+      if(!data){
+        // New device - needs approval unless first device
+        firebase.database().ref('devices').once('value').then(allSnap=>{
+          let all=allSnap.val()||{}; let isFirst=Object.keys(all).length===0;
+          let newData={ id:myId, name:getDeviceName(), allowed:isFirst, isMain:isFirst, lastSeen:Date.now(), pending:!isFirst };
+          ref.set(newData);
+          if(isFirst){ localStorage.setItem('isMainDevice','1'); }
+          if(!isFirst && !newData.allowed){
+            alert('📱 New device detected!\nID: '+myId+'\n\nWaiting for Main Owner approval!\nAsk Owner to open MANAGE and APPROVE you.');
+          }
+          updateDeviceCache();
+        });
+      } else {
+        ref.update({ lastSeen:Date.now(), name:getDeviceName() });
+        if(data.isMain) localStorage.setItem('isMainDevice','1');
+        if(data.allowed===false && data.pending!==true && !data.isMain){
+          // Blocked!
+          document.getElementById('terikanoBlockedScreen').style.display='flex';
+          $id('loginBox').style.display='none';
+        }
+        updateDeviceCache();
+      }
+    });
+  }
+
+  function updateDeviceCache(){
+    if(typeof firebase==='undefined' || !firebase.database || !navigator.onLine) return;
+    firebase.database().ref('devices').once('value').then(snap=>{
+      let devices=snap.val()||{};
+      localStorage.setItem(DEVICES_CACHE, JSON.stringify(devices));
+      // Update count display - FIX 0/8 BUG
+      let allowed=Object.values(devices).filter(d=>d.allowed).length;
+      let total=Object.keys(devices).length;
+      let countEl=document.getElementById('allowedCount');
+      if(countEl){ countEl.textContent=allowed+'/'+(8)+' ('+total+' total)'; countEl.parentElement.style.display='inline-flex'; }
+      // Check if current device blocked
+      let myId=getDeviceId(); let me=devices[myId];
+      if(me && me.allowed===false && !me.isMain){
+        if(me.pending){ /* waiting */ }
+        else { document.getElementById('terikanoBlockedScreen').style.display='flex'; }
+      } else {
+        document.getElementById('terikanoBlockedScreen').style.display='none';
+      }
+      updateOnline();
+    });
+  }
+
+  window.approveDevice=function(id){
+    if(typeof firebase==='undefined' || !firebase.database) return;
+    firebase.database().ref('devices/'+id).update({ allowed:true, pending:false, approvedAt:Date.now() });
+    alert('✅ Approved '+id); setTimeout(updateDeviceCache,500);
+    // Refresh popup
+    setTimeout(()=>{ let mb=$id('manageBtn'); if(mb) mb.click(); },800);
+  };
+  window.blockDevice=function(id){
+    if(!confirm('Block device '+id+'? It will need approval again.')) return;
+    if(typeof firebase==='undefined' || !firebase.database) return;
+    firebase.database().ref('devices/'+id).update({ allowed:false, pending:false, blockedAt:Date.now() });
+    alert('🚫 Blocked '+id); setTimeout(updateDeviceCache,500);
+    setTimeout(()=>{ let mb=$id('manageBtn'); if(mb) mb.click(); },800);
+  };
+  window.removeDevice=function(id){
+    if(!confirm('REMOVE device '+id+' permanently?')) return;
+    if(typeof firebase==='undefined' || !firebase.database) return;
+    firebase.database().ref('devices/'+id).remove();
+    alert('🗑️ Removed '+id); setTimeout(updateDeviceCache,500);
+    setTimeout(()=>{ let mb=$id('manageBtn'); if(mb) mb.click(); },800);
+  };
+  window.claimMainNow=function(){
+    let myId=getDeviceId();
+    if(typeof firebase!=='undefined' && firebase.database){
+      firebase.database().ref('devices').once('value').then(snap=>{
+        let devices=snap.val()||{};
+        // Remove main from others
+        for(let did in devices){ if(devices[did].isMain) firebase.database().ref('devices/'+did).update({ isMain:false }); }
+        firebase.database().ref('devices/'+myId).update({ isMain:true, allowed:true });
+        localStorage.setItem('isMainDevice','1');
+        alert('👑 You are now MAIN OWNER!');
+        updateDeviceCache();
+      });
+    }
+  };
+
   function fixDeviceManage(){
-    let mb=$id('manageBtn'); if(!mb || mb._v10fixed) return; mb._v10fixed=true;
-    let orig=mb.onclick;
-    mb.onclick=function(e){
-      if(typeof firebase!=='undefined' && firebase.database && orig){ try{ orig.call(mb,e); return; }catch(err){} }
-      let myId=localStorage.getItem('terikano_device_id')||'Unknown';
-      let devices={}; try{ devices=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); }catch(e){}
-      let html='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:400px;max-height:85vh;overflow:auto;border:3px solid gold;"><h3>🔒 '+myId+'</h3><div style="background:#000;color:gold;padding:8px;border-radius:8px;margin-bottom:10px;">'+(navigator.onLine?'● Online':'● Offline')+'<br>Owner: '+getOwnerPw()+'<br>Staff: '+getStaffPw()+'</div><button onclick="if(typeof claimMainNow===\'function\')claimMainNow()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div id="devListFallback"></div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
-      let pop=document.createElement('div'); pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999999;display:flex;align-items:center;justify-content:center'; pop.innerHTML=html; document.body.appendChild(pop);
-      let lh=''; for(let id in devices){ let d=devices[id]; lh+='<div style="border:2px solid '+(d.allowed?'green':'red')+';padding:8px;margin:5px 0;border-radius:8px;"><b>'+id+(d.isMain?' 👑':'')+(id===myId?' (This)':'')+'</b> '+(d.allowed?'✅':'❌')+'</div>'; }
-      let le=pop.querySelector('#devListFallback'); if(le) le.innerHTML=lh||'No devices. Go online.';
+    let mb=$id('manageBtn'); if(!mb || mb._v12fixed) return; mb._v12fixed=true;
+    mb.onclick=function(){
+      let myId=getDeviceId();
+      let devices={}; try{ devices=JSON.parse(localStorage.getItem(DEVICES_CACHE)||'{}'); }catch(e){}
+      if(typeof firebase!=='undefined' && firebase.database && navigator.onLine){
+        firebase.database().ref('devices').once('value').then(snap=>{
+          let fbDevices=snap.val()||{}; localStorage.setItem(DEVICES_CACHE, JSON.stringify(fbDevices)); devices=fbDevices;
+          showDevicePopup(devices, myId);
+        });
+      } else {
+        showDevicePopup(devices, myId);
+      }
     };
   }
+
+  function showDevicePopup(devices, myId){
+    let allowed=Object.values(devices).filter(d=>d.allowed).length;
+    let total=Object.keys(devices).length;
+    let html='<div style="background:#fff;padding:15px;border-radius:15px;width:95%;max-width:450px;max-height:85vh;overflow:auto;border:3px solid gold;"><h3>🔒 Device Manager - '+allowed+'/8 Allowed</h3><div style="background:#000;color:gold;padding:8px;border-radius:8px;margin-bottom:10px;font-size:11px;">My ID: '+myId+' '+(localStorage.getItem('isMainDevice')==='1'?'👑 MAIN':'')+'</div><button onclick="claimMainNow()" style="width:100%;padding:10px;background:gold;border:2px solid #000;border-radius:8px;font-weight:bold;margin-bottom:10px">👑 CLAIM MAIN</button><div id="devListV12"></div><button onclick="this.parentElement.parentElement.remove()" style="width:100%;padding:10px;background:#000;color:#fff;border-radius:10px;margin-top:10px">CLOSE</button></div>';
+    let pop=document.createElement('div'); pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999999;display:flex;align-items:center;justify-content:center'; pop.innerHTML=html; document.body.appendChild(pop);
+    let listDiv=pop.querySelector('#devListV12');
+    let listHtml='';
+    for(let id in devices){
+      let d=devices[id];
+      let isMe=id===myId;
+      listHtml+='<div style="border:2px solid '+(d.allowed?'green':(d.pending?'orange':'red'))+';padding:10px;margin:8px 0;border-radius:10px;background:'+(isMe?'#fff9c4':'#fff')+'"><b>'+d.name+' ('+id.slice(-6)+')</b> '+(d.isMain?'👑 MAIN':'')+(isMe?' 📍 THIS':'')+'<br><small>Last: '+(new Date(d.lastSeen).toLocaleString())+'</small><br>Status: '+(d.allowed?'✅ Allowed':(d.pending?'⏳ Waiting Approval':'🚫 Blocked'))+'<br><div style="margin-top:6px;">';
+      if(!d.allowed){ listHtml+='<button onclick="approveDevice(\''+id+'\')" style="padding:6px 12px;background:green;color:#fff;border-radius:6px;margin-right:5px;font-weight:bold;">✅ APPROVE</button>'; }
+      else if(!isMe){ listHtml+='<button onclick="blockDevice(\''+id+'\')" style="padding:6px 12px;background:orange;color:#000;border-radius:6px;margin-right:5px;">🚫 BLOCK</button>'; }
+      if(!isMe || !d.isMain){ listHtml+='<button onclick="removeDevice(\''+id+'\')" style="padding:6px 12px;background:red;color:#fff;border-radius:6px;">🗑️ REMOVE</button>'; }
+      listHtml+='</div></div>';
+    }
+    if(Object.keys(devices).length===0) listHtml='<div>No devices yet. Go online on other device.</div>';
+    listDiv.innerHTML=listHtml;
+  }
+
   function init(){
     updateOnline();
     try{
       if(typeof firebase!=='undefined' && firebase.database && navigator.onLine){
         firebase.database().ref('config/staffPw').on('value', s=>{
-          let v=s.val(); if(v){ localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; }
+          let v=s.val(); if(v){ localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; updateOnline(); }
+        });
+        // Auto-sync devices
+        firebase.database().ref('devices').on('value', snap=>{
+          let devices=snap.val()||{}; localStorage.setItem(DEVICES_CACHE, JSON.stringify(devices));
+          let allowed=Object.values(devices).filter(d=>d.allowed).length;
+          let total=Object.keys(devices).length;
+          let countEl=document.getElementById('allowedCount'); if(countEl){ countEl.textContent=allowed+'/8 ('+total+')'; }
+          let myId=getDeviceId(); let me=devices[myId];
+          if(me && me.allowed===false && !me.isMain && !me.pending){ document.getElementById('terikanoBlockedScreen').style.display='flex'; } else { document.getElementById('terikanoBlockedScreen').style.display='none'; }
+          updateOnline();
         });
       }
     }catch(e){}
@@ -1561,11 +1715,12 @@ function filterProfit(year){
     let l1=$id('curPwLabel'); if(l1) l1.textContent=curOwner;
     let l3=$id('curStaffPwLabel'); if(l3) l3.textContent=curStaff;
     if(!sessionStorage.getItem(SESS)){ showLogin(); }
-    else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); } else { hideForStaff(); } $id('loginBox').style.display='none'; }
-    setTimeout(fixDeviceManage,1000); setTimeout(fixDeviceManage,2500);
+    else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); registerDevice(); } else { hideForStaff(); registerDevice(); } $id('loginBox').style.display='none'; }
+    setTimeout(fixDeviceManage,1000); setTimeout(updateDeviceCache,1500);
   }
-  window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); window.addEventListener('online',updateOnline); window.addEventListener('offline',updateOnline);
-  setTimeout(init,100); setTimeout(init,800);
+
+  window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); window.addEventListener('online',()=>{updateOnline(); updateDeviceCache(); registerDevice();}); window.addEventListener('offline',updateOnline);
+  setTimeout(init,100);
   setInterval(function(){
     let role=localStorage.getItem('isOwner'); let isStaff=role==='0';
     let mb=$id('manageBtn'); let cs=document.getElementById('allowedCount')?.parentElement; let hdr=$id('terikanoDeviceHeader');
@@ -1573,7 +1728,8 @@ function filterProfit(year){
     if(isStaff){ if(mb) mb.style.display='none'; if(cs) cs.style.display='none'; if(hdr) hdr.style.display='none'; }
     else { if(mb){ mb.style.display='inline-block'; fixDeviceManage(); } if(cs) cs.style.display='inline-flex'; if(hdr) hdr.style.display='inline-flex'; let sp=$id('staffPwDiv'); if(sp && $id('pwDiv') && $id('pwDiv').style.display!=='none') sp.style.display='block'; }
     updateOnline();
-  },1000);
+  },2000);
+  setInterval(()=>{ if(navigator.onLine) updateDeviceCache(); },5000);
 })();
 </script>
 </body>
