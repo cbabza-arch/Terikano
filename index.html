@@ -1604,8 +1604,8 @@ setTimeout(()=>{
   });
   function killAutoOpen(){
     if(location.search.includes('logout') || location.search.includes('blocked')){ localStorage.removeItem('isOwner'); sessionStorage.removeItem('terikano_session_auth'); }
+    // FIXED: Don't delete isOwner if logged in, just show lock if no session
     if(!sessionStorage.getItem('terikano_session_auth')){
-      localStorage.removeItem('isOwner');
       let sl=document.getElementById('staffLock'); let lb=document.getElementById('loginBox');
       if(sl) sl.style.display='flex';
       if(lb){ lb.style.display='flex'; lb.style.zIndex='99999999'; lb.style.position='fixed'; lb.style.inset='0'; lb.style.background='rgba(0,0,0,0.92)'; lb.style.alignItems='center'; lb.style.justifyContent='center'; }
