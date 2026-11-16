@@ -1620,12 +1620,26 @@ setTimeout(()=>{
     },800);
     })();
 </script>
-<!-- FINAL CLEAN V29 - SINGLE FIX FOR ALL -->
+<!-- FINAL CLEAN V29 - AUTO SWITCH FIX + OFFLINE QUEUE FIX -->
 <script>
 (function(){
-  console.log('FINAL CLEAN V29 - ONE FIX ONLY');
+  console.log('FINAL CLEAN V29 - COMBINED FIX');
+
+  // FORCE CLEAR ON LOGOUT PARAM - FIX AUTO STAFF
+  if(location.search.includes('logout') || location.search.includes('blocked')){
+    localStorage.removeItem('isOwner');
+    sessionStorage.removeItem('terikano_session_auth');
+  }
+
   let myId = localStorage.getItem('terikano_device_id');
+  const STORE_KEY='Terikano_storage_data';
+  const FB_PATH='terikano_v1/main_store';
+  const FB = firebase.database();
   
+  // OFFLINE QUEUES
+  let pendingMain = JSON.parse(localStorage.getItem('pending_main_queue')||'[]');
+  let pendingNotes = JSON.parse(localStorage.getItem('pending_notes_queue')||'[]');
+
   // 1. DEVICE BLOCK LISTENER
   if(myId && window.firebase){
     setTimeout(()=>{
@@ -1642,7 +1656,7 @@ setTimeout(()=>{
     },1500);
   }
   
-  // 2. MANAGE BUTTON - SINGLE VERSION
+  // 2. MANAGE BUTTON
   function fixManage(){
     let oldBtn=document.getElementById('manageBtn');
     if(!oldBtn) return;
@@ -1663,41 +1677,110 @@ setTimeout(()=>{
     };
   }
   
-  // 3. PW FIX
+  // 3. PW FIX WITH OFFLINE QUEUE
   window.changePw = function(){
     let newV=document.getElementById('new_pw')?.value?.trim();
     if(!newV) return alert('Enter new owner PW');
     localStorage.setItem('TERI_PW', newV);
-    firebase.database().ref('config/passwords/owner').set(newV);
-    firebase.database().ref('config/passwords').update({owner:newV});
-    alert('✅ Owner PW '+newV+' synced to cloud!');
+    let p={owner:newV, ts:Date.now()};
+    if(!navigator.onLine){
+      pendingMain.push(p);
+      localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
+    } else {
+      firebase.database().ref('config/passwords/owner').set(newV);
+      firebase.database().ref('config/passwords').update({owner:newV});
+    }
+    if(typeof pushFinal==='function') pushFinal();
+    alert('✅ Owner PW '+newV+' synced!');
   };
   window.setStaffPw = function(){
-    let v=document.getElementById('new_staff_pw')?.value?.trim() || document.getElementById('bot_new_staff_pw')?.value?.trim();
+    let v=document.getElementById('new_staff_pw')?.value?.trim();
     if(!v) return alert('Enter staff PW');
     localStorage.setItem('TERI_STAFF_PW', v);
-    firebase.database().ref('config/passwords/staff').set(v);
+    if(!navigator.onLine){
+      pendingMain.push({staff:v, ts:Date.now()});
+      localStorage.setItem('pending_main_queue', JSON.stringify(pendingMain));
+    } else {
+      firebase.database().ref('config/passwords/staff').set(v);
+    }
+    if(typeof pushFinal==='function') pushFinal();
     alert('✅ Staff PW '+v+' synced!');
   };
   try{
     firebase.database().ref('config/passwords').on('value', snap=>{
       let c=snap.val();
-      if(c){
-        if(c.owner) localStorage.setItem('TERI_PW', c.owner);
-        if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff);
-      }
+      if(c){ if(c.owner) localStorage.setItem('TERI_PW', c.owner); if(c.staff) localStorage.setItem('TERI_STAFF_PW', c.staff); }
     });
   }catch(e){}
   
-  // 4. STAFF HIDE + NO AUTO-OPEN
+  // 4. DAILY NOTES WITH OFFLINE QUEUE - LATEST WINS
+  window.saveDailyNotes = function(){
+    localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(dailyNotesArr));
+    localStorage.setItem('dailyNotes_TS', Date.now());
+    let payload = {data: JSON.stringify(dailyNotesArr), ts: Date.now()};
+    if(!navigator.onLine){
+      pendingNotes.push(payload);
+      localStorage.setItem('pending_notes_queue', JSON.stringify(pendingNotes));
+      console.log('Offline queued notes', pendingNotes.length);
+      return;
+    }
+    FB.ref('config/dailyNotes_v13').set(payload);
+  };
+  window.addEventListener('online', ()=>{
+    console.log('Online! Pushing queued...');
+    try{
+      if(pendingMain.length>0){
+        let last = pendingMain[pendingMain.length-1];
+        if(last.data) firebase.database().ref(FB_PATH).set(last);
+        pendingMain=[];
+        localStorage.setItem('pending_main_queue', '[]');
+      }
+      if(pendingNotes.length>0){
+        let last = pendingNotes[pendingNotes.length-1];
+        FB.ref('config/dailyNotes_v13').set(last);
+        pendingNotes=[];
+        localStorage.setItem('pending_notes_queue', '[]');
+      }
+    }catch(e){}
+  });
+  FB.ref('config/dailyNotes_v13').on('value', snap=>{
+    let val=snap.val(); if(!val || !val.data) return;
+    let localTS = parseInt(localStorage.getItem('dailyNotes_TS')||'0');
+    if(val.ts && val.ts < localTS) return;
+    if(val.data===(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]')) return;
+    try{
+      dailyNotesArr=JSON.parse(val.data);
+      localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', val.data);
+      localStorage.setItem('dailyNotes_TS', val.ts);
+      renderDailyNotes();
+    }catch(e){}
+  });
+
+  // 5. STAFF HIDE + NO AUTO-OPEN FIX
   function applyStaffHide(){
     let role=localStorage.getItem('isOwner');
     let manageBtn=document.getElementById('manageBtn');
     if(role==='0' && manageBtn) manageBtn.style.display='none';
     if(role==='1' && manageBtn) manageBtn.style.display='inline-block';
+    // HIDE BANK SETTINGS FOR STAFF
+    if(role==='0'){
+      document.querySelectorAll('*').forEach(el=>{
+        let txt=(el.innerText||'').trim().toLowerCase();
+        if(txt==='bank settings' || txt.includes('bank settings')){
+          if(el.tagName==='BUTTON' || el.tagName==='DIV' || el.tagName==='SPAN'){
+            el.style.display='none';
+          }
+        }
+      });
+    }
   }
   function killAutoOpen(){
+    if(location.search.includes('logout') || location.search.includes('blocked')){
+      localStorage.removeItem('isOwner');
+      sessionStorage.removeItem('terikano_session_auth');
+    }
     if(!sessionStorage.getItem('terikano_session_auth')){
+      localStorage.removeItem('isOwner');
       let sl=document.getElementById('staffLock');
       let lb=document.getElementById('loginBox');
       if(sl) sl.style.display='flex';
@@ -1707,7 +1790,7 @@ setTimeout(()=>{
   window.doOwnerFix2 = function(){
     let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
     let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    if(val!=='' && val!==ownerPw){ let m=document.getElementById('pwMsg'); if(m){m.innerText='Wrong!'; m.style.display='block';} return; }
+    if(val!=='' && val!==ownerPw){ return alert('Wrong Owner PW! Cloud is '+ownerPw); }
     localStorage.setItem('isOwner','1');
     sessionStorage.setItem('terikano_session_auth','1');
     document.getElementById('staffLock').style.display='none';
@@ -1718,7 +1801,7 @@ setTimeout(()=>{
     let val=(document.getElementById('ownerPass')||document.getElementById('staffPw'))?.value?.trim()||'';
     let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
     let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-    if(val!==staffPw && val!==ownerPw && val!==''){ let m=document.getElementById('pwMsg'); if(m){m.innerText='Wrong!'; m.style.display='block';} return; }
+    if(val!==staffPw && val!==ownerPw && val!==''){ return alert('Wrong Staff PW!'); }
     localStorage.setItem('isOwner','0');
     sessionStorage.setItem('terikano_session_auth','1');
     document.getElementById('staffLock').style.display='none';
@@ -1731,29 +1814,29 @@ setTimeout(()=>{
     location.href = location.pathname + '?logout=' + Date.now();
   };
   window.checkStaffPw = function(){
-  let e=document.getElementById('staffPw') || document.getElementById('ownerPass');
-  if(!e) return;
-  let val=e.value.trim();
-  let ownerPw=localStorage.getItem('TERI_PW')||'1234';
-  let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
-  if(val===ownerPw){
-    localStorage.setItem('isOwner','1');
-    sessionStorage.setItem('terikano_session_auth','1');
-    document.getElementById('staffLock').style.display='none';
-    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
-    e.value=''; return;
-  }
-  if(val===staffPw){
-    localStorage.setItem('isOwner','0');
-    sessionStorage.setItem('terikano_session_auth','1');
-    document.getElementById('staffLock').style.display='none';
-    let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
-    try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
-    e.value=''; return;
-  }
-  let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
-};
+    let e=document.getElementById('staffPw') || document.getElementById('ownerPass');
+    if(!e) return;
+    let val=e.value.trim();
+    let ownerPw=localStorage.getItem('TERI_PW')||'1234';
+    let staffPw=localStorage.getItem('TERI_STAFF_PW')||'2001';
+    if(val===ownerPw){
+      localStorage.setItem('isOwner','1');
+      sessionStorage.setItem('terikano_session_auth','1');
+      document.getElementById('staffLock').style.display='none';
+      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+      try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
+      e.value=''; return;
+    }
+    if(val===staffPw){
+      localStorage.setItem('isOwner','0');
+      sessionStorage.setItem('terikano_session_auth','1');
+      document.getElementById('staffLock').style.display='none';
+      let lb=document.getElementById('loginBox'); if(lb) lb.style.display='none';
+      try{lockAll(); rebuild(); applyStaffHide();}catch(err){}
+      e.value=''; return;
+    }
+    let msg=document.getElementById('pwMsg'); if(msg){msg.innerText='Wrong password!'; msg.style.display='block';}
+  };
   
   setTimeout(fixManage, 800);
   setTimeout(applyStaffHide, 500);
