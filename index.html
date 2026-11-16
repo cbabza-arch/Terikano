@@ -1453,61 +1453,67 @@ function filterProfit(year){
   }
 }
 </script>
-<!-- TERIKANO FINAL - 100% CORRECT - PW REQUIRED + ONLINE GREEN + OWNER ALL TABS -->
+<!-- TERIKANO FIXED FINAL - ONLY 1 LOGIN - NO FIGHTING -->
 <script>
 (function(){
-  var CFG={OWNER_KEY:'Terikano_2026',STAFF_KEY:'Terikano_2005',FLAG:'isOwner',SESSION_KEY:'terikano_session_auth'};
-  function $(id){return document.getElementById(id);}
-  function forceOwner(){
-    try{localStorage.setItem(CFG.FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(CFG.SESSION_KEY,'owner');}catch(e){}
-    var lb=$('loginBox');if(lb)lb.style.display='none';
-    var sl=$('staffLock');if(sl)sl.style.display='none';
-    setTimeout(function(){
-      if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-      document.querySelectorAll('[data-tab]').forEach(function(b){b.style.display='';});
-      document.querySelectorAll('input,select,button,textarea').forEach(function(el){
-        if(el.id!=='ownerPass'){el.removeAttribute('disabled');el.removeAttribute('readonly');el.style.pointerEvents='auto';el.style.opacity='1';}
-      });
-    },100);
+  const OWNER='Terikano_2026'; 
+  const STAFF='Terikano_2005';
+  const SESS='terikano_session_auth'; 
+  const FLAG='isOwner';
+  function $id(i){return document.getElementById(i);}
+  function showLogin(){
+    try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){}
+    let lb=$id('loginBox'); let sl=$id('staffLock');
+    if(sl)sl.style.display='none';
+    if(lb)lb.style.cssText='display:flex !important; position:fixed !important; inset:0 !important; z-index:99999999 !important; background:rgba(0,0,0,0.92) !important; align-items:center !important; justify-content:center !important;';
   }
-  function forceStaff(){
-    try{localStorage.setItem(CFG.FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(CFG.SESSION_KEY,'staff');}catch(e){}
-    var lb=$('loginBox');if(lb)lb.style.display='none';
-    var sl=$('staffLock');if(sl)sl.style.display='none';
+  function updateOnline(){
+    let el=document.getElementById('onlineStatus');
+    if(!el){el=document.createElement('div'); el.id='onlineStatus'; el.style.cssText='position:fixed;top:10px;right:10px;z-index:9999999;padding:6px 12px;border-radius:20px;background:#000;color:#0f0;border:1px solid #0f0;font-weight:bold;font-size:12px'; document.body.appendChild(el);}
+    el.style.display='block';
+    if(navigator.onLine){el.textContent='● Online'; el.style.color='#0f0'; el.style.borderColor='#0f0';}
+    else{el.textContent='● Offline'; el.style.color='red'; el.style.borderColor='red';}
+  }
+  function doOwnerAllTabs(){
+    try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(SESS,'owner');}catch(e){}
+    let lb=$id('loginBox'); if(lb)lb.style.display='none';
+    let sl=$id('staffLock'); if(sl)sl.style.display='none';
+    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.pointerEvents='auto'; b.style.opacity='1';});
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    setTimeout(function(){
-      var keep=['dashboard','sales'];
-      document.querySelectorAll('[data-tab]').forEach(function(b){
-        var t=b.getAttribute('data-tab'); if(keep.indexOf(t)===-1){b.style.display='none';}else{b.style.display='';}
-      });
-    },100);
+    setTimeout(()=>{document.querySelectorAll('[data-tab]').forEach(b=>b.style.display='');},200);
+    updateOnline();
   }
-  function clearPw(){var op=$('ownerPass');if(op){op.value='';}}
+  function doStaffLimited(){
+    try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
+    let lb=$id('loginBox'); if(lb)lb.style.display='none';
+    let sl=$id('staffLock'); if(sl)sl.style.display='none';
+    if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
+    updateOnline();
+  }
   window.doOwnerFix2=function(){
-    var p=($('ownerPass')?$('ownerPass').value:'').trim();
-    if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
-    if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
-    if(p===''){alert('Enter password!');return;}alert('WRONG!');clearPw();
+    let v=($id('ownerPass')?.value||'').trim();
+    if(!v){alert('Enter password!');return;}
+    if(v===OWNER){doOwnerAllTabs();$id('ownerPass').value='';return;}
+    if(v===STAFF){doStaffLimited();$id('ownerPass').value='';return;}
+    alert('WRONG PASSWORD!');$id('ownerPass').value='';
   };
   window.doStaffFix2=function(){
-    var p=($('ownerPass')?$('ownerPass').value:'').trim();
-    if(p===CFG.STAFF_KEY){forceStaff();clearPw();return;}
-    if(p===CFG.OWNER_KEY){forceOwner();clearPw();return;}
-    if(p===''){var sl=$('staffLock');if(sl)sl.style.display='flex';var lb=$('loginBox');if(lb)lb.style.display='none';clearPw();return;}
-    alert('WRONG! Use 2005');clearPw();
+    let v=($id('ownerPass')?.value||'').trim();
+    if(v===STAFF){doStaffLimited();$id('ownerPass').value='';return;}
+    if(v===OWNER){doOwnerAllTabs();$id('ownerPass').value='';return;}
+    if(!v){showLogin();return;}
+    alert('WRONG! Staff use 2005');$id('ownerPass').value='';
   };
-  window.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){
-      try{sessionStorage.removeItem(CFG.SESSION_KEY);}catch(e){}
-      try{localStorage.removeItem(CFG.FLAG);localStorage.removeItem('isOwner');}catch(e){}
-      var lb=$('loginBox');if(lb){lb.style.display='flex';}
-      var sl=$('staffLock');if(sl)sl.style.display='none';
-      var updateOnline=function(){
-        var el=document.getElementById('onlineStatus')||document.querySelector('[id*="online" i]');
-        if(el){el.style.display='';if(navigator.onLine){el.textContent='● Online';el.style.color='#0f0';}else{el.textContent='● Offline';el.style.color='red';}}
-      };
-      updateOnline();window.addEventListener('online',updateOnline);window.addEventListener('offline',updateOnline);
-    },400);
+  window.doLogout=function(){try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now();};
+  window.addEventListener('load',function(){
+    if(location.search.includes('logout')||location.search.includes('blocked')){
+      try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){}
+    }
+    if(!sessionStorage.getItem(SESS)){showLogin();}
+    setTimeout(()=>{if(!sessionStorage.getItem(SESS))showLogin();},800);
+    window.addEventListener('online',updateOnline);
+    window.addEventListener('offline',updateOnline);
+    updateOnline();
   });
 })();
 </script>
