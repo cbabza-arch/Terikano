@@ -1327,30 +1327,57 @@ setTimeout(function(){
 (function(){
 const firebaseConfig={databaseURL:"https://terikano-3d137-default-rtdb.firebaseio.com",projectId:"terikano-3d137"};
 try{if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);}catch(e){}
-const db=firebase.database();const PATH="terikano_v1/main_store";const KEY='Terikano_storage_data';const OWNER_PW_KEY='TERI_PW';const STAFF_PW_KEY='TERI_PW_STAFF';
-let isSyncing=false;let lastLocal=localStorage.getItem(KEY);
-function ensureBar(){let b=document.getElementById('cloudStatus');if(!b){b=document.createElement('div');b.id='cloudStatus';document.body.prepend(b);}return b;}
+const db=firebase.database();const PATH="terikano_v1/main_store";const KEY='Terikano_storage_data';let isSyncing=false;
+function ensureBar(){let b=document.getElementById('cloudStatus');if(!b){b=document.createElement('div');b.id='cloudStatus';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;text-align:center;padding:4px;font-size:12px;color:white';document.body.prepend(b);}return b;}
 function updateBar(m,c){let b=ensureBar();b.innerHTML=m;b.style.background=c;}
-updateBar("🔴 Checking STORE Cloud...","#c62828");
+updateBar("🔄 Checking STORE Cloud...","#c62828");
+const OWNER_PW_KEY='TERI_PW';const STAFF_PW_KEY='TERI_STAFF_PW';
 function pushReal(){
-  if(isSyncing) return;
-  if(window._terikano_syncing) return;
-  if(!navigator.onLine){updateBar("🔴 STORE Cloud OFFLINE - No Internet","#c62828");return;}
-  let d=localStorage.getItem(KEY);
-  if(!d) return;
-  try{
-    let obj=JSON.parse(d);
-    obj._ownerPwSync=localStorage.getItem(OWNER_PW_KEY)||'1234';
-    obj._staffPwSync=localStorage.getItem(STAFF_PW_KEY)||'2001';
-    d=JSON.stringify(obj);
-  }catch(e){}
-  db.ref(PATH).set({data:d,ts:Date.now()}).then(()=>{updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ "+new Date().toLocaleTimeString(),"#2e7d32");}).catch(e=>{updateBar("🔴 OFFLINE - "+e.message,"#c62828");});
+ if(isSyncing) return;
+ if(window._terikano_syncing) return;
+ if(!navigator.onLine){updateBar("🔴 STORE Cloud OFFLINE - No Internet","#c62828");return;}
+ let d=localStorage.getItem(KEY);
+ if(!d) return;
+ try{
+  let obj=JSON.parse(d);
+  obj._ts=Date.now();
+  obj._ownerPwSync=localStorage.getItem(OWNER_PW_KEY)||'1234';
+  obj._staffPwSync=localStorage.getItem(STAFF_PW_KEY)||'2001';
+  d=JSON.stringify(obj);
+  localStorage.setItem(KEY,d);
+ }catch(e){}
+ db.ref(PATH).set({data:d,ts:Date.now()}).then(()=>{updateBar("🟢 STORE Cloud ONLINE - Latest Synced","#2e7d32");});
 }
-const origSave=window.save;window.save=function(){try{if(origSave) origSave();}catch(e){}setTimeout(pushReal,400);};
-db.ref(".info/connected").on('value',s=>{if(s.val()===true){updateBar("☁️ STORE Cloud LIVE - ONLINE ✓ Connected","#2e7d32");}else{updateBar("🔴 STORE Cloud OFFLINE - No Firebase","#c62828");}});
-setTimeout(pushReal,2000);setInterval(pushReal,15000);
-window.addEventListener('online',()=>{updateBar("☁️ Back Online - Syncing...","#ff9800");pushReal();});
-window.addEventListener('offline',()=>updateBar("🔴 OFFLINE - No Internet","#c62828"));
+const origSave=window.save;window.save=function(){try{if(origSave) origSave();}catch(e){} pushReal();}
+window.pushFinal=window.save;
+
+db.ref(PATH).on('value',snap=>{
+ let v=snap.val(); if(!v||!v.data) {updateBar("🟡 STORE Cloud EMPTY - Pushing Local","#ef6c00"); pushReal(); return;}
+ try{
+  let remoteTs=v.ts||0;
+  let localRaw=localStorage.getItem(KEY);
+  let localTs=0; try{localTs=JSON.parse(localRaw)._ts||0;}catch(e){}
+  if(v.data===localRaw) {updateBar("🟢 STORE Cloud ONLINE - Latest Synced","#2e7d32"); return;}
+  if(remoteTs < localTs){
+    updateBar("🟡 Local NEWER than Cloud - Pushing Latest...","#ef6c00");
+    setTimeout(()=>{pushReal();},800);
+    return;
+  }
+  if(remoteTs > localTs){
+    updateBar("🔵 Cloud NEWER - Pulling Latest Entry...","#1565c0");
+    isSyncing=true;
+    localStorage.setItem(KEY,v.data);
+    try{let o=JSON.parse(v.data); if(o._ownerPwSync) localStorage.setItem(OWNER_PW_KEY,o._ownerPwSync); if(o._staffPwSync) localStorage.setItem(STAFF_PW_KEY,o._staffPwSync);}catch(e){}
+    try{load();rebuild();}catch(e){}
+    setTimeout(()=>{isSyncing=false; updateBar("🟢 STORE Cloud ONLINE - Latest Synced","#2e7d32");},1000);
+  }
+ }catch(e){updateBar("🔴 Sync Error","#c62828");}
+});
+
+db.ref(".info/connected").on('value',s=>{if(s.val()===true){updateBar("🟢 STORE Cloud ONLINE","#2e7d32"); setTimeout(pushReal,2000);}else{updateBar("🔴 STORE Cloud OFFLINE","#c62828");}});
+setInterval(pushReal,15000);
+window.addEventListener('online',()=>{updateBar("☁️ Back Online - Syncing Latest...","#2e7d32"); setTimeout(pushReal,1000);});
+window.addEventListener('offline',()=>updateBar("🔴 OFFLINE - Using Latest Local","#c62828"));
 document.body.style.paddingTop="32px";
 })()
 </script>
