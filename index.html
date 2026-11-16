@@ -1453,20 +1453,20 @@ function filterProfit(year){
   }
 }
 </script>
-<!-- LOGIN BOX V6 - NO PW DISPLAY -->
+<!-- V7 - STAFF PW + DEVICE MANAGE + ONLINE IN MAIN APP -->
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
   <div style="background:#111; border:3px solid gold; border-radius:15px; padding:25px; width:90%; max-width:320px; text-align:center;">
-    <h2 style="color:gold;">🔒 TERIKANO LOGIN</h2>
+    <h2 style="color:gold;">TERIKANO LOGIN</h2>
     <input id="ownerPass" type="password" placeholder="Enter Password" style="width:100%; padding:12px; font-size:18px; border:2px solid gold; border-radius:10px; text-align:center; background:#000; color:#fff; margin-bottom:10px;">
     <button id="loginBtn" onclick="doOwnerFix2()" style="width:100%; padding:12px; background:gold; color:#000; font-weight:bold; border-radius:10px;">LOGIN</button>
     <button id="exitBtn" onclick="doStaffFix2()" style="width:100%; padding:8px; background:#333; color:#fff; border-radius:8px; margin-top:8px;">EXIT</button>
-    <div id="onlineStatus" style="margin-top:12px; padding:6px; border-radius:20px; background:#000; color:#0f0; border:1px solid #0f0; font-size:12px;">● Online</div>
   </div>
 </div>
 <div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold; border-radius:8px;">LOGIN</button></div></div>
+<div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:4px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V6 - FIX DEVICE MANAGE + PW SYNC
+// V7 - FIXES
 (function(){
   const DEFAULT_OWNER='Terikano_2026'; const DEFAULT_STAFF='Terikano_2005';
   const SESS='terikano_session_auth'; const FLAG='isOwner';
@@ -1481,30 +1481,35 @@ function filterProfit(year){
     if(!sessionStorage.getItem(SESS)){ localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); }
   }catch(e){}
   function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb)lb.style.display='flex'; }
-  function updateOnline(){ let el=$id('onlineStatus'); if(el){ el.style.display='block'; el.textContent=navigator.onLine?'● Online':'● Offline'; el.style.color=navigator.onLine?'#0f0':'red'; } }
+  function updateOnline(){
+    let el=$id('terikanoOnlineMain'); if(!el) return;
+    el.style.display='inline-flex';
+    if(navigator.onLine){ el.textContent='● Online'; el.style.color='#0f0'; el.style.borderColor='#0f0'; }
+    else{ el.textContent='● Offline - Working Offline OK'; el.style.color='red'; el.style.borderColor='red'; }
+  }
   window.isOwner=function(){return localStorage.getItem('isOwner')==='1'||localStorage.getItem(FLAG)==='1';};
-  window.getOwnerPw=getOwnerPw; window.getStaffPw=getStaffPw;
   function forceOwnerTabs(){
-    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.visibility='visible'; b.style.opacity='1';});
-    let cash=$id('cashBoxIsolated'); if(cash) cash.style.display='flex';
+    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display=''; b.style.visibility='visible';});
     let mb=$id('manageBtn'); if(mb) mb.style.display='inline-block';
-    let countSpan=document.getElementById('allowedCount')?.parentElement; if(countSpan) countSpan.style.display='inline-flex';
+    let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='inline-flex';
+    let hdr=$id('terikanoDeviceHeader'); if(hdr) hdr.style.display='inline-flex';
   }
   function hideForStaff(){
     let mb=$id('manageBtn'); if(mb) mb.style.display='none';
-    let countSpan=document.getElementById('allowedCount')?.parentElement; if(countSpan) countSpan.style.display='none';
+    let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='none';
+    let hdr=$id('terikanoDeviceHeader'); if(hdr) hdr.style.display='none';
   }
   function doOwnerAllTabs(){
     try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','1');sessionStorage.setItem(SESS,'owner');}catch(e){}
     let lb=$id('loginBox'); if(lb)lb.style.display='none'; let sl=$id('staffLock'); if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,500); updateOnline();
+    setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,600); updateOnline();
   }
   function doStaffLimited(){
     try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
     let lb=$id('loginBox'); if(lb)lb.style.display='none'; let sl=$id('staffLock'); if(sl)sl.style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    updateOnline(); setTimeout(hideForStaff,200);
+    updateOnline(); setTimeout(hideForStaff,300);
   }
   window.doOwnerFix2=function(){
     let el=$id('ownerPass'); let v=(el?.value||'').trim();
@@ -1516,15 +1521,19 @@ function filterProfit(year){
   window.doStaffFix2=window.doOwnerFix2; window.checkStaffPw=window.doOwnerFix2;
   window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
   window.setStaffPw=function(){ let el=$id('new_staff_pw'); let v=(el?.value||'').trim(); if(!v){alert('Enter Staff PW!');return;} localStorage.setItem(STAFF_KEY,v); localStorage.setItem('staff_pw',v); alert('Staff PW Saved: '+v); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent=v; if(el) el.value=''; };
-  window.setOwnerPw=function(){ let el=$id('new_owner_pw'); let v=(el?.value||'').trim(); if(!v){alert('Enter Owner PW!');return;} localStorage.setItem(OWNER_KEY,v); alert('Owner PW Saved: '+v); let lbl=$id('curOwnerPwLabel'); if(lbl) lbl.textContent=v; if(el) el.value=''; };
+  window.removeStaffPw=function(){ if(!confirm('Remove Staff PW?')) return; localStorage.removeItem(STAFF_KEY); localStorage.removeItem('staff_pw'); alert('Removed - Default Terikano_2005'); let lbl=$id('curStaffPwLabel'); if(lbl) lbl.textContent='Terikano_2005 (Default)'; };
+  window.changePw=function(){ let oldEl=$id('old_pw'); let newEl=$id('new_pw'); let oldV=(oldEl?.value||'').trim(); let newV=(newEl?.value||'').trim(); let cur=getOwnerPw(); if(oldV!==cur && oldV!==DEFAULT_OWNER){alert('Wrong Old PW! Current: '+cur);return;} if(!newV){alert('Enter New PW!');return;} localStorage.setItem(OWNER_KEY,newV); alert('Owner PW Changed to: '+newV); let lbl=$id('curPwLabel'); if(lbl) lbl.textContent=newV; if(oldEl) oldEl.value=''; if(newEl) newEl.value=''; };
   function init(){
     updateOnline();
-    let oLbl=$id('curOwnerPwLabel'); if(oLbl) oLbl.textContent=getOwnerPw();
-    let sLbl=$id('curStaffPwLabel'); if(sLbl) sLbl.textContent=getStaffPw();
+    let curOwner=getOwnerPw(); let curStaff=getStaffPw();
+    let l1=$id('curPwLabel'); if(l1) l1.textContent=curOwner;
+    let l3=$id('curStaffPwLabel'); if(l3) l3.textContent=curStaff;
     if(!sessionStorage.getItem(SESS)){ showLogin(); } else { if(localStorage.getItem('isOwner')==='1'){ forceOwnerTabs(); } else { hideForStaff(); } let lb=$id('loginBox'); if(lb)lb.style.display='none'; }
+    let om=$id('terikanoOnlineMain'); if(om) om.style.display='inline-flex';
   }
-  window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); setTimeout(init,100); setTimeout(init,800);
-  setInterval(function(){ let role=localStorage.getItem('isOwner'); let mb=$id('manageBtn'); if(!mb) return; if(role==='0'){ mb.style.display='none'; let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='none'; } else { if(sessionStorage.getItem(SESS)){ mb.style.display='inline-block'; let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='inline-flex'; } } },1000);
+  window.addEventListener('DOMContentLoaded',init); window.addEventListener('load',init); window.addEventListener('online',updateOnline); window.addEventListener('offline',updateOnline);
+  setTimeout(init,100); setTimeout(init,800); setTimeout(updateOnline,500);
+  setInterval(function(){ let role=localStorage.getItem('isOwner'); let mb=$id('manageBtn'); let cs=document.getElementById('allowedCount')?.parentElement; let hdr=$id('terikanoDeviceHeader'); if(!sessionStorage.getItem(SESS)){ if(mb) mb.style.display='none'; return; } if(role==='0'){ if(mb) mb.style.display='none'; if(cs) cs.style.display='none'; if(hdr) hdr.style.display='none'; } else { if(mb) mb.style.display='inline-block'; if(cs) cs.style.display='inline-flex'; if(hdr) hdr.style.display='inline-flex'; } updateOnline(); },1000);
 })();
 </script>
 </body>
