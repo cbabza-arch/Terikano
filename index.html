@@ -1732,5 +1732,34 @@ FB.ref('config/dailyNotes_v13').on('value', snap=>{
  },1500);
 })();
 </script>
+<script>
+// FORCE REPLACE MANAGE BUTTON - NO FIGHT
+setTimeout(()=>{
+  const oldBtn = document.getElementById('manageBtn');
+  if(!oldBtn) { alert('manageBtn not found'); return; }
+  
+  // Clone = removes ALL old clicks
+  const newBtn = oldBtn.cloneNode(true);
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+  newBtn.id='manageBtn';
+  newBtn.style.cssText='background:#111;color:#fff;border:none;padding:4px 10px;border-radius:12px;cursor:pointer;font-size:11px;z-index:9999999;position:relative';
+  
+  newBtn.addEventListener('click', function(){
+    // YOUR REAL MANAGE POPUP HERE
+    let devices = JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
+    let myId = localStorage.getItem('terikano_device_id');
+    let listHtml='';
+    for(let k in devices){
+      listHtml+=`<div style="padding:8px;border-bottom:1px solid #eee;display:flex;justify-content:space-between"><b>${k} ${devices[k].isMain?'👑':''}</b> <button onclick="let d=JSON.parse(localStorage.getItem('terikano_devices_cache')); delete d['${k}']; localStorage.setItem('terikano_devices_cache',JSON.stringify(d)); firebase.database().ref('config/devices').set(d); alert('Deleted'); location.reload()" style="background:red;color:#fff;border:none;padding:2px 6px;border-radius:5px">X</button></div>`;
+    }
+    let overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML=`<div style="background:#fff;width:90%;max-width:380px;border-radius:15px;padding:15px;max-height:80vh;overflow:auto"><h3 style="margin:0 0 10px">🔒 Manage Devices</h3><div style="background:#f5f5f5;padding:8px;border-radius:8px;margin-bottom:10px;font-size:12px">Your ID: <b>${myId}</b></div>${listHtml||'No devices'}<button onclick="firebase.database().ref('config/mainDeviceId').set('${myId}'); alert('You are MAIN now'); location.reload()" style="width:100%;background:gold;border:2px solid #000;padding:10px;border-radius:8px;font-weight:bold;margin-top:10px">👑 CLAIM MAIN</button><button onclick="this.parentElement.parentElement.remove()" style="width:100%;background:#000;color:#fff;padding:10px;border-radius:8px;margin-top:8px">CLOSE</button></div>`;
+    document.body.appendChild(overlay);
+  });
+  
+  console.log('MANAGE BUTTON REPLACED - 100% WILL WORK');
+},1000);
+</script>
 </body>
 </html>
