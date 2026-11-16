@@ -1465,21 +1465,23 @@ function filterProfit(year){
 
 <script>
 (function(){
-  // REMOVE OLD DUPLICATES - FIX 3/8/8
   document.querySelectorAll('#loginBox').forEach(e=>e.remove());
-  document.querySelectorAll('#ownerPass').forEach(e=>e.remove());
-  document.querySelectorAll('#pendingBox').forEach(e=>e.remove());
   document.body.innerHTML = document.body.innerHTML.replaceAll('3/8/8','3/8');
 
   const SESS='terikano_session_auth';
   const $id=id=>document.getElementById(id);
   function getDeviceId(){ let id=localStorage.getItem('terikano_device_id'); if(!id){ id='DEV_'+Math.random().toString(36).substr(2,4).toUpperCase(); localStorage.setItem('terikano_device_id',id); } return id; }
+  
+  function getSession(){
+    return sessionStorage.getItem(SESS) || localStorage.getItem(SESS) || localStorage.getItem('terikano_session_auth');
+  }
 
   $id('logoutBtnFinal').onclick=function(){ 
     sessionStorage.clear(); 
     localStorage.removeItem('isOwner'); 
     localStorage.removeItem(SESS); 
     localStorage.removeItem('terikano_session_auth'); 
+    localStorage.removeItem('terikano_staff_approved'); // CLEAR STAFF AUTO
     location.reload(); 
   };
 
@@ -1488,7 +1490,10 @@ function filterProfit(year){
     if(!v) return alert('Enter PW!');
     let deviceId=getDeviceId();
     if(v==='Terikano_2026'){
+      // OWNER - SAVE IN BOTH SESSION + LOCAL - STAY OWNER!
       sessionStorage.setItem(SESS,'owner'); 
+      localStorage.setItem(SESS,'owner');
+      localStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('isOwner','1');
       let c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); 
       c[deviceId]={id:deviceId, allowed:true, isMain:true}; 
@@ -1505,6 +1510,8 @@ function filterProfit(year){
       let c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
       if(a[deviceId] || (c[deviceId] && c[deviceId].isMain)){
         sessionStorage.setItem(SESS,'staff'); 
+        localStorage.setItem(SESS,'staff');
+        localStorage.setItem('terikano_session_auth','staff');
         localStorage.setItem('isOwner','0'); 
         $id('loginBoxFinal').style.display='none'; 
         location.reload(); 
@@ -1523,38 +1530,30 @@ function filterProfit(year){
     alert('Wrong! Owner: Terikano_2026 | Staff: 200175');
   };
 
-  window.approveStaff=function(id){
-    let a=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}'); a[id]=true; 
-    localStorage.setItem('terikano_staff_approved', JSON.stringify(a));
-    let p=JSON.parse(localStorage.getItem('terikano_staff_pending')||'{}'); delete p[id]; 
-    localStorage.setItem('terikano_staff_pending', JSON.stringify(p));
-    let c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); if(c[id]) c[id].allowed=true; 
-    localStorage.setItem('terikano_devices_cache', JSON.stringify(c));
-    alert('Approved '+id); location.reload();
-  };
-
-  window.deleteDevice=function(id){
-    if(!confirm('Delete '+id+'?')) return;
-    let c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); delete c[id]; 
-    localStorage.setItem('terikano_devices_cache', JSON.stringify(c));
-    let a=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}'); delete a[id]; 
-    localStorage.setItem('terikano_staff_approved', JSON.stringify(a));
-    if(id===getDeviceId()){ sessionStorage.clear(); localStorage.removeItem('isOwner'); location.reload(); return; }
-    location.reload();
-  };
-
   function init(){
     getDeviceId();
-    let s=sessionStorage.getItem(SESS);
-    if(!s){ localStorage.removeItem('isOwner'); $id('loginBoxFinal').style.display='flex'; }
-    else { $id('loginBoxFinal').style.display='none'; }
-    let c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}');
-    let count=Object.keys(c).filter(k=>c[k].allowed!==false).length || 1;
-    let ac=document.getElementById('allowedCount'); if(ac) ac.textContent=count+'/8';
+    let s=getSession(); // CHECK BOTH SESSION + LOCAL!
+    if(s==='owner'){
+      localStorage.setItem('isOwner','1');
+      localStorage.setItem(SESS,'owner');
+      sessionStorage.setItem(SESS,'owner');
+      $id('loginBoxFinal').style.display='none';
+      return;
+    }
+    if(s==='staff'){
+      localStorage.setItem('isOwner','0');
+      $id('loginBoxFinal').style.display='none';
+      return;
+    }
+    // NO SESSION = SHOW LOGIN - CLEAR STAFF AUTO
+    localStorage.removeItem('isOwner');
+    $id('loginBoxFinal').style.display='flex';
   }
+  
   window.addEventListener('DOMContentLoaded', init); 
   window.addEventListener('load', init); 
-  setTimeout(init,500);
+  setTimeout(init,300);
+  setTimeout(init,1000);
 })();
 </script>
 </body>
