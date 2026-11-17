@@ -1748,5 +1748,6 @@ setTimeout(()=>{
   console.log('Staff PW fix loaded:', s);
 },800);
 </script>
+  <script>setTimeout(()=>{localStorage.setItem('TERI_ALLOWED_COUNT','3');localStorage.setItem('allowedCount','3');let b=document.getElementById('allowedCount')||document.querySelector('[id*="allowed"]');if(b)b.textContent='3/8';let c=document.querySelectorAll('*');c.forEach(e=>{if(e.textContent=='8/8')e.textContent='3/8';});},500);</script>
 </body>
 </html>
