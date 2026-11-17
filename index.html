@@ -1188,19 +1188,13 @@ function filterProfit(year){
     if(!v){alert('Enter password!');return;}
     if(v===getOwnerPw() || v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
     if(v===getStaffPw() || v===DEFAULT_STAFF){
-      let did=getDeviceId(); let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}');
-      if(appr[did]){ doStaffLimited(); el.value=''; return; }
-      else { 
-        let pend=JSON.parse(localStorage.getItem('terikano_staff_pending')||'{}'); pend[did]={id:did,time:Date.now()}; localStorage.setItem('terikano_staff_pending',JSON.stringify(pend));
-        let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); cache[did]={id:did,allowed:false}; localStorage.setItem('terikano_devices_cache',JSON.stringify(cache));
-        alert('Need Approval: '+did+'\nAsk Owner to approve in Manage'); el.value=''; return;
-      }
+      doStaffLimited(); el.value=''; return;
     }
-    // FIX 1: WRONG PW DON'T SHOW REAL PW
     alert('WRONG PASSWORD!'); el.value='';
-  };
-  window.doStaffFix2=window.doOwnerFix2;
-  window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
+};
+window.doStaffFix2=window.doOwnerFix2;
+    // FIX 1: WRONG PW DON'T SHOW REAL PW
+   window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
   
   // FIX 3: BLOCK DEVICE -> NEED APPROVAL AGAIN
   window.deleteDevice=function(id){
