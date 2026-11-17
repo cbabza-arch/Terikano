@@ -1749,7 +1749,15 @@ setTimeout(()=>{
 },800);
 </script>
 <script>
-// FINAL - KEEP STAFF PW + 3/8 + DAILY NOTES SYNC
+// FINAL - KEEP STAFF PW ALWAYS VISIBLE + 3/8 + DAILY NOTES
+setInterval(()=>{
+ let isOwner=localStorage.getItem('isOwner')==='1';
+ if(isOwner){
+  let sDiv=document.getElementById('staffPwDiv');
+  if(sDiv){ sDiv.style.display='block'; sDiv.style.visibility='visible'; }
+ }
+},1000);
+
 async function cloudSyncAll(){
  try{
   if(typeof db==='undefined') return;
