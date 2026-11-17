@@ -1,0 +1,22 @@
+{
+  "name": "TERIKANO V28.2",
+  "short_name": "TERIKANO",
+  "description": "TERIKANO V28.2 AVERAGE COST + Price History",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#FFD700",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/138/138292.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/138/138292.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
