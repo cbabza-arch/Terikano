@@ -1,11 +1,85 @@
 <html><head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-  <script>if(localStorage.getItem('v')!=='v37'){caches.keys().then(a=>a.forEach(b=>caches.delete(b)));localStorage.setItem('v','v37');location.reload();}</script>
+  <script>if(sessionStorage.getItem('v')!=='v38'){caches.keys().then(a=>a.forEach(b=>caches.delete(b)));sessionStorage.setItem('v','v38');location.reload();}</script>
+
+<!-- FIREBASE CLOUD START -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCUQDoaPSYD-ZVFtyc_uBNi9gaLYEe9qs",
+    authDomain: "terikano-3d137.firebaseapp.com",
+    databaseURL: "https://terikano-3d137-default-rtdb.firebaseio.com",
+    projectId: "terikano-3d137",
+    storageBucket: "terikano-3d137.firebasestorage.app",
+    messagingSenderId: "906871391351",
+    appId: "1:906871391351:web:d6acfb65cecd19ebbd3272"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
+<!-- FIREBASE CLOUD END -->
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FFD700">
 <meta name="viewport" content="width=device-width, initial-scale=1"><script>
-var MARKUP_KEY='terikano_markup_percent';
+<script>
+// CLOUD SAVE/LOAD
+let purchases = [];
+let sales = [];
+let CLOUD_READY = false;
+
+async function saveToCloud(){
+  let toSave = {
+    purchases: purchases,
+    sales: sales,
+    markup: globalMarkup,
+    time: new Date().toISOString()
+  };
+  await db.ref('shop').set(toSave);
+  console.log('SAVED TO CLOUD');
+}
+
+async function loadFromCloud(){
+  try{
+    let snap = await db.ref('shop').once('value');
+    let cloud = snap.val();
+    if(cloud){
+      if(cloud.purchases) purchases = cloud.purchases;
+      if(cloud.sales) sales = cloud.sales;
+      if(cloud.markup) { globalMarkup = cloud.markup; }
+      CLOUD_READY = true;
+      if(typeof renderAll === 'function') renderAll();
+      if(typeof autoSellCalc === 'function') autoSellCalc();
+    } else {
+      // Migrate old local if cloud empty
+      let local = localStorage.getItem('Terikano_storage_data');
+      if(local){
+        if(confirm('Move 2 months old data to CLOUD? Click OK')){
+          let ld = JSON.parse(local);
+          purchases = ld.purchases || [];
+          sales = ld.sales || [];
+          await saveToCloud();
+          alert('Migrated! Now same on all devices');
+          CLOUD_READY = true;
+        }
+      }
+    }
+    // Live listener - other phones update instantly
+    db.ref('shop').on('value', s=>{
+      if(!CLOUD_READY) return;
+      let d = s.val();
+      if(d){
+        purchases = d.purchases || [];
+        sales = d.sales || [];
+        if(typeof renderAll === 'function') renderAll();
+      }
+    });
+  }catch(e){ console.log('Cloud error', e); }
+}
+
+  var MARKUP_KEY='terikano_markup_percent';
 var globalMarkup=parseFloat(localStorage.getItem(MARKUP_KEY)||15);
 function getMarkup(){ return (globalMarkup||15)/100; }
 function setMarkup(v){
