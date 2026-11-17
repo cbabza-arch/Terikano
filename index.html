@@ -1224,32 +1224,45 @@ function filterProfit(year){
     let el=document.getElementById('ownerPass'); 
     let v=(el?.value||'').trim();
     if(!v){alert('Enter password!');return;}
+    console.log('PW typed:',v);
+    
+    // STAFF
     if(v==='Terikano_2005'){
       localStorage.setItem('isOwner','0');
-      sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('isStaff','1');
-      el.value='';
-      location.href = location.pathname;
-      return;
-    }
-    if(v==='Terikano_2026'||v==='1234'||v==='12345'||v===getOwnerPw()){
-      localStorage.setItem('isOwner','1');
+      localStorage.setItem('terikano_session_auth','1');
       sessionStorage.setItem('terikano_session_auth','1');
-      localStorage.removeItem('isStaff');
+      sessionStorage.setItem('terikano_auth','1');
+      localStorage.setItem('terikano_auth','1');
+      localStorage.setItem('auth','1');
+      sessionStorage.setItem('auth','1');
       el.value='';
-      location.href = location.pathname;
+      setTimeout(()=>{ window.location.href=location.origin+location.pathname; },100);
       return;
     }
-    alert('WRONG PW!');
+    // OWNER
+    if(v==='Terikano_2026'||v==='1234'||v==='12345'){
+      localStorage.setItem('isOwner','1');
+      localStorage.removeItem('isStaff');
+      localStorage.setItem('terikano_session_auth','1');
+      sessionStorage.setItem('terikano_session_auth','1');
+      sessionStorage.setItem('terikano_auth','1');
+      localStorage.setItem('terikano_auth','1');
+      localStorage.setItem('auth','1');
+      sessionStorage.setItem('auth','1');
+      el.value='';
+      setTimeout(()=>{ window.location.href=location.origin+location.pathname; },100);
+      return;
+    }
+    alert('WRONG PW! you typed:'+v);
     el.value='';
   };
   window.doStaffFix2=window.doOwnerFix2;
   
   window.doLogout=function(){ 
     try{
-      localStorage.removeItem('isOwner');
-      localStorage.removeItem('isStaff');
-      sessionStorage.removeItem('terikano_session_auth');
+      localStorage.clear();
+      sessionStorage.clear();
     }catch(e){} 
     location.href=location.pathname+'?logout='+Date.now(); 
   };
