@@ -1257,22 +1257,52 @@ function filterProfit(year){
   <script>
 (function(){
   window.collects = window.collects || {};
-  window.doOwnerFix2=function(){
-    let el=document.getElementById('ownerPass'); let v=(el?.value||'').trim();
-    if(!v){alert('Enter password!');return;}
+  
+  function FIX_LOGIN(){
+    let el = document.getElementById('ownerPass') || document.querySelector('input[type="password"]');
+    let v = (el?.value||'').trim();
+    console.log('PW ENTERED:', v);
+    if(!v){ alert('Enter password!'); return false; }
+    
     if(v==='Terikano_2005'){
-      localStorage.setItem('isOwner','0'); localStorage.setItem('isStaff','1');
-      sessionStorage.setItem('terikano_session_auth','1'); localStorage.setItem('terikano_session_auth','1');
-      location.href=location.pathname; return;
+      localStorage.setItem('isOwner','0');
+      localStorage.setItem('isStaff','1');
+      sessionStorage.setItem('terikano_session_auth','1');
+      localStorage.setItem('terikano_session_auth','1');
+      alert('Staff OK! Loading...');
+      location.reload();
+      return false;
     }
     if(v==='Terikano_2026'||v==='1234'||v==='12345'){
-      localStorage.setItem('isOwner','1'); localStorage.removeItem('isStaff');
-      sessionStorage.setItem('terikano_session_auth','1'); localStorage.setItem('terikano_session_auth','1');
-      location.href=location.pathname; return;
+      localStorage.setItem('isOwner','1');
+      localStorage.removeItem('isStaff');
+      sessionStorage.setItem('terikano_session_auth','1');
+      localStorage.setItem('terikano_session_auth','1');
+      alert('Owner OK! Loading...');
+      location.reload();
+      return false;
     }
     alert('WRONG PW: '+v);
-  };
-  window.doStaffFix2=window.doOwnerFix2;
+    return false;
+  }
+
+  // OVERRIDE EVERY POSSIBLE NAME
+  window.doOwnerFix2 = FIX_LOGIN;
+  window.doStaffFix2 = FIX_LOGIN;
+  window.doOwnerLogin = FIX_LOGIN;
+  window.doStaffLogin = FIX_LOGIN;
+  window.ownerLogin = FIX_LOGIN;
+  window.staffLogin = FIX_LOGIN;
+  window.login = FIX_LOGIN;
+  window.checkPassword = FIX_LOGIN;
+
+  // FORCE BUTTON ON CLICK
+  setTimeout(()=>{
+    let btn = document.querySelector('button[onclick*="Login"], button[onclick*="Fix"], button');
+    if(btn){ btn.onclick = FIX_LOGIN; console.log('Button hooked:', btn); }
+  }, 500);
+
+  window.doLogout=function(){try{localStorage.clear();sessionStorage.clear();}catch(e){} location.href=location.pathname+'?logout='+Date.now();};
 })();
 </script>
 </body>
