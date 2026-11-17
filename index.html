@@ -1261,7 +1261,6 @@ function filterProfit(year){
   function FIX_LOGIN(){
     let el = document.getElementById('ownerPass') || document.querySelector('input[type="password"]');
     let v = (el?.value||'').trim();
-    console.log('PW ENTERED:', v);
     if(!v){ alert('Enter password!'); return false; }
     
     if(v==='Terikano_2005'){
@@ -1269,8 +1268,12 @@ function filterProfit(year){
       localStorage.setItem('isStaff','1');
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('terikano_session_auth','1');
-      alert('Staff OK! Loading...');
-      location.reload();
+      // NO RELOAD - HIDE GATE DIRECTLY
+      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate, #staffGate').forEach(e=>{ e.style.display='none'; e.style.visibility='hidden'; });
+      document.body.classList.remove('locked');
+      let dash = document.getElementById('dashboard') || document.querySelector('.dashboard, main, #app');
+      if(dash) dash.style.display='block';
+      alert('Staff OK!');
       return false;
     }
     if(v==='Terikano_2026'||v==='1234'||v==='12345'){
@@ -1278,15 +1281,17 @@ function filterProfit(year){
       localStorage.removeItem('isStaff');
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('terikano_session_auth','1');
-      alert('Owner OK! Loading...');
-      location.reload();
+      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate, #staffGate').forEach(e=>{ e.style.display='none'; e.style.visibility='hidden'; });
+      document.body.classList.remove('locked');
+      let dash = document.getElementById('dashboard') || document.querySelector('.dashboard, main, #app');
+      if(dash) dash.style.display='block';
+      alert('Owner OK!');
       return false;
     }
     alert('WRONG PW: '+v);
     return false;
   }
 
-  // OVERRIDE EVERY POSSIBLE NAME
   window.doOwnerFix2 = FIX_LOGIN;
   window.doStaffFix2 = FIX_LOGIN;
   window.doOwnerLogin = FIX_LOGIN;
@@ -1294,13 +1299,6 @@ function filterProfit(year){
   window.ownerLogin = FIX_LOGIN;
   window.staffLogin = FIX_LOGIN;
   window.login = FIX_LOGIN;
-  window.checkPassword = FIX_LOGIN;
-
-  // FORCE BUTTON ON CLICK
-  setTimeout(()=>{
-    let btn = document.querySelector('button[onclick*="Login"], button[onclick*="Fix"], button');
-    if(btn){ btn.onclick = FIX_LOGIN; console.log('Button hooked:', btn); }
-  }, 500);
 
   window.doLogout=function(){try{localStorage.clear();sessionStorage.clear();}catch(e){} location.href=location.pathname+'?logout='+Date.now();};
 })();
