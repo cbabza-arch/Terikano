@@ -1175,7 +1175,8 @@ function filterProfit(year){
     $id('loginBox').style.display='none'; $id('staffLock').style.display='none';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
     setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,600); updateOnline(); updateCountDisplay();
-  }function doStaffLimited(){
+  }
+  function doStaffLimited(){
     try{
       localStorage.setItem(FLAG,'1');
       localStorage.setItem('isOwner','0');
@@ -1243,7 +1244,6 @@ function hideForStaff(){
       setInterval(hideForStaff, 1000);
     }
   })();
-
   // AUTO RUN HIDE IF STAFF
   (function(){
     let flag=localStorage.getItem('isOwner');
