@@ -206,7 +206,17 @@ if(isStaffView){ if(mb) mb.style.display='none'; if(countSpan) countSpan.style.d
 <div id="profitYearFilter" style="display:flex;gap:8px;margin:10px 0;justify-content:center;flex-wrap:wrap">
   <!-- Buttons will auto create here -->
 </div>
-<script>
+ <script>
+  function showWin(id){ 
+  let el=document.getElementById(id); 
+  if(el) el.style.display='flex'; 
+}
+function hideWin(id){ 
+  let el=document.getElementById(id); 
+  if(el) el.style.display='none'; 
+}
+ </script>
+  <script>
 (function autoMakeYearButtons(){
   try{
     let D = JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}');
