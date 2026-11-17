@@ -1060,48 +1060,25 @@ function viewClosedYears(){
 <script>
 function filterProfit(year){
   try{
-    // get data
-    let cloudRaw = null; try{ if(window.cloudDataCache) cloudRaw = JSON.stringify(window.cloudDataCache); }catch(e){}
-    let raw = cloudRaw || localStorage.getItem('Terikano_storage_data') || localStorage.getItem('terikano_data') || '{}';
+    let raw = localStorage.getItem('Terikano_storage_data') || localStorage.getItem('terikano_data') || '{}';
+    try{ if(window.cloudDataCache) raw = JSON.stringify(window.cloudDataCache); }catch(e){}
     let D = JSON.parse(raw);
-    let sales = D.sales || D.transactions || D.data_transactions || [];
-    if(sales.length===0) sales = JSON.parse(localStorage.getItem('sales')||'[]');   
-    // filter
-    let list = sales;
+    let salesData = D.sales || D.transactions || [];
+    let purchasesData = D.purchases || [];
+    let filtered = salesData;
     if(year !== 'all'){
-      list = sales.filter(s=>{
-        let d = new Date(s.date || s.time || s.created);
-        return d.getFullYear().toString() === year.toString();
-      });
+      filtered = salesData.filter(s=>{ let d=new Date(s.date||s.time); return d.getFullYear().toString()===year.toString(); });
     }
-   
-    // highlight button
-    document.querySelectorAll('#profitYearFilter button').forEach(b=>{
-      b.style.background='#111'; b.style.color='#fff'; b.style.border='1px solid gold';
-    });
-    let btn = document.getElementById('btn_'+year);
-    if(btn){ btn.style.background='gold'; btn.style.color='#000'; }
-   
-    // calc
     let tot=0,cost=0;
-    list.forEach(s=>{
+    filtered.forEach(s=>{
       if((s.pay||'').toUpperCase()==='WASTE') return;
       tot+=Number(s.price||s.total||s.amount||0);
       cost+=Number(s.cost||s.buyPrice||0);
     });
     let profit = tot-cost;
-   
-    // SHOW RESULT - this will work 100%
-    alert(year + " PROFIT: $" + profit.toFixed(2) + " from " + list.length + " sales");
-   
-    // try update dashboard numbers if IDs exist
-    let profitEl = document.querySelector('[id*="Profit"]') || document.querySelector('.profit-value');
-    if(profitEl) profitEl.innerText = '$'+profit.toFixed(2);
-   
-  }catch(e){
-    alert('Error: '+e.message);
-    console.log(e);
-  }
+    alert(year + " PROFIT: $" + profit.toFixed(2) + " from " + filtered.length + " sales");
+    if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
+  }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
 </script>
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
