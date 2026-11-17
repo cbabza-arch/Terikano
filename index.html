@@ -1202,15 +1202,27 @@ function filterProfit(year){
   window.doOwnerFix2=function(){
     let el=$id('ownerPass'); let v=(el?.value||'').trim();
     if(!v){alert('Enter password!');return;}
-    if(v===getOwnerPw() || v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
-    if(v===getStaffPw() || v===DEFAULT_STAFF){
+    let ownerPw = getOwnerPw();
+    let staffPw = getStaffPw();
+    console.log('Entered:',v,' Owner is:',ownerPw,' Staff is:',staffPw);
+    if(v===ownerPw){doOwnerAllTabs(); el.value='';return;}
+    if(v===staffPw){ 
       let did=getDeviceId(); 
       let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}');
       appr[did]=true;
       localStorage.setItem('terikano_staff_approved',JSON.stringify(appr));
       doStaffLimited(); el.value=''; return;
     }
-    alert('WRONG PASSWORD!'); el.value='';
+    // also allow defaults if no custom set
+    if(v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
+    if(v===DEFAULT_STAFF){
+      let did=getDeviceId(); 
+      let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}');
+      appr[did]=true;
+      localStorage.setItem('terikano_staff_approved',JSON.stringify(appr));
+      doStaffLimited(); el.value=''; return;
+    }
+    alert('WRONG PASSWORD! Owner:'+ownerPw+' Staff:'+staffPw); el.value='';
 };
 window.doStaffFix2=window.doOwnerFix2;
   // FIX 1: WRONG PW DON'T SHOW REAL PW
