@@ -1220,52 +1220,38 @@ function filterProfit(year){
     setTimeout(hideForStaff,300); setTimeout(hideForStaff,1000); setTimeout(hideForStaff,2000);
   };
 
-    window.doOwnerFix2=function(){
+   window.doOwnerFix2=function(){
     let el=document.getElementById('ownerPass'); 
     let v=(el?.value||'').trim();
     if(!v){alert('Enter password!');return;}
-    console.log('PW typed:',v);
     
-    // STAFF
     if(v==='Terikano_2005'){
       localStorage.setItem('isOwner','0');
       localStorage.setItem('isStaff','1');
-      localStorage.setItem('terikano_session_auth','1');
       sessionStorage.setItem('terikano_session_auth','1');
-      sessionStorage.setItem('terikano_auth','1');
-      localStorage.setItem('terikano_auth','1');
-      localStorage.setItem('auth','1');
-      sessionStorage.setItem('auth','1');
-      el.value='';
-      setTimeout(()=>{ window.location.href=location.origin+location.pathname; },100);
+      localStorage.setItem('terikano_session_auth','1');
+      // DIRECT SHOW APP - NO RELOAD
+      document.getElementById('ownerGate').style.display='none';
+      document.getElementById('mainApp').style.display='block';
+      document.body.classList.remove('locked');
+      window.hideForStaff && window.hideForStaff();
+      alert('STAFF LOGGED - NO RELOAD');
       return;
     }
-    // OWNER
     if(v==='Terikano_2026'||v==='1234'||v==='12345'){
       localStorage.setItem('isOwner','1');
       localStorage.removeItem('isStaff');
-      localStorage.setItem('terikano_session_auth','1');
       sessionStorage.setItem('terikano_session_auth','1');
-      sessionStorage.setItem('terikano_auth','1');
-      localStorage.setItem('terikano_auth','1');
-      localStorage.setItem('auth','1');
-      sessionStorage.setItem('auth','1');
-      el.value='';
-      setTimeout(()=>{ window.location.href=location.origin+location.pathname; },100);
+      localStorage.setItem('terikano_session_auth','1');
+      document.getElementById('ownerGate').style.display='none';
+      document.getElementById('mainApp').style.display='block';
+      document.body.classList.remove('locked');
+      alert('OWNER LOGGED - NO RELOAD');
       return;
     }
-    alert('WRONG PW! you typed:'+v);
-    el.value='';
+    alert('WRONG PW: '+v);
   };
   window.doStaffFix2=window.doOwnerFix2;
-  
-  window.doLogout=function(){ 
-    try{
-      localStorage.clear();
-      sessionStorage.clear();
-    }catch(e){} 
-    location.href=location.pathname+'?logout='+Date.now(); 
-  };
 })();
 </script>
 </body>
