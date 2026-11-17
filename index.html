@@ -1665,5 +1665,61 @@ function filterProfit(year){
   },2000);
 })();
 </script>
+<script>
+// FIX STAFF PW NOT SHOWN
+(function(){
+  function fixStaffPw(){
+    let ownerPw = localStorage.getItem('TERI_PW') || localStorage.getItem('owner_pw') || 'Terikano_2026';
+    let staffPw = localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('staff_pw') || localStorage.getItem('staffPw') || 'Terikano_2005';
+    
+    // Force show Staff PW div for Owner
+    let pwDiv = document.getElementById('pwDiv') || document.getElementById('passwordDiv');
+    let staffDiv = document.getElementById('staffPwDiv');
+    let manageTab = document.querySelector('[data-tab="password"]') || document.getElementById('pwTab');
+    
+    // If owner logged in, force show
+    let isOwner = localStorage.getItem('isOwner')==='1' || sessionStorage.getItem('terikano_session_auth')==='owner';
+    if(isOwner){
+      if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
+      if(pwDiv){ pwDiv.style.display='block'; }
+    }
+    
+    // Update labels
+    let l1 = document.getElementById('curPwLabel'); if(l1) l1.textContent = ownerPw;
+    let l3 = document.getElementById('curStaffPwLabel'); 
+    if(l3){ 
+      l3.textContent = staffPw; 
+      l3.style.display='inline'; 
+      l3.style.visibility='visible';
+      console.log('Staff PW label fixed:', staffPw);
+    } else {
+      // If label doesn't exist, find it
+      console.log('curStaffPwLabel NOT FOUND - searching...');
+      // Try find by text
+      document.querySelectorAll('span, div').forEach(el=>{
+        if(el.textContent.includes('Terikano_2005') || el.id.includes('Staff')){
+          console.log('Found staff element:', el.id, el.textContent);
+        }
+      });
+    }
+    
+    // Also show in console
+    console.log('Owner:', ownerPw, 'Staff:', staffPw);
+  }
+  
+  setTimeout(fixStaffPw, 500);
+  setTimeout(fixStaffPw, 1500);
+  setTimeout(fixStaffPw, 3000);
+  
+  // Manual show function - type in console showStaffPw()
+  window.showStaffPw = function(){
+    let staffPw = localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('staff_pw') || 'Terikano_2005';
+    let staffDiv = document.getElementById('staffPwDiv');
+    if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
+    let l3 = document.getElementById('curStaffPwLabel'); if(l3) l3.textContent=staffPw;
+    alert('Staff PW: '+staffPw+'\n\nDiv forced visible!');
+  };
+})();
+</script>
 </body>
 </html>
