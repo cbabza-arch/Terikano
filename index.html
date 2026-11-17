@@ -1188,12 +1188,16 @@ function filterProfit(year){
     if(!v){alert('Enter password!');return;}
     if(v===getOwnerPw() || v===DEFAULT_OWNER){doOwnerAllTabs(); el.value='';return;}
     if(v===getStaffPw() || v===DEFAULT_STAFF){
+      let did=getDeviceId(); 
+      let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}');
+      appr[did]=true;
+      localStorage.setItem('terikano_staff_approved',JSON.stringify(appr));
       doStaffLimited(); el.value=''; return;
     }
     alert('WRONG PASSWORD!'); el.value='';
 };
 window.doStaffFix2=window.doOwnerFix2;
-    // FIX 1: WRONG PW DON'T SHOW REAL PW
+  // FIX 1: WRONG PW DON'T SHOW REAL PW
    window.doLogout=function(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} location.href=location.pathname+'?logout='+Date.now(); };
   
   // FIX 3: BLOCK DEVICE -> NEED APPROVAL AGAIN
