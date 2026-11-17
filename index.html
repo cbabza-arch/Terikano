@@ -1255,6 +1255,7 @@ function filterProfit(year){
 })();
 </script>
   <script>
+// === FIX LOGIN + STAFF LOCK FINAL V28.2 ===
 (function(){
   window.collects = window.collects || {};
   
@@ -1268,12 +1269,11 @@ function filterProfit(year){
       localStorage.setItem('isStaff','1');
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('terikano_session_auth','1');
-      // NO RELOAD - HIDE GATE DIRECTLY
-      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate, #staffGate').forEach(e=>{ e.style.display='none'; e.style.visibility='hidden'; });
+      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate').forEach(e=>{ e.style.display='none'; });
       document.body.classList.remove('locked');
-      let dash = document.getElementById('dashboard') || document.querySelector('.dashboard, main, #app');
+      let dash = document.getElementById('dashboard') || document.querySelector('main, #app');
       if(dash) dash.style.display='block';
-      alert('Staff OK!');
+      setTimeout(()=>{ if(window.applyStaffLock) applyStaffLock(); }, 500);
       return false;
     }
     if(v==='Terikano_2026'||v==='1234'||v==='12345'){
@@ -1281,11 +1281,10 @@ function filterProfit(year){
       localStorage.removeItem('isStaff');
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('terikano_session_auth','1');
-      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate, #staffGate').forEach(e=>{ e.style.display='none'; e.style.visibility='hidden'; });
+      document.querySelectorAll('[id*="Gate"], [id*="gate"], [id*="Login"], [id*="login"], .login-box, #ownerGate').forEach(e=>{ e.style.display='none'; });
       document.body.classList.remove('locked');
-      let dash = document.getElementById('dashboard') || document.querySelector('.dashboard, main, #app');
+      let dash = document.getElementById('dashboard') || document.querySelector('main, #app');
       if(dash) dash.style.display='block';
-      alert('Owner OK!');
       return false;
     }
     alert('WRONG PW: '+v);
@@ -1298,7 +1297,30 @@ function filterProfit(year){
   window.doStaffLogin = FIX_LOGIN;
   window.ownerLogin = FIX_LOGIN;
   window.staffLogin = FIX_LOGIN;
-  window.login = FIX_LOGIN;
+
+  // STAFF LOCK - HIDE COST/PROFIT/INTEREST/DELETE/SETTINGS
+  function isStaffMode(){ return localStorage.getItem('isStaff')==='1'; }
+  function lockStaff(){
+    if(!isStaffMode()) return;
+    // Hide Delete
+    document.querySelectorAll('button, a, span, i').forEach(el=>{
+      let t = (el.textContent||'').toLowerCase().trim();
+      let oc = (el.getAttribute('onclick')||'').toLowerCase();
+      if(t==='delete' || (t.includes('delete') && t.length<15) || oc.includes('delete')) el.style.display='none';
+    });
+    // Hide Cost/Profit/Interest cols
+    document.querySelectorAll('th, td').forEach(el=>{
+      let t = (el.textContent||'').toLowerCase();
+      if(t.includes('cost price') || t==='cost' || t.includes('profit') || t.includes('interest') || t.includes('avg cost')) el.style.display='none';
+    });
+    // Hide Settings/Manage
+    document.querySelectorAll('[id*="setting"], [id*="manage"], .settings, #backupBtn, #restoreBtn').forEach(e=> e.style.display='none');
+  }
+
+  window.applyStaffLock = lockStaff;
+  setInterval(lockStaff, 1000);
+  const obs = new MutationObserver(lockStaff);
+  obs.observe(document.body, {childList:true, subtree:true});
 
   window.doLogout=function(){try{localStorage.clear();sessionStorage.clear();}catch(e){} location.href=location.pathname+'?logout='+Date.now();};
 })();
