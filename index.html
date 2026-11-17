@@ -25,12 +25,12 @@
 <meta name="theme-color" content="#FFD700">
 <meta name="viewport" content="width=device-width, initial-scale=1"><script>
 // CLOUD SAVE/LOAD
-let purchases = [];
-let sales = [];
-let CLOUD_READY = false;
+var purchases = [];
+var sales = [];
+var CLOUD_READY = false;
 
 async function saveToCloud(){
-  let toSave = {
+  var toSave = {
     purchases: purchases,
     sales: sales,
     markup: globalMarkup,
@@ -1248,6 +1248,27 @@ function filterProfit(year){
       document.body.classList.remove('locked');
       alert('OWNER LOGGED - NO RELOAD');
       return;
+    }
+    alert('WRONG PW: '+v);
+  };
+  window.doStaffFix2=window.doOwnerFix2;
+})();
+</script>
+  <script>
+(function(){
+  window.collects = window.collects || {};
+  window.doOwnerFix2=function(){
+    let el=document.getElementById('ownerPass'); let v=(el?.value||'').trim();
+    if(!v){alert('Enter password!');return;}
+    if(v==='Terikano_2005'){
+      localStorage.setItem('isOwner','0'); localStorage.setItem('isStaff','1');
+      sessionStorage.setItem('terikano_session_auth','1'); localStorage.setItem('terikano_session_auth','1');
+      location.href=location.pathname; return;
+    }
+    if(v==='Terikano_2026'||v==='1234'||v==='12345'){
+      localStorage.setItem('isOwner','1'); localStorage.removeItem('isStaff');
+      sessionStorage.setItem('terikano_session_auth','1'); localStorage.setItem('terikano_session_auth','1');
+      location.href=location.pathname; return;
     }
     alert('WRONG PW: '+v);
   };
