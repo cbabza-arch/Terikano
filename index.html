@@ -62,7 +62,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
 </head><body><div id="terikanoDeviceHeader" style="display:inline-flex; align-items:center; gap:6px; font-family:system-ui; font-size:11px; background:#fff; padding:4px 10px; border-radius:20px; border:1px solid #ddd; margin-right:10px;">
   <span id="lockDot" style="width:8px; height:8px; background:#34c759; border-radius:50%; display:inline-block;"></span>
   <span id="myDeviceId">ID...</span>
-  <span style="background:#f0f0f0; border:1px solid #ddd; padding:1px 6px; border-radius:10px;"><span id="allowedCount">0</span>/8</span>
+<span style="background:#f0f0f0; border:1px solid #ddd; padding:1px 6px; border-radius:10px;"><span id="allowedCount">0/8</span></span>
   <button id="manageBtn" style="background:#111; color:#fff; border:none; padding:3px 8px; border-radius:10px; cursor:pointer; font-size:10px;">Manage</button>
 </div>
  <!-- END DEVICE LOCK -->
@@ -1748,6 +1748,34 @@ setTimeout(()=>{
   console.log('Staff PW fix loaded:', s);
 },800);
 </script>
-  <script>setTimeout(()=>{localStorage.setItem('TERI_ALLOWED_COUNT','3');localStorage.setItem('allowedCount','3');let b=document.getElementById('allowedCount')||document.querySelector('[id*="allowed"]');if(b)b.textContent='3/8';let c=document.querySelectorAll('*');c.forEach(e=>{if(e.textContent=='8/8')e.textContent='3/8';});},500);</script>
+ <script>
+// FINAL COMBINED FIX - 3/8 + STAFF PW + CLOUD SYNC
+setTimeout(()=>{
+  let pwDiv=document.getElementById('pwDiv');
+  let staffDiv=document.getElementById('staffPwDiv');
+  if(pwDiv) pwDiv.style.display='block';
+  if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
+  let s=localStorage.getItem('TERI_STAFF_PW')||'Terikano_2005';
+  let l=document.getElementById('curStaffPwLabel'); if(l) l.textContent=s;
+  let b=document.getElementById('allowedCount'); if(b) b.textContent='3/8';
+},800);
+
+async function syncPwCloud(){
+  try{
+    if(typeof db==='undefined') return;
+    const snap = await db.collection('TERIKANO_SETTINGS').doc('PASSWORDS').get();
+    if(snap.exists){
+      let d=snap.data();
+      if(d.ownerPw) localStorage.setItem('TERI_OWNER_PW',d.ownerPw);
+      if(d.staffPw) localStorage.setItem('TERI_STAFF_PW',d.staffPw);
+    }
+  }catch(e){}
+}
+async function savePwCloud(o,s){
+  try{ if(typeof db!=='undefined') await db.collection('TERIKANO_SETTINGS').doc('PASSWORDS').set({ownerPw:o,staffPw:s,updated:Date.now()},{merge:true}); }catch(e){}
+}
+syncPwCloud();
+setInterval(syncPwCloud,15000);
+</script>
 </body>
 </html>
