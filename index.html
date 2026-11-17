@@ -1176,12 +1176,28 @@ function filterProfit(year){
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
     setTimeout(forceOwnerTabs,100); setTimeout(forceOwnerTabs,600); updateOnline(); updateCountDisplay();
   }
-  function doStaffLimited(){
-    try{localStorage.setItem(FLAG,'0');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
+ function doStaffLimited(){
+    try{localStorage.setItem(FLAG,'1');localStorage.setItem('isOwner','0');sessionStorage.setItem(SESS,'staff');}catch(e){}
     let did=getDeviceId(); let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); if(!cache[did]){ cache[did]={id:did,allowed:true}; localStorage.setItem('terikano_devices_cache',JSON.stringify(cache)); }
-    $id('loginBox').style.display='none'; $id('staffLock').style.display='none';
+    $id('loginBox').style.display='none'; 
+    if($id('staffLock')) $id('staffLock').style.display='none';
+    if($id('mainApp')) $id('mainApp').style.display='block';
     if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    updateOnline(); updateCountDisplay(); setTimeout(hideForStaff,200);
+    updateOnline(); updateCountDisplay(); 
+    setTimeout(hideForStaff,200);
+    setTimeout(hideForStaff,1000);
+    setTimeout(hideForStaff,2000);
+  }
+
+  function hideForStaff(){
+    // FORCE HIDE owner buttons
+    document.querySelectorAll('button').forEach(btn=>{
+      let t = (btn.innerText||'').trim().toUpperCase();
+      if(t==='PW' || t.includes('RENAME') || t.includes('BACKUP')){
+        btn.style.display='none';
+      }
+    });
+    console.log('Staff mode: owner buttons hidden');
   }
   window.doOwnerFix2=function(){
     let el=$id('ownerPass'); let v=(el?.value||'').trim();
