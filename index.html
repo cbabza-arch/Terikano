@@ -1721,5 +1721,32 @@ function filterProfit(year){
   };
 })();
 </script>
+<script>
+// FORCE STAFF PW SETTING TO SHOW
+function setStaffPw(){
+  let v=document.getElementById('new_staff_pw').value.trim();
+  if(!v){ alert('Enter new Staff PW!'); return; }
+  localStorage.setItem('TERI_STAFF_PW', v);
+  localStorage.setItem('staff_pw', v);
+  localStorage.setItem('staffPw', v);
+  let l=document.getElementById('curStaffPwLabel'); if(l) l.textContent=v;
+  alert('Staff PW Set: '+v); document.getElementById('new_staff_pw').value='';
+}
+function removeStaffPw(){
+  localStorage.setItem('TERI_STAFF_PW','Terikano_2005');
+  localStorage.setItem('staff_pw','Terikano_2005');
+  let l=document.getElementById('curStaffPwLabel'); if(l) l.textContent='Terikano_2005';
+  alert('Staff PW Reset to Terikano_2005');
+}
+setTimeout(()=>{
+  let pwDiv=document.getElementById('pwDiv');
+  let staffDiv=document.getElementById('staffPwDiv');
+  if(pwDiv){ pwDiv.style.display='block'; }
+  if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
+  let s=localStorage.getItem('TERI_STAFF_PW')||localStorage.getItem('staff_pw')||'Terikano_2005';
+  let l=document.getElementById('curStaffPwLabel'); if(l) l.textContent=s;
+  console.log('Staff PW fix loaded:', s);
+},800);
+</script>
 </body>
 </html>
