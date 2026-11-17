@@ -1750,32 +1750,57 @@ setTimeout(()=>{
 </script>
  <script>
 // FINAL COMBINED FIX - 3/8 + STAFF PW + CLOUD SYNC
+<script>
 setTimeout(()=>{
-  let pwDiv=document.getElementById('pwDiv');
-  let staffDiv=document.getElementById('staffPwDiv');
-  if(pwDiv) pwDiv.style.display='block';
-  if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
-  let s=localStorage.getItem('TERI_STAFF_PW')||'Terikano_2005';
-  let l=document.getElementById('curStaffPwLabel'); if(l) l.textContent=s;
-  let b=document.getElementById('allowedCount'); if(b) b.textContent='3/8';
+ let pwDiv=document.getElementById('pwDiv');
+ let staffDiv=document.getElementById('staffPwDiv');
+ if(pwDiv) pwDiv.style.display='block';
+ if(staffDiv){ staffDiv.style.display='block'; staffDiv.style.visibility='visible'; }
 },800);
 
-async function syncPwCloud(){
-  try{
-    if(typeof db==='undefined') return;
-    const snap = await db.collection('TERIKANO_SETTINGS').doc('PASSWORDS').get();
-    if(snap.exists){
-      let d=snap.data();
-      if(d.ownerPw) localStorage.setItem('TERI_OWNER_PW',d.ownerPw);
-      if(d.staffPw) localStorage.setItem('TERI_STAFF_PW',d.staffPw);
-    }
-  }catch(e){}
+// --- ALL CLOUD SYNC ---
+async function cloudSyncAll(){
+ try{
+  if(typeof db==='undefined') return;
+  // 3/8 SYNC
+  let cSnap=await db.collection('TERIKANO_SETTINGS').doc('COUNT').get();
+  if(cSnap.exists){ 
+   let v=cSnap.data().allowed||'3';
+   localStorage.setItem('TERI_ALLOWED_COUNT',v);
+   let b=document.getElementById('allowedCount'); if(b) b.textContent=v+'/8';
+  }
+  // DAILY NOTES SYNC - NIKIRA/KAKORO
+  let today=new Date().toISOString().split('T')[0];
+  for(let loc of ['NIKIRA','KAKORO']){
+   let nSnap=await db.collection('TERIKANO_DAILY_NOTES').doc(today+'_'+loc).get();
+   if(nSnap.exists){
+    localStorage.setItem('DAILY_'+today+'_'+loc, JSON.stringify(nSnap.data()));
+    let el=document.getElementById('dailyNotes_'+loc) || document.getElementById('dailyNotes');
+    if(el && nSnap.data().text) el.value=nSnap.data().text;
+   }
+  }
+ }catch(e){}
 }
-async function savePwCloud(o,s){
-  try{ if(typeof db!=='undefined') await db.collection('TERIKANO_SETTINGS').doc('PASSWORDS').set({ownerPw:o,staffPw:s,updated:Date.now()},{merge:true}); }catch(e){}
+
+async function saveDailyNote(loc, text){
+ try{
+  let today=new Date().toISOString().split('T')[0];
+  await db.collection('TERIKANO_DAILY_NOTES').doc(today+'_'+loc).set({text:text, loc:loc, date:today, updated:Date.now()},{merge:true});
+ }catch(e){}
 }
-syncPwCloud();
-setInterval(syncPwCloud,15000);
+
+// HOOK SAVE BUTTONS
+let oldSaveDaily=window.saveDailyNotes;
+if(typeof saveDailyNotes==='function'){
+ window.saveDailyNotes=function(loc){
+  let el=document.getElementById('dailyNotes_'+loc) || document.getElementById('dailyNotes');
+  if(el) saveDailyNote(loc||'NIKIRA', el.value);
+  if(oldSaveDaily) oldSaveDaily(loc);
+ }
+}
+
+cloudSyncAll();
+setInterval(cloudSyncAll,10000);
 </script>
 </body>
 </html>
