@@ -1221,17 +1221,15 @@ function filterProfit(year){
   };
 
     window.doOwnerFix2=function(){
-    let el=$id('ownerPass'); 
+    let el=document.getElementById('ownerPass'); 
     let v=(el?.value||'').trim();
     if(!v){alert('Enter password!');return;}
-    // STAFF FIRST
     if(v==='Terikano_2005'){
-      localStorage.setItem('isOwner','0');
       localStorage.setItem('isOwner','0');
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.setItem('isStaff','1');
       el.value='';
-      location.reload();
+      location.href = location.pathname;
       return;
     }
     if(v==='Terikano_2026'||v==='1234'||v==='12345'||v===getOwnerPw()){
@@ -1239,7 +1237,7 @@ function filterProfit(year){
       sessionStorage.setItem('terikano_session_auth','1');
       localStorage.removeItem('isStaff');
       el.value='';
-      location.reload();
+      location.href = location.pathname;
       return;
     }
     alert('WRONG PW!');
@@ -1252,28 +1250,10 @@ function filterProfit(year){
       localStorage.removeItem('isOwner');
       localStorage.removeItem('isStaff');
       sessionStorage.removeItem('terikano_session_auth');
-      localStorage.removeItem('isOwner');
     }catch(e){} 
     location.href=location.pathname+'?logout='+Date.now(); 
   };
-  
-  // FORCE HIDE FOR STAFF - FINAL OVERRIDE
-  window.hideForStaff=function(){
-    if(localStorage.getItem('isOwner')!=='0') return;
-    let mb=document.getElementById('manageBtn'); if(mb) mb.style.display='none';
-    let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='none';
-    let hdr=document.getElementById('terikanoDeviceHeader'); if(hdr) hdr.style.display='none';
-    document.querySelectorAll('button').forEach(btn=>{
-      let t=(btn.innerText||'').toUpperCase();
-      if(t==='PW' || t.includes('RENAME') || t.includes('BACKUP') || t.includes('CAPITAL') || t.includes('TARGET')){
-        btn.style.display='none';
-        btn.style.visibility='hidden';
-      }
-    });
-  };
-  
-  setInterval(window.hideForStaff,1000);
 })();
 </script>
 </body>
-</html
+</html>
