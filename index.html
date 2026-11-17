@@ -416,7 +416,7 @@ function doLogout(){localStorage.setItem('isOwner','0');document.getElementById(
 function doOwnerFix2(){localStorage.setItem('isOwner','1');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
-function save(){try{localStorage.setItem('Terikano_storage_data',JSON.stringify({purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts}));}catch(e){console.log('Save err',e);}}
+function save(){try{var d={purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts};localStorage.setItem('Terikano_storage_data',JSON.stringify(d));if(window.saveToCloud)saveToCloud(d);}catch(e){console.log('Save err',e);}}
 let terikanoSet={"bankInt":11,"bankCharge":50};
 function load(){try{var d=JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}');purchases=d.purchases||[];sales=d.sales||[];capitals=d.capitals||[];banks=d.banks||[];expenses=d.expenses||[];collects=d.collects||[];ownerTakes=d.ownerTakes||[];tips=d.tips||[];waste=d.waste||[];clearance=d.clearance||[];dailyTarget=d.dailyTarget||100;cocoRateG1=d.cocoRateG1||0.3333333;cocoRateG2=d.cocoRateG2||0.25;businessName=d.businessName||'TERIKANO';cocoBuys=d.cocoBuys||[];cocoMills=d.cocoMills||[];millRatePerKg=(d.millRatePerKg&&d.millRatePerKg>=1)?d.millRatePerKg:4;millWeightPerCoco=(d.millWeightPerCoco&&d.millWeightPerCoco>=0.05)?d.millWeightPerCoco:0.1532;badDebts=d.badDebts||[];wholesalerDebts=d.wholesalerDebts||JSON.parse(localStorage.getItem('wholesalerDebts')||'[]');priceHistory=d.priceHistory||[];terikanoSet=d.terikanoSet||{"bankInt":11,"bankCharge":50};try{document.getElementById('bankIntIn').value=terikanoSet.bankInt;document.getElementById('bankChargeIn').value=terikanoSet.bankCharge;}catch(e){}}catch(e){console.log('Load err',e);}setTimeout(function(){populateDatalist();},500);}
 function saveSet(){save();rebuild();}
@@ -1061,11 +1061,11 @@ function viewClosedYears(){
 function filterProfit(year){
   try{
     // get data
-    let raw = localStorage.getItem('Terikano_storage_data') || localStorage.getItem('terikano_data') || '{}';
+    let cloudRaw = null; try{ if(window.cloudDataCache) cloudRaw = JSON.stringify(window.cloudDataCache); }catch(e){}
+    let raw = cloudRaw || localStorage.getItem('Terikano_storage_data') || localStorage.getItem('terikano_data') || '{}';
     let D = JSON.parse(raw);
     let sales = D.sales || D.transactions || D.data_transactions || [];
-    if(sales.length===0) sales = JSON.parse(localStorage.getItem('sales')||'[]');
-   
+    if(sales.length===0) sales = JSON.parse(localStorage.getItem('sales')||'[]');   
     // filter
     let list = sales;
     if(year !== 'all'){
