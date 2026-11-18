@@ -1212,65 +1212,81 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:9999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V28.2 FINAL - SINGLE CLEAN LOGIN
+// V28.2 FINAL - SINGLE CLEAN LOGIN - NO AUTO LOGOUT
 (function(){
   const DEFAULT_OWNER='Terikano_2026'; 
   const DEFAULT_STAFF='Terikano_2005';
   const SESS='terikano_session_auth';
   function $id(i){return document.getElementById(i);}
-  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || DEFAULT_OWNER).trim(); };
-  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || DEFAULT_STAFF).trim(); };
-  window.isOwner=function(){ return localStorage.getItem('isOwner')==='1'; };
+  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || 'Terikano_2026').trim(); };
+  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || 'Terikano_2005').trim(); };
+  
   window.checkLogin=function(){
-    var p = ($id('staffPass')?.value || '').trim();
+    var p = ($id('staffPass')?.value||'').trim();
     if(!p){ alert('Enter PW'); return; }
     var ownerPw = window.getOwnerPw();
     var staffPw = window.getStaffPw();
     if(p === ownerPw){
-      localStorage.setItem('isOwner','1'); localStorage.removeItem('isStaff');
+      localStorage.setItem('isOwner','1'); 
+      localStorage.removeItem('isStaff');
+      localStorage.setItem(SESS,'owner'); 
       sessionStorage.setItem(SESS,'owner');
-      $id('loginBox').style.display='none'; 
-      alert('👑 OWNER LOGIN OK');
+      $id('loginBox').style.display='none';
       location.reload();
     } else if(p === staffPw){
-      localStorage.setItem('isOwner','0'); localStorage.setItem('isStaff','1');
+      localStorage.setItem('isOwner','0'); 
+      localStorage.setItem('isStaff','1');
+      localStorage.setItem(SESS,'staff'); 
       sessionStorage.setItem(SESS,'staff');
       $id('loginBox').style.display='none';
-      alert('👤 STAFF LOGIN OK');
       location.reload();
     } else {
-      alert('❌ WRONG PW! Owner:'+ownerPw+' Staff:'+staffPw);
+      alert('❌ WRONG PASSWORD!');
     }
   };
+  
   window.changePw=function(){
     let oldP = ($id('old_pw')?.value||'').trim();
     let newP = ($id('new_pw')?.value||'').trim();
     let cur = window.getOwnerPw();
-    if(oldP !== cur){ alert('Wrong Old! Current:'+cur); return; }
+    if(oldP !== cur){ alert('Wrong Old!'); return; }
+    if(!newP){ alert('Enter new'); return; }
     localStorage.setItem('TERI_PW', newP);
     localStorage.setItem('terikano_owner_pw', newP);
     if($id('curPwLabel')) $id('curPwLabel').innerText=newP;
-    alert('✅ OWNER PW: '+newP);
+    alert('✅ OWNER PW CHANGED');
   };
+  
   window.setStaffPw=function(){
     let newP = ($id('new_staff_pw')?.value||'').trim();
     if(!newP){ alert('Enter staff pw'); return; }
     localStorage.setItem('TERI_STAFF_PW', newP);
     localStorage.setItem('terikano_staff_custom_pw', newP);
     if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=newP;
-    alert('✅ STAFF PW: '+newP);
+    alert('✅ STAFF PW CHANGED');
   };
+  
   window.removeStaffPw=function(){
     localStorage.removeItem('TERI_STAFF_PW');
     localStorage.removeItem('terikano_staff_custom_pw');
+    if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=DEFAULT_STAFF;
     alert('Reset to '+DEFAULT_STAFF);
   };
+  
   window.doOwnerFix2=window.checkLogin;
   window.doStaffFix2=window.checkLogin;
+
+  // AUTO HIDE LOGIN IF ALREADY LOGGED IN - FIX LOGOUT BUG
   setTimeout(function(){
+    let sess = localStorage.getItem(SESS) || sessionStorage.getItem(SESS);
+    let isOwnerFlag = localStorage.getItem('isOwner');
+    if(sess && (isOwnerFlag==='1' || isOwnerFlag==='0')){
+      let lb=$id('loginBox'); if(lb) lb.style.display='none';
+      let sl=$id('staffLock'); if(sl) sl.style.display='none';
+    }
     if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
     if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
-  },400);
+  },300);
 })();
 </script>
 </body>
