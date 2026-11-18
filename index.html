@@ -479,7 +479,7 @@ function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function doLogout(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='flex';document.body.classList.remove('authenticated');location.reload();}
+function doLogout(){localStorage.removeItem('isOwner');localStorage.removeItem('isStaff');localStorage.removeItem('terikano_session_auth');sessionStorage.clear();document.getElementById('loginBox').style.display='flex';document.getElementById('staffLock').style.display='none';location.href = location.pathname + '?logout=' + Date.now();}
 function doOwnerFix2(){localStorage.setItem('isOwner','1');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
@@ -1290,100 +1290,74 @@ function filterProfit(year){
       let t=(b.innerText||'').toUpperCase();
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
 <div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
-<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V28.4</b><br><br>
-<input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
-<button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
+<b style="color:gold;">🏪 TERIKANO V28.5</b><br><br>
+<input id="staffPass" type="password" placeholder="Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
+<button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold;">🔓 LOGIN</button>
 <div style="margin-top:10px; font-size:11px; color:#fff;">Owner: <span id="loginOwnerHint"></span> | Staff: <span id="loginStaffHint"></span></div>
-<button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();" style="margin-top:15px; font-size:10px; background:#444; color:#fff; padding:5px;">🔴 FORCE RESET IF STUCK</button>
+<br><button onclick="localStorage.clear(); sessionStorage.clear(); alert('CLEARED! Now reload'); location.href=location.pathname;" style="background:red; color:white; padding:6px; font-size:10px; border-radius:5px;">CLEAR ALL & RESET</button>
 </div></div>
 
 <script>
-// V28.4 FINAL - NO AUTO STAFF, FIX LOGOUT LOOP
+// V28.5 NUCLEAR - STOP AUTO STAFF
 (function(){
-  const DEFAULT_OWNER='Terikano_2026'; 
-  const DEFAULT_STAFF='Terikano_2005';
   const SESS='terikano_session_auth';
   function $id(i){return document.getElementById(i);}
-
-  // ==== LOGOUT = HARD CLEAR ====
-  if(location.search.includes('logout')){
+  // IF URL HAS logout OR clearall -> FORCE DELETE EVERYTHING
+  let url = location.href.toLowerCase();
+  if(url.includes('logout') || url.includes('clearall') || url.includes('blocked')){
     localStorage.removeItem('isOwner');
     localStorage.removeItem('isStaff');
     localStorage.removeItem(SESS);
     sessionStorage.removeItem(SESS);
-    // DO NOT auto hide, force show login and STOP
-    window.__IS_LOGOUT__ = true;
+    localStorage.removeItem('terikano_session_auth');
+    // KEEP DATA, ONLY REMOVE LOGIN FLAGS
   }
 
-  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || DEFAULT_OWNER).trim(); };
-  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || DEFAULT_STAFF).trim(); };
+  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || 'Terikano_2026').trim(); };
+  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || 'Terikano_2005').trim(); };
   
   window.checkLogin=function(){
     var p = ($id('staffPass')?.value||'').trim();
-    if(!p){ alert('Enter PW'); return; }
-    var ownerPw = window.getOwnerPw();
-    var staffPw = window.getStaffPw();
-    console.log('TRY:',p,'Owner:',ownerPw,'Staff:',staffPw);
-    if(p === ownerPw){
-      localStorage.setItem('isOwner','1'); 
+    if(p===window.getOwnerPw()){
+      localStorage.setItem('isOwner','1');
       localStorage.removeItem('isStaff');
-      localStorage.setItem(SESS,'owner'); 
-      sessionStorage.setItem(SESS,'owner');
-      alert('✅ OWNER LOGIN OK');
-      location.href = location.pathname + '?owner=' + Date.now();
-    } else if(p === staffPw){
-      localStorage.setItem('isOwner','0'); 
+      localStorage.setItem(SESS,'owner');
+      location.href=location.pathname;
+    } else if(p===window.getStaffPw()){
+      localStorage.setItem('isOwner','0');
       localStorage.setItem('isStaff','1');
-      localStorage.setItem(SESS,'staff'); 
-      sessionStorage.setItem(SESS,'staff');
-      alert('✅ STAFF LOGIN OK');
-      location.href = location.pathname + '?staff=' + Date.now();
+      localStorage.setItem(SESS,'staff');
+      location.href=location.pathname;
     } else {
-      alert('❌ WRONG! You typed:'+p+'\nOwner is:'+ownerPw+'\nStaff is:'+staffPw);
+      alert('WRONG PW! Owner:'+window.getOwnerPw()+' Staff:'+window.getStaffPw());
     }
   };
 
-  window.changePw=function(){
-    let oldP = ($id('old_pw')?.value||'').trim();
-    let newP = ($id('new_pw')?.value||'').trim();
-    if(oldP !== window.getOwnerPw()){ alert('Wrong Old!'); return; }
-    localStorage.setItem('TERI_PW', newP);
-    localStorage.setItem('terikano_owner_pw', newP);
-    alert('✅ OWNER PW NOW:'+newP);
-  };
-  window.setStaffPw=function(){
-    let newP = ($id('new_staff_pw')?.value||'').trim();
-    if(!newP) return;
-    localStorage.setItem('TERI_STAFF_PW', newP);
-    localStorage.setItem('terikano_staff_custom_pw', newP);
-    alert('✅ STAFF PW NOW:'+newP);
-  };
-  window.removeStaffPw=function(){
-    localStorage.removeItem('TERI_STAFF_PW');
-    localStorage.removeItem('terikano_staff_custom_pw');
-    alert('Reset');
-  };
-  window.doOwnerFix2=window.checkLogin;
-  window.doStaffFix2=window.checkLogin;
-
-  // Show login correctly
+  // THIS IS THE FIX - STOP AUTO LOGIN IF LOGOUT IN URL
+  let isLogoutPage = location.search.includes('logout') || location.search.includes('clearall');
   setTimeout(function(){
-    if(window.__IS_LOGOUT__){
-      let lb=$id('loginBox'); if(lb) lb.style.display='flex';
-      if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
-      if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
-      return;
-    }
     let sess = localStorage.getItem(SESS);
     let flag = localStorage.getItem('isOwner');
-    if(sess && (flag==='1' || flag==='0')){
-      let lb=$id('loginBox'); if(lb) lb.style.display='none';
+    let lb = $id('loginBox');
+    if(isLogoutPage){
+      if(lb) lb.style.display='flex';
+      console.log('LOGOUT PAGE - SHOW LOGIN');
+    } else if(sess && (flag==='0' || flag==='1')){
+      if(lb) lb.style.display='none';
     } else {
-      let lb=$id('loginBox'); if(lb) lb.style.display='flex';
+      if(lb) lb.style.display='flex';
     }
     if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
     if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
-  },400);
+  },500);
+  
+  // BLOCK OLD SCRIPT AUTO STAFF
+  setInterval(function(){
+    let isLogoutPage2 = location.search.includes('logout');
+    if(isLogoutPage2){
+      let lb=$id('loginBox'); if(lb && lb.style.display==='none') lb.style.display='flex';
+    }
+  },300);
 })();
 </script>
 </body>
