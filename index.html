@@ -1278,13 +1278,15 @@ function filterProfit(year){
   };
 
       window.doOwnerFix2=function(){
+let getStaffPw=()=>localStorage.getItem('terikano_staff_custom_pw')||'Terikano_2005';
+try{firebase.firestore().collection('terikano_config').doc('passwords').onSnapshot(d=>{if(d.exists&&d.data()?.staffPw)localStorage.setItem('terikano_staff_custom_pw',d.data().staffPw)})}catch(e){}
       let el=document.getElementById('ownerPass'); 
       let v=(el?.value||'').trim();
       if(!v){alert('Enter password!');return;}
       
       let vp=v.toLowerCase();
       // STAFF
-      if(v==='Terikano_2005' || vp==='terikano_2005' || v==='2005' || vp.includes('2005')){
+      if(v===getStaffPw()){
         localStorage.setItem('isOwner','0');
         localStorage.setItem('isStaff','1');
         localStorage.setItem('isOwner','0');
