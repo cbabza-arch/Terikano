@@ -1225,7 +1225,7 @@ function filterProfit(year){
     let hdr=$id('terikanoDeviceHeader'); if(hdr) hdr.style.display='none';
     document.querySelectorAll('button').forEach(btn=>{
       let t=(btn.innerText||'').toUpperCase();
-      if(t==='PW' || t.includes('RENAME') || t.includes('BACKUP') || t.includes('CAPITAL') || t.includes('TARGET SET') || t.includes('CHANGE PW')){
+      if((t==='PW' || t.includes('RENAME') || t.includes('BACKUP') || t.includes('CAPITAL') || t.includes('TARGET SET') || t.includes('CHANGE PW')) && localStorage.getItem('isOwner')==='1'){
         btn.style.display='none'; btn.style.visibility='hidden';
       }
       if(t==='PW' || (t.includes('PW') && t.length<10)){
