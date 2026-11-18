@@ -18,6 +18,36 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  // === STAFF PW ONLINE SYNC ===
+firebase.database().ref('terikano_config/passwords/staffPw').on('value', (snap)=>{
+  let cloudPw = snap.val();
+  if(cloudPw){
+    localStorage.setItem('terikano_staff_custom_pw', cloudPw);
+    let label = document.getElementById('curStaffPwLabel');
+    if(label) label.innerText = cloudPw;
+  }
+});
+
+function setStaffPw(){
+  let np = document.getElementById('new_staff_pw').value.trim();
+  if(!np){ alert('Enter new Staff PW'); return; }
+  localStorage.setItem('terikano_staff_custom_pw', np);
+  firebase.database().ref('terikano_config/passwords/staffPw').set(np).then(()=>{
+    alert('Staff PW Changed & Synced Online: ' + np);
+    document.getElementById('curStaffPwLabel').innerText = np;
+    document.getElementById('new_staff_pw').value = '';
+  });
+}
+
+function removeStaffPw(){
+  if(!confirm('Remove Staff PW?')) return;
+  localStorage.removeItem('terikano_staff_custom_pw');
+  firebase.database().ref('terikano_config/passwords/staffPw').remove().then(()=>{
+    alert('Staff PW Removed');
+    document.getElementById('curStaffPwLabel').innerText = 'Terikano_2005';
+  });
+}
+setInterval(function(){ if(typeof lockAll==='function' && !isOwner()) lockAll(); }, 800);
 </script>
 <!-- FIREBASE CLOUD END -->
 
