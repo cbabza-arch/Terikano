@@ -437,7 +437,18 @@ Old <input id="old_pw" type="password" style="width:100%;border:2px solid #000;p
 New <input id="new_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br><br>
 <button onclick="changePw()" style="background:gold;width:100%;padding:12px;border-radius:10px;border:2px solid #000;font-weight:bold">CHANGE OWNER PW</button>
 </div>
-
+<div id="pwDiv" class="window owner-only-div" style="position:fixed;top:60px;right:10px;z-index:9999;width:300px;background:#222;padding:10px;border-radius:10px;border:2px solid gold;display:none">
+<div class="window-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<b style="color:gold">🔑 PASSWORD - Owner Only</b>
+<button class="hide-btn" style="background:gold;color:#000;padding:4px 10px;border-radius:5px;font-weight:bold" onclick="hideWin('pwDiv')">❌ HIDE</button>
+</div>
+<div style="background:#fff;padding:10px;border-radius:10px;border:2px solid gold">
+<b>OWNER PASSWORD</b><br>
+Current Owner: <b id="curPwLabel">Terikano_2026</b><br>
+Old <input id="old_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br>
+New <input id="new_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br><br>
+<button onclick="changePw()" style="background:gold;width:100%;padding:12px;border-radius:10px;border:2px solid #000;font-weight:bold">CHANGE OWNER PW</button>
+</div>
 <div id="staffPwDiv" style="background:orange;padding:10px;border:3px solid #000;margin-top:10px;border-radius:10px;display:block">
 <b>👤 STAFF PASSWORD</b><br>
 Current Staff: <b id="curStaffPwLabel">Teikano_2006</b><br><br>
@@ -446,23 +457,6 @@ New Staff PW <input id="new_staff_pw" type="text" style="width:100%;border:2px s
 <button onclick="removeStaffPw()" style="background:#c62828;color:#fff;width:100%;padding:8px;border-radius:10px;margin-top:6px">🗑️ REMOVE</button>
 </div>
 </div>
-<div class="window-header"><b style="color:gold">🔑 PASSWORD - Owner Only</b><button class="hide-btn" style="background:gold;color:#000" onclick="hideWin('pwDiv')">❌ HIDE</button></div>
-<div style="background:#fff;padding:10px;border-radius:10px;border:2px solid gold">
-Current <b id="curPwLabel">1234</b><br>
-Old <input id="old_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br>
-New <input id="new_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br><br>
-<button onclick="changePw()" style="background:gold;width:100%;padding:12px;border-radius:10px;border:2px solid #000;font-weight:bold">CHANGE PW</button>
-
-<div id="staffPwDiv" style="background:orange;padding:10px;border:3px solid #000;margin-top:10px;border-radius:10px;display:block">
-<b>👤 STAFF PASSWORD</b><br>
-Current: <b id="curStaffPwLabel">Terikano_2005</b><br><br>
-New Staff PW <input id="new_staff_pw" type="text" style="width:100%;border:2px solid #000;padding:8px"><br><br>
-<button onclick="setStaffPw()" style="background:#000;color:orange;width:100%;padding:12px;border-radius:10px;font-weight:bold">💾 SET STAFF PW</button>
-<button onclick="removeStaffPw()" style="background:#c62828;color:#fff;width:100%;padding:8px;border-radius:10px;margin-top:6px">🗑️ REMOVE</button>
-</div>
-
-</div></div>
-
 <div id="backupDiv" class="owner-only-div" style="background:#ede7f6;padding:12px;border:3px solid #4a148c;border-radius:12px;display:none;margin:8px 6px"><div class="window-header"><b>💾 BACKUP - Avg Cost + Price History - Owner Only</b><button class="hide-btn" onclick="hideWin(&#39;backupDiv&#39;)">❌ HIDE</button></div><button onclick="backupData()" style="background:green;color:#fff;width:100%;padding:13px;border-radius:10px;border:2px solid #000;font-weight:bold">📥 BACKUP NOW - Avg + History + IB</button><button onclick="exportStockToStaff()" style="background:#FF9800;color:white;width:100%;padding:13px;border-radius:10px;border:2px solid #000;font-weight:bold;margin-top:10px;">📦 EXPORT STOCK TO STAFF</button>
 <input type="file" id="mergeFileInput" style="display:none" accept=".json" onchange="importMergeOffline(event)">
 <button onclick="document.getElementById('mergeFileInput').click()" style="background:#4CAF50;color:white;width:100%;padding:13px;border-radius:10px;border:2px solid #000;font-weight:bold;margin-top:8px;">📥 MERGE STAFF FILE - OFFLINE</button>
