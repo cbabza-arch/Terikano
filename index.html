@@ -1198,12 +1198,11 @@ function filterProfit(year){
     if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
-</script>
 <div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold; border-radius:8px;">LOGIN</button></div></div>
 
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
 <div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
-<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V28.2 FINAL</b><br><br>
+<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V28.3 FINAL</b><br><br>
 <input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
 <button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
 <div style="margin-top:10px; font-size:11px; color:#fff;">Owner: <span id="loginOwnerHint"></span> | Staff: <span id="loginStaffHint"></span></div>
@@ -1212,12 +1211,21 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:9999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V28.2 FINAL - SINGLE CLEAN LOGIN - NO AUTO LOGOUT
+// V28.3 FINAL - FIX LOGOUT + HIDE BANK SETTING FOR STAFF
 (function(){
   const DEFAULT_OWNER='Terikano_2026'; 
   const DEFAULT_STAFF='Terikano_2005';
   const SESS='terikano_session_auth';
   function $id(i){return document.getElementById(i);}
+
+  if(location.search.includes('logout') || location.search.includes('blocked')){
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+    localStorage.removeItem(SESS);
+    sessionStorage.removeItem(SESS);
+    localStorage.removeItem('terikano_session_auth');
+  }
+
   window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || 'Terikano_2026').trim(); };
   window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || 'Terikano_2005').trim(); };
   
@@ -1231,15 +1239,13 @@ function filterProfit(year){
       localStorage.removeItem('isStaff');
       localStorage.setItem(SESS,'owner'); 
       sessionStorage.setItem(SESS,'owner');
-      $id('loginBox').style.display='none';
-      location.reload();
+      location.href = location.pathname;
     } else if(p === staffPw){
       localStorage.setItem('isOwner','0'); 
       localStorage.setItem('isStaff','1');
       localStorage.setItem(SESS,'staff'); 
       sessionStorage.setItem(SESS,'staff');
-      $id('loginBox').style.display='none';
-      location.reload();
+      location.href = location.pathname;
     } else {
       alert('❌ WRONG PASSWORD!');
     }
@@ -1250,7 +1256,6 @@ function filterProfit(year){
     let newP = ($id('new_pw')?.value||'').trim();
     let cur = window.getOwnerPw();
     if(oldP !== cur){ alert('Wrong Old!'); return; }
-    if(!newP){ alert('Enter new'); return; }
     localStorage.setItem('TERI_PW', newP);
     localStorage.setItem('terikano_owner_pw', newP);
     if($id('curPwLabel')) $id('curPwLabel').innerText=newP;
@@ -1259,7 +1264,7 @@ function filterProfit(year){
   
   window.setStaffPw=function(){
     let newP = ($id('new_staff_pw')?.value||'').trim();
-    if(!newP){ alert('Enter staff pw'); return; }
+    if(!newP) return;
     localStorage.setItem('TERI_STAFF_PW', newP);
     localStorage.setItem('terikano_staff_custom_pw', newP);
     if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=newP;
@@ -1269,20 +1274,37 @@ function filterProfit(year){
   window.removeStaffPw=function(){
     localStorage.removeItem('TERI_STAFF_PW');
     localStorage.removeItem('terikano_staff_custom_pw');
-    if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=DEFAULT_STAFF;
     alert('Reset to '+DEFAULT_STAFF);
   };
   
   window.doOwnerFix2=window.checkLogin;
   window.doStaffFix2=window.checkLogin;
 
-  // AUTO HIDE LOGIN IF ALREADY LOGGED IN - FIX LOGOUT BUG
+  function HIDE_FOR_STAFF(){
+    if(localStorage.getItem('isOwner')!=='0') return;
+    let pwDiv=$id('pwDiv'); if(pwDiv) pwDiv.style.display='none';
+    let backupDiv=$id('backupDiv'); if(backupDiv) backupDiv.style.display='none';
+    let renameDiv=$id('renameDiv'); if(renameDiv) renameDiv.style.display='none';
+    // Hide BANK SETTING buttons by ID - add IDs in stock tab
+    document.querySelectorAll('button').forEach(b=>{
+      let t=(b.innerText||'').toUpperCase();
+      if(t.includes('BANK') || t==='PW' || t.includes('CAPITAL') || t.includes('TARGET')) b.style.display='none';
+    });
+  }
+  setInterval(HIDE_FOR_STAFF, 1000);
+
   setTimeout(function(){
+    if(location.search.includes('logout')){
+      let lb=$id('loginBox'); if(lb) lb.style.display='flex';
+      return;
+    }
     let sess = localStorage.getItem(SESS) || sessionStorage.getItem(SESS);
     let isOwnerFlag = localStorage.getItem('isOwner');
     if(sess && (isOwnerFlag==='1' || isOwnerFlag==='0')){
       let lb=$id('loginBox'); if(lb) lb.style.display='none';
-      let sl=$id('staffLock'); if(sl) sl.style.display='none';
+      HIDE_FOR_STAFF();
+    } else {
+      let lb=$id('loginBox'); if(lb) lb.style.display='flex';
     }
     if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
     if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
