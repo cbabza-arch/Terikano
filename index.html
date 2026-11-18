@@ -527,8 +527,6 @@ function doLogout(){
   try{sessionStorage.clear();}catch(e){}
   location.href = location.pathname + '?logout=' + Date.now();
 }
-function doOwnerFix2(){localStorage.setItem('isOwner','1');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
-function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
 function save(){try{var d={purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts};localStorage.setItem('Terikano_storage_data',JSON.stringify(d));if(window.saveToCloud)saveToCloud(d);}catch(e){console.log('Save err',e);}}
 let terikanoSet={"bankInt":11,"bankCharge":50};
@@ -1324,18 +1322,39 @@ function filterProfit(year){
     alert('Reset to '+DEFAULT_STAFF);
   };
   
-  window.doOwnerFix2=window.checkLogin;
-  window.doStaffFix2=window.checkLogin;
+function HIDE_FOR_STAFF(){
+    var isStaff = localStorage.getItem('isOwner')==='0' && localStorage.getItem('terikano_session_auth')==='staff';
 
-  function HIDE_FOR_STAFF(){
-    if(localStorage.getItem('isOwner')!=='0') return;
+    // If NOT real staff, SHOW everything back and stop
+    if(!isStaff){
+        ['pwDiv','backupDiv','renameDiv','ownerDiv','settingsDiv','deleteDiv','adminDiv'].forEach(function(id){
+            var el = $id(id);
+            if(el) el.style.display = '';
+        });
+        document.querySelectorAll('button').forEach(function(b){
+            if(b.dataset.ownerHidden){
+                b.style.display = '';
+                delete b.dataset.ownerHidden;
+            }
+        });
+        return;
+    }
+
+    // If REALLY staff, HIDE owner-only divs
     let pwDiv=$id('pwDiv'); if(pwDiv) pwDiv.style.display='none';
     let backupDiv=$id('backupDiv'); if(backupDiv) backupDiv.style.display='none';
     let renameDiv=$id('renameDiv'); if(renameDiv) renameDiv.style.display='none';
+
     // Hide BANK SETTING buttons by ID - add IDs in stock tab
     document.querySelectorAll('button').forEach(b=>{
       let t=(b.innerText||'').toUpperCase();
-<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
+      if(t.includes('BANK') || t.includes('SETTING') || t.includes('CHANGE PW') || t.includes('BACKUP') || t.includes('RENAME') || t.includes('DELETE') || t.includes('OWNER')){
+        b.dataset.ownerHidden = '1';
+        b.style.display='none';
+      }
+    });
+}
+  <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
 <div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
 <b style="color:gold;">🏪 TERIKANO V28.5</b><br><br>
 <input id="staffPass" type="password" placeholder="Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
@@ -1363,22 +1382,22 @@ function filterProfit(year){
   window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || 'Terikano_2026').trim(); };
   window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || 'Terikano_2005').trim(); };
   
-  window.checkLogin=function(){
-    var p = ($id('staffPass')?.value||'').trim();
-    if(p===window.getOwnerPw()){
-      localStorage.setItem('isOwner','1');
-      localStorage.removeItem('isStaff');
-      localStorage.setItem(SESS,'owner');
-      location.href=location.pathname;
-    } else if(p===window.getStaffPw()){
-      localStorage.setItem('isOwner','0');
-      localStorage.setItem('isStaff','1');
-      localStorage.setItem(SESS,'staff');
-      location.href=location.pathname;
-    } else {
-      alert('WRONG PW! Owner:'+window.getOwnerPw()+' Staff:'+window.getStaffPw());
-    }
-  };
+    window.checkLogin=function(){
+      var p = ($id('staffPass')?.value||'').trim();
+      if(p===window.getOwnerPw()){
+        localStorage.setItem('isOwner','1');
+        localStorage.removeItem('isStaff');
+        localStorage.setItem(SESS,'owner');
+        location.href=location.pathname;
+      } else if(p===window.getStaffPw()){
+        localStorage.setItem('isOwner','0');
+        localStorage.setItem('isStaff','1');
+        localStorage.setItem(SESS,'staff');
+        location.href=location.pathname;
+      } else {
+        alert('WRONG PW! Owner:'+window.getOwnerPw()+' Staff:'+window.getStaffPw());
+      }
+    };
 
   // THIS IS THE FIX - STOP AUTO LOGIN IF LOGOUT IN URL
   let isLogoutPage = location.search.includes('logout') || location.search.includes('clearall');
