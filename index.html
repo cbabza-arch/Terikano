@@ -1199,276 +1199,79 @@ function filterProfit(year){
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
 </script>
-<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;">
-  <div style="background:#111; border:3px solid gold; border-radius:15px; padding:25px; width:90%; max-width:320px; text-align:center;">
-    <h2 style="color:gold;">TERIKANO LOGIN</h2>
-    <input id="ownerPass" type="password" placeholder="Enter Password" style="width:100%; padding:12px; font-size:18px; border:2px solid gold; border-radius:10px; text-align:center; background:#000; color:#fff; margin-bottom:10px;">
-    <button id="loginBtn" onclick="doOwnerFix2()" style="width:100%; padding:12px; background:gold; color:#000; font-weight:bold; border-radius:10px;">LOGIN</button>
-    <button id="exitBtn" onclick="doStaffFix2()" style="width:100%; padding:8px; background:#333; color:#fff; border-radius:8px; margin-top:8px;">EXIT</button>
-  </div>
-</div>
 <div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold; border-radius:8px;">LOGIN</button></div></div>
+
+<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
+<div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
+<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V28.2 FINAL</b><br><br>
+<input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
+<button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
+<div style="margin-top:10px; font-size:11px; color:#fff;">Owner: <span id="loginOwnerHint"></span> | Staff: <span id="loginStaffHint"></span></div>
+</div></div>
+
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:9999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V11 GOOD + 3 FIXES ONLY - FIXED SINGLE VERSION NO DUPLICATE
+// V28.2 FINAL - SINGLE CLEAN LOGIN
 (function(){
-  const DEFAULT_OWNER='Terikano_2026'; const DEFAULT_STAFF='Terikano_2005';
-  const SESS='terikano_session_auth'; const FLAG='isOwner';
-  const OWNER_KEY='TERI_PW'; const STAFF_KEY='TERI_STAFF_PW';
+  const DEFAULT_OWNER='Terikano_2026'; 
+  const DEFAULT_STAFF='Terikano_2005';
+  const SESS='terikano_session_auth';
   function $id(i){return document.getElementById(i);}
-  function getDeviceId(){ let id=localStorage.getItem('terikano_device_id'); if(!id){ id='DEV_'+Math.random().toString(36).substr(2,4).toUpperCase(); localStorage.setItem('terikano_device_id',id);} return id; }
-  function getOwnerPw(){ return (localStorage.getItem(OWNER_KEY) || localStorage.getItem('owner_pw') || DEFAULT_OWNER).trim(); }
-  function getStaffPw(){ return (localStorage.getItem(STAFF_KEY) || localStorage.getItem('staff_pw') || localStorage.getItem('staffPw') || DEFAULT_STAFF).trim(); }
-
-  try{
-    if(location.search.includes('logout')||location.search.includes('blocked')){
-      localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); sessionStorage.removeItem(SESS);
-    }
-    if(!sessionStorage.getItem(SESS)){ localStorage.removeItem(FLAG); localStorage.removeItem('isOwner'); }
-  }catch(e){}
-
-  function showLogin(){ try{localStorage.removeItem(FLAG);localStorage.removeItem('isOwner');sessionStorage.removeItem(SESS);}catch(e){} let lb=$id('loginBox'); let sl=$id('staffLock'); if(sl)sl.style.display='none'; if(lb)lb.style.display='flex'; }
-  
-  function updateOnline(){
-    let el=$id('terikanoOnlineMain'); if(!el) return;
-    el.style.display='inline-flex';
-    if(navigator.onLine){ el.textContent='● Online'; el.style.color='#0f0'; el.style.borderColor='#0f0'; }
-    else{ el.textContent='● Offline - Working OK'; el.style.color='#ff9800'; el.style.borderColor='#ff9800'; }
-    el.onclick=function(){ alert('Online OK - Device: '+getDeviceId()); };
-  }
-
-  function getDeviceCount(){
-    let c={}; try{ c=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); }catch(e){}
-    let approved={}; try{ approved=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}'); }catch(e){}
-    let ids = new Set([...Object.keys(c), ...Object.keys(approved)]);
-    let count=0;
-    ids.forEach(id=>{
-      let inCache=c[id];
-      if(!inCache) count++;
-      else if(inCache.allowed!==false) count++;
-    });
-    if(count===0) count=1;
-    return {count, cache:c, approved};
-  }
-  function updateCountDisplay(){
-    let {count}=getDeviceCount();
-    let ac=document.getElementById('allowedCount'); if(ac) ac.textContent=count+'/8';
-    return count;
-  }
-
-  window.isOwner=function(){return localStorage.getItem('isOwner')==='1';};
-  window.getOwnerPw=getOwnerPw; window.getStaffPw=getStaffPw;
-
-  function forceOwnerTabs(){
-    document.querySelectorAll('[data-tab]').forEach(b=>{b.style.display='';});
-    let mb=$id('manageBtn'); if(mb) mb.style.display='inline-block';
-    let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='inline-flex';
-    let hdr=$id('terikanoDeviceHeader'); if(hdr) hdr.style.display='inline-flex';
-    let sp=$id('staffPwDiv'); if(sp) sp.style.display='block';
-    document.querySelectorAll('button').forEach(btn=>{
-      let t=(btn.innerText||'').toUpperCase();
-      if(t.includes('PW') || t.includes('RENAME') || t.includes('BACKUP') || t.includes('CAPITAL') || t.includes('TARGET')){
-        btn.style.display=''; btn.style.visibility=''; btn.style.opacity=''; btn.style.pointerEvents='';
-      }
-    });
-  }
-
-  function hideForStaff(){
-    let flag=localStorage.getItem('isOwner');
-    if(flag!=='0') return;
-    let mb=$id('manageBtn'); if(mb) mb.style.display='none';
-    let cs=document.getElementById('allowedCount')?.parentElement; if(cs) cs.style.display='none';
-    let hdr=$id('terikanoDeviceHeader'); if(hdr) hdr.style.display='none';
-    document.querySelectorAll('button').forEach(btn=>{
-      let t=(btn.innerText||'').toUpperCase();
-      if((t==='PW' || t.includes('RENAME') || t.includes('BACKUP') || t.includes('CAPITAL') || t.includes('TARGET SET') || t.includes('CHANGE PW')) && localStorage.getItem('isOwner')==='1'){
-        btn.style.display='none'; btn.style.visibility='hidden';
-      }
-      if(t==='PW' || (t.includes('PW') && t.length<10)){
-         btn.style.display='none';
-      }
-    });
-     // PASTE THIS 2 LINES HERE:
-    document.querySelectorAll('div').forEach(function(d){ 
-      if(d.innerText.indexOf('BANK SETTINGS')>-1) d.style.display='none'; 
-    });
-    // =====================================
-    
-  } // <- END OF hideForStaff
-        
-  window.doOwnerAllTabs=function(){
-    try{
-      localStorage.setItem(FLAG,'1');
-      localStorage.setItem('isOwner','1');
+  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || DEFAULT_OWNER).trim(); };
+  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || DEFAULT_STAFF).trim(); };
+  window.isOwner=function(){ return localStorage.getItem('isOwner')==='1'; };
+  window.checkLogin=function(){
+    var p = ($id('staffPass')?.value || '').trim();
+    if(!p){ alert('Enter PW'); return; }
+    var ownerPw = window.getOwnerPw();
+    var staffPw = window.getStaffPw();
+    if(p === ownerPw){
+      localStorage.setItem('isOwner','1'); localStorage.removeItem('isStaff');
       sessionStorage.setItem(SESS,'owner');
-      localStorage.removeItem('isStaff');
-    }catch(e){}
-    let did=getDeviceId(); let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); cache[did]={id:did,allowed:true,isMain:true}; localStorage.setItem('terikano_devices_cache',JSON.stringify(cache));
-    let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}'); appr[did]=true; localStorage.setItem('terikano_staff_approved',JSON.stringify(appr));
-    $id('loginBox').style.display='none'; if($id('staffLock')) $id('staffLock').style.display='none';
-    if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    forceOwnerTabs(); updateOnline(); updateCountDisplay();
-    location.reload();
-  };
-
-  window.doStaffLimited=function(){
-    try{
-      localStorage.setItem('isOwner','0');
-      localStorage.setItem(FLAG,'0');
+      $id('loginBox').style.display='none'; 
+      alert('👑 OWNER LOGIN OK');
+      location.reload();
+    } else if(p === staffPw){
+      localStorage.setItem('isOwner','0'); localStorage.setItem('isStaff','1');
       sessionStorage.setItem(SESS,'staff');
-      localStorage.setItem('isStaff','1');
-    }catch(e){}
-    let did=getDeviceId(); 
-    let cache=JSON.parse(localStorage.getItem('terikano_devices_cache')||'{}'); 
-    if(!cache[did]){ cache[did]={id:did,allowed:true}; localStorage.setItem('terikano_devices_cache',JSON.stringify(cache)); }
-    let appr=JSON.parse(localStorage.getItem('terikano_staff_approved')||'{}');
-    appr[did]=true;
-    localStorage.setItem('terikano_staff_approved',JSON.stringify(appr));
-    if($id('loginBox')) $id('loginBox').style.display='none'; 
-    if($id('staffLock')) $id('staffLock').style.display='none';
-    if($id('mainApp')) $id('mainApp').style.display='block';
-    if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-    updateOnline(); updateCountDisplay(); 
-    hideForStaff();
-    setTimeout(hideForStaff,300); setTimeout(hideForStaff,1000); setTimeout(hideForStaff,2000);
+      $id('loginBox').style.display='none';
+      alert('👤 STAFF LOGIN OK');
+      location.reload();
+    } else {
+      alert('❌ WRONG PW! Owner:'+ownerPw+' Staff:'+staffPw);
+    }
   };
-
-      window.doOwnerFix2=function(){
-let getStaffPw=()=>localStorage.getItem('terikano_staff_custom_pw')||'Terikano_2005';
-try{firebase.firestore().collection('terikano_config').doc('passwords').onSnapshot(d=>{if(d.exists&&d.data()?.staffPw)localStorage.setItem('terikano_staff_custom_pw',d.data().staffPw)})}catch(e){}
-      let el=document.getElementById('ownerPass'); 
-      let v=(el?.value||'').trim();
-      if(!v){alert('Enter password!');return;}
-      
-      let vp=v.toLowerCase();
-      // STAFF
-      if(v===getStaffPw()){
-        localStorage.setItem('isOwner','0');
-        localStorage.setItem('isStaff','1');
-        localStorage.setItem('isOwner','0');
-        sessionStorage.setItem('terikano_session_auth','staff');
-        localStorage.setItem('terikano_session_auth','1');
-        document.getElementById('loginBox').style.display='none';
-        let sl=document.getElementById('staffLock'); if(sl) sl.style.display='none';
-        if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-        hideForStaff();
-        return;
-      }
-      // OWNER
-      if(v==='Terikano_2026' || vp==='terikano_2026' || v==='1234' || v==='12345' || vp.includes('2026')){
-        localStorage.setItem('isOwner','1');
-        localStorage.removeItem('isStaff');
-        localStorage.setItem('isOwner','1');
-        sessionStorage.setItem('terikano_session_auth','owner');
-        localStorage.setItem('terikano_session_auth','1');
-        document.getElementById('loginBox').style.display='none';
-        let sl=document.getElementById('staffLock'); if(sl) sl.style.display='none';
-        if(typeof lockAll==='function'){try{lockAll();}catch(e){}}
-        forceOwnerTabs();
-        return;
-      }
-      alert('WRONG PW: '+v);
-    };
-    window.doStaffFix2=window.doOwnerFix2;
+  window.changePw=function(){
+    let oldP = ($id('old_pw')?.value||'').trim();
+    let newP = ($id('new_pw')?.value||'').trim();
+    let cur = window.getOwnerPw();
+    if(oldP !== cur){ alert('Wrong Old! Current:'+cur); return; }
+    localStorage.setItem('TERI_PW', newP);
+    localStorage.setItem('terikano_owner_pw', newP);
+    if($id('curPwLabel')) $id('curPwLabel').innerText=newP;
+    alert('✅ OWNER PW: '+newP);
+  };
+  window.setStaffPw=function(){
+    let newP = ($id('new_staff_pw')?.value||'').trim();
+    if(!newP){ alert('Enter staff pw'); return; }
+    localStorage.setItem('TERI_STAFF_PW', newP);
+    localStorage.setItem('terikano_staff_custom_pw', newP);
+    if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=newP;
+    alert('✅ STAFF PW: '+newP);
+  };
+  window.removeStaffPw=function(){
+    localStorage.removeItem('TERI_STAFF_PW');
+    localStorage.removeItem('terikano_staff_custom_pw');
+    alert('Reset to '+DEFAULT_STAFF);
+  };
+  window.doOwnerFix2=window.checkLogin;
+  window.doStaffFix2=window.checkLogin;
+  setTimeout(function(){
+    if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
+    if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
+  },400);
 })();
-</script>
-<script>
-(function(){
-  function isStaff(){ return localStorage.getItem('isStaff')==='1'; }
-  
-  function ULTRA_HIDE(){
-    if(!isStaff()) return;
-    
-    // 1. FIND STOCK TABLE AND HIDE BY HEADER INDEX
-    document.querySelectorAll('table').forEach(table=>{
-      let headers = table.querySelectorAll('th');
-      if(headers.length===0) return;
-      headers.forEach((th, idx)=>{
-        let txt = (th.innerText||'').toLowerCase();
-        if(txt.includes('cost') || txt.includes('profit') || txt.includes('interest') || txt.includes('buy') || txt.includes('purchase')){
-          // Hide header
-          th.style.setProperty('display','none','important');
-          // Hide all cells in that column
-          table.querySelectorAll('tr').forEach(row=>{
-            if(row.children[idx]) row.children[idx].style.setProperty('display','none','important');
-          });
-        }
-      });
-    });
-
-    // 2. HIDE ANY CARD/STOCK ITEM SHOWING COST/PROFIT
-    document.querySelectorAll('.stock-item, .item-card, div').forEach(el=>{
-      let html = (el.innerHTML||'').toLowerCase();
-      if(html.length>500) return; // skip large containers
-      if((html.includes('cost price') || html.includes('avg cost')) && el.children.length < 5){
-        el.style.setProperty('display','none','important');
-      }
-    });
-    
-    // 3. LEDGER DELETE ALREADY OK - KEEP
-    document.querySelectorAll('button').forEach(b=>{
-      if((b.textContent||'').toLowerCase().trim()==='delete' || b.textContent.toLowerCase().includes('delete entry'))
-        b.style.setProperty('display','none','important');
-    });
-  }
-  
-  setInterval(ULTRA_HIDE, 500);
-  new MutationObserver(ULTRA_HIDE).observe(document.body, {childList:true, subtree:true});
-  window.applyStaffLock = ULTRA_HIDE;
-})();
-setInterval(function(){ if(typeof lockAll==='function' && !isOwner()) lockAll(); }, 800);
-})();
-
-// ========== FIXED PW SYSTEM - PASTE HERE ==========
-function getOwnerPw(){
-  return (localStorage.getItem('terikano_owner_pw') || 'Terikano_2026').trim();
-}
-function getStaffPw(){
-  return (localStorage.getItem('terikano_staff_custom_pw') || 'Teikano_2006').trim();
-}
-function changePw(){
-  let oldP = document.getElementById('old_pw').value.trim();
-  let newP = document.getElementById('new_pw').value.trim();
-  let cur = getOwnerPw();
-  if(oldP !== cur){ alert('Wrong Old PW! Current is: '+cur); return; }
-  if(!newP || newP.length < 4){ alert('New PW too short!'); return; }
-  localStorage.setItem('terikano_owner_pw', newP);
-  document.getElementById('curPwLabel').innerText = newP;
-  alert('✅ OWNER PW CHANGED TO: '+newP);
-}
-function setStaffPw(){
-  let newP = document.getElementById('new_staff_pw').value.trim();
-  if(!newP || newP.length < 4){ alert('Staff PW too short!'); return; }
-  localStorage.setItem('terikano_staff_custom_pw', newP);
-  document.getElementById('curStaffPwLabel').innerText = newP;
-  alert('✅ STAFF PW CHANGED TO: '+newP);
-}
-function removeStaffPw(){
-  localStorage.removeItem('terikano_staff_custom_pw');
-  document.getElementById('curStaffPwLabel').innerText = 'Teikano_2006';
-  alert('Reset to Teikano_2006');
-}
-function checkLogin(){
-  let input = document.getElementById('loginPw');
-  if(!input) return;
-  let p = input.value.trim();
-  let ownerPw = getOwnerPw();
-  let staffPw = getStaffPw();
-  if(p === ownerPw){
-    localStorage.setItem('terikano_role','owner');
-    document.getElementById('loginDiv').style.display='none';
-    document.getElementById('mainApp').style.display='block';
-  } else if(p === staffPw || p === 'Terikano_2005'){
-    localStorage.setItem('terikano_role','staff');
-    document.getElementById('loginDiv').style.display='none';
-    document.getElementById('mainApp').style.display='block';
-    document.querySelectorAll('.owner-only-div').forEach(el=>el.style.display='none');
-    if(document.getElementById('pwDiv')) document.getElementById('pwDiv').style.display='none';
-  } else {
-    alert('Wrong PW! Owner:'+ownerPw+' Staff:'+staffPw);
-  }
-}
 </script>
 </body>
 </html>
