@@ -1232,23 +1232,14 @@ function filterProfit(year){
          btn.style.display='none';
       }
     });
-    // === BANK SETTINGS HIDE FOR STAFF - START ===
-    try{
-      document.querySelectorAll('div').forEach(div=>{
-        let txt=(div.innerText||'');
-        if(txt.includes('BANK SETTINGS') || txt.includes('SAVE BANK%')){
-          div.style.setProperty('display','none','important');
-        }
-      });
-      document.querySelectorAll('button').forEach(b=>{
-        if((b.innerText||'').toUpperCase().includes('SAVE BANK')){
-          b.style.setProperty('display','none','important');
-          if(b.parentElement) b.parentElement.style.setProperty('display','none','important');
-          let row=b.closest('div');
-          if(row) row.style.setProperty('display','none','important');
-        }
-      });
-      document.querySelectorAll('input').forEach(inp=>{
+     // PASTE THIS 2 LINES HERE:
+    document.querySelectorAll('div').forEach(function(d){ 
+      if(d.innerText.indexOf('BANK SETTINGS')>-1) d.style.display='none'; 
+    });
+    // =====================================
+    
+  } // <- END OF hideForStaff
+        document.querySelectorAll('input').forEach(inp=>{
         let label=(inp.previousSibling?.textContent||'')+(inp.parentElement?.innerText||'');
         if(label.toUpperCase().includes('BANK INT') || label.toUpperCase().includes('BANK SETTINGS')){
           inp.style.setProperty('display','none','important');
