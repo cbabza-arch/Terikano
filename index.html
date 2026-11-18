@@ -6,7 +6,30 @@
 <!-- FIREBASE CLOUD START -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script>
+<script>// AUTO HEAL OLD BUG - NO MANUAL CLEAR NEEDED
+(function(){
+  var url = location.href.toLowerCase();
+  if(url.includes('logout') || url.includes('clearall')){
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+    localStorage.removeItem('terikano_session_auth');
+    try{sessionStorage.clear();}catch(e){}
+    // stop old script from re-setting
+    setTimeout(function(){
+      var lb=document.getElementById('loginBox');
+      if(lb) lb.style.display='flex';
+      var sl=document.getElementById('staffLock');
+      if(sl) sl.style.display='none';
+    },100);
+  }
+  // If corrupted: isOwner=0 but no session -> force logout
+  var flag = localStorage.getItem('isOwner');
+  var sess = localStorage.getItem('terikano_session_auth');
+  if(flag==='0' && !sess && !url.includes('staff=')){
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+  }
+})();
   const firebaseConfig = {
     apiKey: "AIzaSyCUQDoaPSYD-ZVFtyc_uBNi9gaLYEe9qs",
     authDomain: "terikano-3d137.firebaseapp.com",
@@ -479,7 +502,13 @@ function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function doLogout(){localStorage.removeItem('isOwner');localStorage.removeItem('isStaff');localStorage.removeItem('terikano_session_auth');sessionStorage.clear();document.getElementById('loginBox').style.display='flex';document.getElementById('staffLock').style.display='none';location.href = location.pathname + '?logout=' + Date.now();}
+function doLogout(){
+  localStorage.removeItem('isOwner');
+  localStorage.removeItem('isStaff');
+  localStorage.removeItem('terikano_session_auth');
+  try{sessionStorage.clear();}catch(e){}
+  location.href = location.pathname + '?logout=' + Date.now();
+}
 function doOwnerFix2(){localStorage.setItem('isOwner','1');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function doStaffFix2(){localStorage.setItem('isOwner','0');document.getElementById('staffLock').style.display='none';document.body.classList.add('authenticated');lockAll();rebuild();}
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
