@@ -1,7 +1,25 @@
 <html><head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-  <script>if(sessionStorage.getItem('v')!=='v38'){caches.keys().then(a=>a.forEach(b=>caches.delete(b)));sessionStorage.setItem('v','v38');location.reload();}</script>
+  <script>
+// KILL AUTO STAFF - BLOCK ANY SCRIPT FROM FORCING STAFF
+(function(){
+  var isLogoutPage = location.href.toLowerCase().includes('logout') || location.href.toLowerCase().includes('clearall');
+  if(isLogoutPage){
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+    localStorage.removeItem('terikano_session_auth');
+    try{sessionStorage.clear();}catch(e){}
+    // BLOCK any other script trying to set isOwner=0 after logout!
+    var origSet = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(k,v){
+      if(k==='isOwner' && v==='0' && location.href.toLowerCase().includes('logout')) return;
+      return origSet(k,v);
+    };
+  }
+})();
+if(sessionStorage.getItem('v')!='v38'){caches.keys().then(a=>a.forEach(k=>caches.delete(k)));sessionStorage.setItem('v','v38');location.reload(true);}
+</script>
 
 <!-- FIREBASE CLOUD START -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
