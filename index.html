@@ -1408,5 +1408,30 @@ function HIDE_FOR_STAFF(){
   },300);
 })();
 </script>
+<script>
+// HIDE BANK SETTING IN STOCK FOR STAFF
+(function(){
+  function isStaff(){ return localStorage.getItem('isOwner')==='0' && localStorage.getItem('terikano_session_auth')==='staff'; }
+  function hideBank(){
+    if(!isStaff()) return;
+    document.querySelectorAll('button, a, div, span').forEach(function(el){
+      var t = (el.innerText||'').toUpperCase();
+      var id = (el.id||'').toUpperCase();
+      if(t.includes('BANK') || t.includes('SETTING') || t.includes('STOCK') && t.includes('SETTING') || id.includes('BANK') || id.includes('SETTING') || id.includes('STOCK')){
+        // only hide small buttons / settings, not whole stock list
+        if(el.tagName==='BUTTON' || el.tagName==='A' || id.includes('BANK') || id.includes('SETTING')){
+          el.style.display='none';
+        }
+      }
+    });
+    ['pwDiv','backupDiv','renameDiv','ownerDiv','settingsDiv','deleteDiv','adminDiv','bankDiv','bankSettingDiv','stockSettingDiv','settingDiv'].forEach(function(id){
+      var e=document.getElementById(id); if(e) e.style.display='none';
+    });
+  }
+  hideBank();
+  setInterval(hideBank, 500);
+  if(window.HIDE_FOR_STAFF) window.HIDE_FOR_STAFF();
+})();
+</script>
 </body>
 </html>
