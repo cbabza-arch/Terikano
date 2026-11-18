@@ -1436,6 +1436,57 @@ try{firebase.firestore().collection('terikano_config').doc('passwords').onSnapsh
   window.applyStaffLock = ULTRA_HIDE;
 })();
 setInterval(function(){ if(typeof lockAll==='function' && !isOwner()) lockAll(); }, 800);
+})();
+
+// ========== FIXED PW SYSTEM - PASTE HERE ==========
+function getOwnerPw(){
+  return (localStorage.getItem('terikano_owner_pw') || 'Terikano_2026').trim();
+}
+function getStaffPw(){
+  return (localStorage.getItem('terikano_staff_custom_pw') || 'Teikano_2006').trim();
+}
+function changePw(){
+  let oldP = document.getElementById('old_pw').value.trim();
+  let newP = document.getElementById('new_pw').value.trim();
+  let cur = getOwnerPw();
+  if(oldP !== cur){ alert('Wrong Old PW! Current is: '+cur); return; }
+  if(!newP || newP.length < 4){ alert('New PW too short!'); return; }
+  localStorage.setItem('terikano_owner_pw', newP);
+  document.getElementById('curPwLabel').innerText = newP;
+  alert('✅ OWNER PW CHANGED TO: '+newP);
+}
+function setStaffPw(){
+  let newP = document.getElementById('new_staff_pw').value.trim();
+  if(!newP || newP.length < 4){ alert('Staff PW too short!'); return; }
+  localStorage.setItem('terikano_staff_custom_pw', newP);
+  document.getElementById('curStaffPwLabel').innerText = newP;
+  alert('✅ STAFF PW CHANGED TO: '+newP);
+}
+function removeStaffPw(){
+  localStorage.removeItem('terikano_staff_custom_pw');
+  document.getElementById('curStaffPwLabel').innerText = 'Teikano_2006';
+  alert('Reset to Teikano_2006');
+}
+function checkLogin(){
+  let input = document.getElementById('loginPw');
+  if(!input) return;
+  let p = input.value.trim();
+  let ownerPw = getOwnerPw();
+  let staffPw = getStaffPw();
+  if(p === ownerPw){
+    localStorage.setItem('terikano_role','owner');
+    document.getElementById('loginDiv').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+  } else if(p === staffPw || p === 'Terikano_2005'){
+    localStorage.setItem('terikano_role','staff');
+    document.getElementById('loginDiv').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    document.querySelectorAll('.owner-only-div').forEach(el=>el.style.display='none');
+    if(document.getElementById('pwDiv')) document.getElementById('pwDiv').style.display='none';
+  } else {
+    alert('Wrong PW! Owner:'+ownerPw+' Staff:'+staffPw);
+  }
+}
 </script>
 </body>
 </html>
