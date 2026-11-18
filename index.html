@@ -48,10 +48,7 @@ function removeStaffPw(){
   });
 }
 function changePw(){
-  let oldP = document.getElementById('old_pw').value;
-  let newP = document.getElementById('new_pw').value;
-  let currentOwner = localStorage.getItem('terikano_owner_pw') || 'Terikano_2026';
-  if(oldP !== currentOwner){ alert('Old PW Wrong! Current: '+currentOwner); return; }
+  let newP = document.getElementById('new_pw').value.trim();
   if(!newP){ alert('Enter New PW'); return; }
   localStorage.setItem('terikano_owner_pw', newP);
   document.getElementById('curPwLabel').innerText = newP;
