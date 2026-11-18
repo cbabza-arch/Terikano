@@ -1288,27 +1288,102 @@ function filterProfit(year){
     // Hide BANK SETTING buttons by ID - add IDs in stock tab
     document.querySelectorAll('button').forEach(b=>{
       let t=(b.innerText||'').toUpperCase();
-      if(t.includes('BANK') || t==='PW' || t.includes('CAPITAL') || t.includes('TARGET')) b.style.display='none';
-    });
-  }
-  setInterval(HIDE_FOR_STAFF, 1000);
+<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
+<div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
+<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V28.4</b><br><br>
+<input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
+<button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
+<div style="margin-top:10px; font-size:11px; color:#fff;">Owner: <span id="loginOwnerHint"></span> | Staff: <span id="loginStaffHint"></span></div>
+<button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();" style="margin-top:15px; font-size:10px; background:#444; color:#fff; padding:5px;">🔴 FORCE RESET IF STUCK</button>
+</div></div>
 
+<script>
+// V28.4 FINAL - NO AUTO STAFF, FIX LOGOUT LOOP
+(function(){
+  const DEFAULT_OWNER='Terikano_2026'; 
+  const DEFAULT_STAFF='Terikano_2005';
+  const SESS='terikano_session_auth';
+  function $id(i){return document.getElementById(i);}
+
+  // ==== LOGOUT = HARD CLEAR ====
+  if(location.search.includes('logout')){
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+    localStorage.removeItem(SESS);
+    sessionStorage.removeItem(SESS);
+    // DO NOT auto hide, force show login and STOP
+    window.__IS_LOGOUT__ = true;
+  }
+
+  window.getOwnerPw=function(){ return (localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || DEFAULT_OWNER).trim(); };
+  window.getStaffPw=function(){ return (localStorage.getItem('TERI_STAFF_PW') || localStorage.getItem('terikano_staff_custom_pw') || DEFAULT_STAFF).trim(); };
+  
+  window.checkLogin=function(){
+    var p = ($id('staffPass')?.value||'').trim();
+    if(!p){ alert('Enter PW'); return; }
+    var ownerPw = window.getOwnerPw();
+    var staffPw = window.getStaffPw();
+    console.log('TRY:',p,'Owner:',ownerPw,'Staff:',staffPw);
+    if(p === ownerPw){
+      localStorage.setItem('isOwner','1'); 
+      localStorage.removeItem('isStaff');
+      localStorage.setItem(SESS,'owner'); 
+      sessionStorage.setItem(SESS,'owner');
+      alert('✅ OWNER LOGIN OK');
+      location.href = location.pathname + '?owner=' + Date.now();
+    } else if(p === staffPw){
+      localStorage.setItem('isOwner','0'); 
+      localStorage.setItem('isStaff','1');
+      localStorage.setItem(SESS,'staff'); 
+      sessionStorage.setItem(SESS,'staff');
+      alert('✅ STAFF LOGIN OK');
+      location.href = location.pathname + '?staff=' + Date.now();
+    } else {
+      alert('❌ WRONG! You typed:'+p+'\nOwner is:'+ownerPw+'\nStaff is:'+staffPw);
+    }
+  };
+
+  window.changePw=function(){
+    let oldP = ($id('old_pw')?.value||'').trim();
+    let newP = ($id('new_pw')?.value||'').trim();
+    if(oldP !== window.getOwnerPw()){ alert('Wrong Old!'); return; }
+    localStorage.setItem('TERI_PW', newP);
+    localStorage.setItem('terikano_owner_pw', newP);
+    alert('✅ OWNER PW NOW:'+newP);
+  };
+  window.setStaffPw=function(){
+    let newP = ($id('new_staff_pw')?.value||'').trim();
+    if(!newP) return;
+    localStorage.setItem('TERI_STAFF_PW', newP);
+    localStorage.setItem('terikano_staff_custom_pw', newP);
+    alert('✅ STAFF PW NOW:'+newP);
+  };
+  window.removeStaffPw=function(){
+    localStorage.removeItem('TERI_STAFF_PW');
+    localStorage.removeItem('terikano_staff_custom_pw');
+    alert('Reset');
+  };
+  window.doOwnerFix2=window.checkLogin;
+  window.doStaffFix2=window.checkLogin;
+
+  // Show login correctly
   setTimeout(function(){
-    if(location.search.includes('logout')){
+    if(window.__IS_LOGOUT__){
       let lb=$id('loginBox'); if(lb) lb.style.display='flex';
+      if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
+      if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
       return;
     }
-    let sess = localStorage.getItem(SESS) || sessionStorage.getItem(SESS);
-    let isOwnerFlag = localStorage.getItem('isOwner');
-    if(sess && (isOwnerFlag==='1' || isOwnerFlag==='0')){
+    let sess = localStorage.getItem(SESS);
+    let flag = localStorage.getItem('isOwner');
+    if(sess && (flag==='1' || flag==='0')){
       let lb=$id('loginBox'); if(lb) lb.style.display='none';
-      HIDE_FOR_STAFF();
     } else {
       let lb=$id('loginBox'); if(lb) lb.style.display='flex';
     }
     if($id('loginOwnerHint')) $id('loginOwnerHint').innerText=window.getOwnerPw();
     if($id('loginStaffHint')) $id('loginStaffHint').innerText=window.getStaffPw();
-  },300);
+  },400);
 })();
 </script>
 </body>
