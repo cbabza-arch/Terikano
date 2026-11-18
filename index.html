@@ -47,6 +47,20 @@ function removeStaffPw(){
     document.getElementById('curStaffPwLabel').innerText = 'Terikano_2005';
   });
 }
+function changePw(){
+  let oldP = document.getElementById('old_pw').value;
+  let newP = document.getElementById('new_pw').value;
+  let currentOwner = localStorage.getItem('terikano_owner_pw') || 'Terikano_2026';
+  if(oldP !== currentOwner){ alert('Old PW Wrong! Current: '+currentOwner); return; }
+  if(!newP){ alert('Enter New PW'); return; }
+  localStorage.setItem('terikano_owner_pw', newP);
+  document.getElementById('curPwLabel').innerText = newP;
+  firebase.database().ref('terikano_config/passwords/ownerPw').set(newP).then(()=>{
+    alert('✅ OWNER PW CHANGED & SYNCED ONLINE TO: ' + newP);
+    document.getElementById('old_pw').value = '';
+    document.getElementById('new_pw').value = '';
+  });
+}
 setInterval(function(){ if(typeof lockAll==='function' && !isOwner()) lockAll(); }, 800);
 </script>
 <!-- FIREBASE CLOUD END -->
@@ -417,6 +431,24 @@ Amt Paid <input type="number" id="coll_amt" style="width:80px;border:2px solid #
 </div>
 
 <div id="pwDiv" class="owner-only-div" style="background:#000;padding:12px;border:3px solid gold;border-radius:12px;display:none;margin:8px 6px">
+<div class="window-header"><b style="color:gold">🔑 PASSWORD - Owner Only</b><button class="hide-btn" style="background:gold;color:#000" onclick="hideWin('pwDiv')">❌ HIDE</button></div>
+
+<div style="background:#fff;padding:10px;border-radius:10px;border:2px solid gold">
+<b>OWNER PASSWORD</b><br>
+Current Owner: <b id="curPwLabel">Terikano_2026</b><br>
+Old <input id="old_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br>
+New <input id="new_pw" type="password" style="width:100%;border:2px solid #000;padding:8px"><br><br>
+<button onclick="changePw()" style="background:gold;width:100%;padding:12px;border-radius:10px;border:2px solid #000;font-weight:bold">CHANGE OWNER PW</button>
+</div>
+
+<div id="staffPwDiv" style="background:orange;padding:10px;border:3px solid #000;margin-top:10px;border-radius:10px;display:block">
+<b>👤 STAFF PASSWORD</b><br>
+Current Staff: <b id="curStaffPwLabel">Teikano_2006</b><br><br>
+New Staff PW <input id="new_staff_pw" type="text" style="width:100%;border:2px solid #000;padding:8px"><br><br>
+<button onclick="setStaffPw()" style="background:#000;color:orange;width:100%;padding:12px;border-radius:10px;font-weight:bold">💾 SET STAFF PW & SYNC ONLINE</button>
+<button onclick="removeStaffPw()" style="background:#c62828;color:#fff;width:100%;padding:8px;border-radius:10px;margin-top:6px">🗑️ REMOVE</button>
+</div>
+</div>
 <div class="window-header"><b style="color:gold">🔑 PASSWORD - Owner Only</b><button class="hide-btn" style="background:gold;color:#000" onclick="hideWin('pwDiv')">❌ HIDE</button></div>
 <div style="background:#fff;padding:10px;border-radius:10px;border:2px solid gold">
 Current <b id="curPwLabel">1234</b><br>
