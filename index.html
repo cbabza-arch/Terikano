@@ -1433,5 +1433,63 @@ function HIDE_FOR_STAFF(){
   if(window.HIDE_FOR_STAFF) window.HIDE_FOR_STAFF();
 })();
 </script>
+<script>
+// HIDE WHOLE BANK SETTINGS BOX FOR STAFF - V2
+(function(){
+  function isStaff(){ return localStorage.getItem('isOwner')==='0' && localStorage.getItem('terikano_session_auth')==='staff'; }
+  function hideBankBox(){
+    if(!isStaff()) return;
+    // Find BANK SETTINGS text and hide its whole parent box
+    document.querySelectorAll('div, section, fieldset, table').forEach(function(el){
+      var t = (el.innerText||'').toUpperCase();
+      if(t.includes('BANK SETTINGS') && t.includes('BANK INT')){
+        // hide only the smallest box that contains it
+        if(el.querySelectorAll('div').length < 5){
+          el.style.display='none';
+        }
+      }
+    });
+    // Also hide any input near Bank Int / Fee
+    document.querySelectorAll('input').forEach(function(inp){
+      var p = (inp.placeholder||'') + ' ' + (inp.id||'') + ' ' + (inp.name||'');
+      var parentText = (inp.parentElement ? inp.parentElement.innerText : '').toUpperCase();
+      if(parentText.includes('BANK INT') || parentText.includes('BANK SETTINGS')){
+        var box = inp.closest('div');
+        if(box) box.style.display='none';
+        inp.style.display='none';
+      }
+    });
+    // Hide SAVE button in that area too
+    document.querySelectorAll('button').forEach(function(b){
+      var t=(b.innerText||'').toUpperCase();
+      if(t.includes('SAVE') && b.closest('div') && b.closest('div').innerText.toUpperCase().includes('BANK')){
+        b.style.display='none';
+      }
+    });
+  }
+  hideBankBox();
+  setInterval(hideBankBox, 500);
+})();
+</script>
+  <script>
+// HIDE PW HINTS ON LOGIN PAGE
+(function(){
+  function hidePw(){
+    ['loginOwnerHint','loginStaffHint'].forEach(function(id){
+      var e=document.getElementById(id);
+      if(e){ e.innerText=''; e.style.display='none'; if(e.parentElement) e.parentElement.style.display='none'; }
+    });
+    // Hide any div that says Owner: ... Staff: ... on login
+    document.querySelectorAll('div').forEach(function(el){
+      var t=(el.innerText||'');
+      if(t.includes('Owner:') && t.includes('Staff:') && el.querySelectorAll('div').length < 3){
+        el.style.display='none';
+      }
+    });
+  }
+  hidePw();
+  setInterval(hidePw, 500);
+})();
+</script>
 </body>
 </html>
