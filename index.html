@@ -92,7 +92,6 @@ function changePw(){
     document.getElementById('new_pw').value = '';
   });
 }
-setInterval(function(){ if(typeof lockAll==='function' && !isOwner()) lockAll(); }, 800);
 </script>
 <!-- FIREBASE CLOUD END -->
 
@@ -1247,9 +1246,8 @@ function filterProfit(year){
 <script>
 // === TERIKANO LOGIN V31 FINAL - 1 SCRIPT ONLY ===
 (function(){
-  function getOwnerPw(){ return localStorage.getItem('terikano_owner_pw') || window.OWNER_PW || 'owner123'; }
-function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || window.STAFF_PW || 'staff123'; }  
-  function $id(i){ return document.getElementById(i); }
+    function getOwnerPw(){ return localStorage.getItem('TERI_PW') || localStorage.getItem('terikano_owner_pw') || '1234'; }
+  function getStaffPw(){ return localStorage.getItem('terikano_staff_custom_pw') || localStorage.getItem('terikano_staff_pw') || 'staff123'; }  function $id(i){ return document.getElementById(i); }
 
   function showLogin(){
     var lb = $id('loginBox');
@@ -1262,14 +1260,16 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
   }
 
   // On open: if already logged in this tab, hide box. If not, show box.
- if(sessionStorage.getItem('terikano_session_auth')){
+     if(sessionStorage.getItem('terikano_session_auth')){
     hideLogin();
     if(sessionStorage.getItem('terikano_session_auth') === 'staff') {
       document.body.classList.add('staff-mode');
       localStorage.setItem('isOwner','0');
+      localStorage.setItem('ownerLock','0');
     } else {
       document.body.classList.remove('staff-mode');
       localStorage.setItem('isOwner','1');
+      localStorage.setItem('ownerLock','1');
     }
   } else {
     showLogin();
