@@ -1259,13 +1259,11 @@ function filterProfit(year){
     if(lb) lb.style.display = 'none';
   }
 
-  // Auto-login Owner if ownerLock = 1
+  // Auto-login Owner ONLY if ownerLock = 1 - Staff must always see login
   if(localStorage.getItem('ownerLock') === '1'){
     sessionStorage.setItem('terikano_session_auth','owner');
     localStorage.setItem('isOwner','1');
     document.body.classList.remove('staff-mode');
-    hideLogin();
-  } else if(sessionStorage.getItem('terikano_session_auth')){
     hideLogin();
   } else {
     showLogin();
