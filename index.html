@@ -282,6 +282,10 @@ if(isStaffView){ if(mb) mb.style.display='none'; if(countSpan) countSpan.style.d
   <!-- Buttons will auto create here -->
 </div>
  <script>
+    // PATCH 1 - FIX SPLIT-BRAIN: if ownerLock=1, restore owner session
+  if(localStorage.getItem('ownerLock')==='1' || localStorage.getItem('isOwner')==='1'){
+    sessionStorage.setItem('terikano_session_auth','owner');
+  }
   function showWin(id){ 
   let el=document.getElementById(id); 
   if(el) el.style.display='flex'; 
@@ -506,7 +510,7 @@ function roundDown05(x){if(isNaN(x))return 0;return Math.floor(x*20+0.00001)/20;
 function roundPCS(x){return Math.ceil(Number(x)||0);}
 function getOwnerPw(){return localStorage.getItem('TERI_PW')||'1234';}
 function isOwner(){ return sessionStorage.getItem('terikano_session_auth')==='owner' || localStorage.getItem('isOwner')==='1' || localStorage.getItem('ownerLock')==='1'; }
-function showWin(id){var el=document.getElementById(id);if(!el)return;var isOwnerDiv=el.classList.contains('owner-only-div');if(isOwnerDiv&&!isOwner()){if(id==='closingDiv'||id==='purDiv'||id==='cocoMillDiv'||id==='expiryDiv'||id==='clearanceDiv'||id==='wasteDiv'||id==='expenseDiv'||id==='bankDiv'||id==='drawingDiv'||id==='capDiv'||id==='targetDiv'||id==='analyticDiv'||id==='pwDiv'||id==='cocoSetDiv'||id==='backupDiv'||id==='renameDiv'||id==='wholesalerDebtDiv'){alert('OWNER ONLY! Staff: SALE, STOCK LIMITED, CREDITORS, COLLECT, COCO BUY, LEDGER, LOGOUT');return;}}document.querySelectorAll('div[id$="Div"]').forEach(d=>{if(d.id!==id && !el.contains(d))d.style.display='none';});el.style.display='block'; var sp=document.getElementById('staffPwDiv'); if(sp && id==='pwDiv') sp.style.display='block';}
+function showWin(id){if(localStorage.getItem('ownerLock')==='1'||localStorage.getItem('isOwner')==='1')sessionStorage.setItem('terikano_session_auth','owner');var el=document.getElementById(id);if(!el)return;
 function hideWin(id){var e=document.getElementById(id);if(e)e.style.display='none';}
 function toggleDark(){document.body.classList.toggle('dark-mode');var isDark=document.body.classList.contains('dark-mode');localStorage.setItem('DARK_MODE',isDark?'1':'0');var btn=document.getElementById('themeBtn');if(btn)btn.innerText=isDark?'☀️ LIGHT':'🌙 DARK';}
 function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.display=d.style.display==='none'?'block':'none';}
