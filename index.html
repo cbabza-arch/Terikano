@@ -1316,15 +1316,31 @@ function filterProfit(year){
     }
   }, true);
 })();
-    // === OWNER GUARD - overpowers any flipper ===
+    // === OWNER GUARD V2 - force Owner UI ===
 setInterval(function(){
   try{
     if(localStorage.getItem('ownerLock') === '1'){
-      if(sessionStorage.getItem('terikano_session_auth') !== 'owner'){
-        sessionStorage.setItem('terikano_session_auth','owner');
-      }
+      // 1. Force session + storage
+      sessionStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('isOwner','1');
+
+      // 2. Force remove staff look
       document.body.classList.remove('staff-mode');
+      document.body.classList.add('owner-mode');
+
+      // 3. Force unlock ALL Owner buttons
+      document.querySelectorAll('button, a, [onclick]').forEach(function(el){
+        el.disabled = false;
+        el.style.pointerEvents = 'auto';
+        el.style.opacity = '1';
+        el.classList.remove('locked','disabled','owner-locked');
+      });
+
+      // 4. Force show Owner-only elements
+      document.querySelectorAll('.owner-only, [data-owner], [data-role="owner"], .owner-btn, #ownerPanel').forEach(function(el){
+        el.style.display = '';
+        el.style.visibility = 'visible';
+      });
     }
   }catch(e){}
 }, 500);
