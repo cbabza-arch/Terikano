@@ -281,21 +281,7 @@ if(isStaffView){ if(mb) mb.style.display='none'; if(countSpan) countSpan.style.d
 <div id="profitYearFilter" style="display:flex;gap:8px;margin:10px 0;justify-content:center;flex-wrap:wrap">
   <!-- Buttons will auto create here -->
 </div>
- <script>
-    // PATCH 1 - FIX SPLIT-BRAIN: if ownerLock=1, restore owner session
-  if(localStorage.getItem('ownerLock')==='1' || localStorage.getItem('isOwner')==='1'){
-    sessionStorage.setItem('terikano_session_auth','owner');
-  }
-  function showWin(id){ 
-  let el=document.getElementById(id); 
-  if(el) el.style.display='flex'; 
-}
-function hideWin(id){ 
-  let el=document.getElementById(id); 
-  if(el) el.style.display='none'; 
-}
- </script>
-  <script>
+   <script>
 (function autoMakeYearButtons(){
   try{
     let D = JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}');
@@ -509,15 +495,13 @@ var dailyTarget=100,cocoRateG1=0.3333333,cocoRateG2=0.25,businessName="TERIKANO"
 function roundDown05(x){if(isNaN(x))return 0;return Math.floor(x*20+0.00001)/20;}
 function roundPCS(x){return Math.ceil(Number(x)||0);}
 function getOwnerPw(){return localStorage.getItem('TERI_PW')||'1234';}
-function isOwner(){ return sessionStorage.getItem('terikano_session_auth')==='owner' || localStorage.getItem('isOwner')==='1' || localStorage.getItem('ownerLock')==='1'; }
-function showWin(id){if(localStorage.getItem('ownerLock')==='1'||localStorage.getItem('isOwner')==='1')sessionStorage.setItem('terikano_session_auth','owner');var el=document.getElementById(id);if(!el)return;
-function hideWin(id){var e=document.getElementById(id);if(e)e.style.display='none';}
-function toggleDark(){document.body.classList.toggle('dark-mode');var isDark=document.body.classList.contains('dark-mode');localStorage.setItem('DARK_MODE',isDark?'1':'0');var btn=document.getElementById('themeBtn');if(btn)btn.innerText=isDark?'☀️ LIGHT':'🌙 DARK';}
+function showWin(id){var el=document.getElementById(id);if(!el)return;el.style.display='flex';lockAll();}
+function hideWin(id){var e=document.getElementById(id);if(e)e.style.display='none';}function toggleDark(){document.body.classList.toggle('dark-mode');var isDark=document.body.classList.contains('dark-mode');localStorage.setItem('DARK_MODE',isDark?'1':'0');var btn=document.getElementById('themeBtn');if(btn)btn.innerText=isDark?'☀️ LIGHT':'🌙 DARK';}
 function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.display=d.style.display==='none'?'block':'none';}
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function safeLogout(){ sessionStorage.clear(); localStorage.setItem('ownerLock','0'); localStorage.setItem('isOwner','0'); location.reload(); } window.safeLogout = safeLogout; function doLogout(){ safeLogout(); }
+function safeLogout(){ sessionStorage.clear(); location.reload(); } window.safeLogout = safeLogout; function doLogout(){ safeLogout(); }
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
 function save(){try{var d={purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts};localStorage.setItem('Terikano_storage_data',JSON.stringify(d));if(window.saveToCloud)saveToCloud(d);}catch(e){console.log('Save err',e);}}
 let terikanoSet={"bankInt":11,"bankCharge":50};
