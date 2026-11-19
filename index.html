@@ -1316,28 +1316,18 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
     }
   }, true);
 })();
-    window.checkLogin = function(){
-    var p = ($id('staffPass') ? $id('staffPass').value : '').trim();
-    if(!p){ return; }
-    if(p === getOwnerPw()){
-      sessionStorage.setItem('terikano_session_auth','owner');
-      localStorage.setItem('ownerLock','1');
+    // === OWNER GUARD - overpowers any flipper ===
+setInterval(function(){
+  try{
+    if(localStorage.getItem('ownerLock') === '1'){
+      if(sessionStorage.getItem('terikano_session_auth') !== 'owner'){
+        sessionStorage.setItem('terikano_session_auth','owner');
+      }
       localStorage.setItem('isOwner','1');
       document.body.classList.remove('staff-mode');
-      if($id('loginErr')) $id('loginErr').style.display = 'none';
-      hideLogin();
-    } else if(p === getStaffPw()){
-      sessionStorage.setItem('terikano_session_auth','staff');
-      localStorage.setItem('ownerLock','0');
-      localStorage.setItem('isOwner','0');
-      document.body.classList.add('staff-mode');
-      if($id('loginErr')) $id('loginErr').style.display = 'none';
-      hideLogin();
-    } else {
-      if($id('loginErr')) $id('loginErr').style.display = 'block';
     }
-    if($id('staffPass')) $id('staffPass').value = '';
-  };
+  }catch(e){}
+}, 500);
 </script>
 </body>
 </html>
