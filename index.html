@@ -1244,39 +1244,46 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// === SIMPLE LOGIN - BLOCK AUTO-STAFF ===
+// === SIMPLE LOGIN - BLOCK AUTO-STAFF V2 ===
 function $id(i){ return document.getElementById(i); }
 function getOwnerPw(){ return window.OWNER_PW || 'owner123'; }
 function getStaffPw(){ return window.STAFF_PW || 'staff123'; }
 
-// BLOCK: No script can set session except checkLogin
+window._didLogin = false;
 window._allowLogin = false;
-var _origSet = sessionStorage.setItem.bind(sessionStorage);
-sessionStorage.setItem = function(k,v){
-  if(k==='terikano_session_auth' && !window._allowLogin){
-    console.log('BLOCKED auto-login:',v);
-    return; // <-- ignore auto-staff
+
+// Block sessionStorage AND localStorage
+var _origSessSet = sessionStorage.setItem.bind(sessionStorage);
+var _origLocalSet = localStorage.setItem.bind(localStorage);
+
+function _blocked(k,v){
+  if((k==='terikano_session_auth' || k==='isOwner' || k==='isStaff') && !window._allowLogin){
+    return true; // block auto
   }
-  return _origSet(k,v);
-};
+  return false;
+}
+sessionStorage.setItem = function(k,v){ if(_blocked(k,v)) return; return _origSessSet(k,v); };
+localStorage.setItem = function(k,v){ if(_blocked(k,v)) return; return _origLocalSet(k,v); };
 
 window.checkLogin = function(){
   var p = ($id('staffPass')?.value||'').trim();
   if(!p){ alert('Enter PW'); return; }
   window._allowLogin = true;
   if(p === getOwnerPw()){
-    _origSet('terikano_session_auth','owner');
+    _origSessSet('terikano_session_auth','owner');
     document.body.classList.remove('staff-mode');
   } else if(p === getStaffPw()){
-    _origSet('terikano_session_auth','staff');
+    _origSessSet('terikano_session_auth','staff');
     document.body.classList.add('staff-mode');
   } else { window._allowLogin=false; alert('❌ WRONG PASSWORD!'); return; }
   window._allowLogin = false;
+  window._didLogin = true;
   if($id('staffPass')) $id('staffPass').value='';
   var lb=$id('loginBox'); if(lb) lb.style.display='none';
 };
 
 window.safeLogout = window.doLogout = function(){
+  window._didLogin = false;
   try{ sessionStorage.clear(); }catch(_){}
   try{ localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff'); localStorage.removeItem('terikano_role'); }catch(_){}
   document.body.classList.remove('staff-mode');
@@ -1284,12 +1291,24 @@ window.safeLogout = window.doLogout = function(){
   if($id('staffPass')) $id('staffPass').value='';
 };
 
-// On every open - NUKE everything, always ask PW
+// NUKE on open
 try{ sessionStorage.clear(); }catch(_){}
-try{ localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff'); }catch(_){}
 window.addEventListener('load', function(){
   var lb=$id('loginBox'); if(lb) lb.style.display='flex';
 });
+
+// GUARD: every 400ms, if you did NOT type PW but session says staff/owner, kill it
+setInterval(function(){
+  if(!window._didLogin){
+    var s = null;
+    try{ s = sessionStorage.getItem('terikano_session_auth'); }catch(_){}
+    if(s){
+      try{ sessionStorage.clear(); }catch(_){}
+      document.body.classList.remove('staff-mode');
+      var lb=$id('loginBox'); if(lb) lb.style.display='flex';
+    }
+  }
+}, 400);
 
 document.addEventListener('click', function(e){
   var b=e.target.closest?e.target.closest('button,a'):null;
