@@ -1315,6 +1315,18 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
     }
   }, true);
 })();
+  // === DEBUG - FIND WHO FLIPS YOU ===
+var _lastOwner = null;
+try{ _lastOwner = isOwner(); }catch(e){ _lastOwner = 'err'; }
+setInterval(function(){
+  try{
+    var now = isOwner();
+    if(_lastOwner === true && now === false){
+      alert('FLIPPED!\n session=' + sessionStorage.getItem('terikano_session_auth') + '\n local isOwner=' + localStorage.getItem('isOwner') + '\n staff-mode=' + document.body.classList.contains('staff-mode') + '\n login visible=' + (document.getElementById('loginBox') ? document.getElementById('loginBox').style.display : 'no loginBox'));
+    }
+    _lastOwner = now;
+  }catch(e){}
+}, 500);
 </script>
 </body>
 </html>
