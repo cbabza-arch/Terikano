@@ -1315,17 +1315,18 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
     }
   }, true);
 })();
-  // === DEBUG - FIND WHO FLIPS YOU ===
-var _lastOwner = null;
-try{ _lastOwner = isOwner(); }catch(e){ _lastOwner = 'err'; }
+  // === DEBUG V2 - WATCH STAFF-MODE + DASHBOARD ===
+var _lastStaffMode = document.body.classList.contains('staff-mode');
 setInterval(function(){
-  try{
-    var now = isOwner();
-    if(_lastOwner === true && now === false){
-      alert('FLIPPED!\n session=' + sessionStorage.getItem('terikano_session_auth') + '\n local isOwner=' + localStorage.getItem('isOwner') + '\n staff-mode=' + document.body.classList.contains('staff-mode') + '\n login visible=' + (document.getElementById('loginBox') ? document.getElementById('loginBox').style.display : 'no loginBox'));
-    }
-    _lastOwner = now;
-  }catch(e){}
+  var nowStaff = document.body.classList.contains('staff-mode');
+  var dash = document.querySelector('.dashboard');
+  var dashHidden = dash ? (dash.style.display === 'none') : 'no-dash';
+  var ls = document.getElementById('lockStatus');
+  var lsText = ls ? ls.innerText.slice(0,30) : 'no-ls';
+  if(_lastStaffMode === false && nowStaff === true){
+    alert('STAFF-MODE ADDED!\n isOwner=' + isOwner() + '\n session=' + sessionStorage.getItem('terikano_session_auth') + '\n local=' + localStorage.getItem('isOwner') + '\n dash=' + dashHidden + '\n lockStatus=' + lsText);
+  }
+  _lastStaffMode = nowStaff;
 }, 500);
 </script>
 </body>
