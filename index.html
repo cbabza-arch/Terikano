@@ -288,7 +288,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
   setInterval(enforce, 500);
   document.addEventListener('click', function(e){
     var b=e.target.closest('button,a');
-    if(b && (b.innerText||'').toLowerCase().trim()==='logout'){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); sessionStorage.clear(); enforce(); }
+    if(b && (b.innerText||'').toLowerCase().includes('logout')){ e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); sessionStorage.clear(); enforce(); }
   }, true);
 })();
 </script>
@@ -1328,5 +1328,38 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
  <script>
+// === FINAL FIX - PASTE LAST BEFORE </body> ===
+(function(){
+  // 1. Kill V32's 500ms loop by forcing fresh login on every REAL open
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted){ sessionStorage.clear(); location.reload(); }
+  });
+
+  // 2. Force LOGOUT to always work - any button with LOGOUT word
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button,a') : null;
+    if(b && (b.innerText||'').toLowerCase().includes('logout')){
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      try{ sessionStorage.clear(); }catch(_){}
+      try{ localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff'); }catch(_){}
+      location.href = location.pathname + '?logout=' + Date.now();
+    }
+  }, true);
+
+  // 3. Unblock buttons - if NO session, make sure loginBox is the ONLY wall, not invisible wall
+  setTimeout(function(){
+    var sess = sessionStorage.getItem('terikano_session_auth');
+    var lb = document.getElementById('loginBox');
+    if(!sess && lb){
+      lb.style.setProperty('display','flex','important');
+      lb.style.setProperty('visibility','visible','important');
+      lb.style.setProperty('pointer-events','auto','important');
+    }
+    if(sess){
+      if(lb) lb.style.setProperty('display','none','important');
+    }
+  }, 800);
+})();
+</script>
 </body>
 </html>
