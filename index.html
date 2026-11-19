@@ -505,7 +505,7 @@ var dailyTarget=100,cocoRateG1=0.3333333,cocoRateG2=0.25,businessName="TERIKANO"
 function roundDown05(x){if(isNaN(x))return 0;return Math.floor(x*20+0.00001)/20;}
 function roundPCS(x){return Math.ceil(Number(x)||0);}
 function getOwnerPw(){return localStorage.getItem('TERI_PW')||'1234';}
-function isOwner(){ return sessionStorage.getItem('terikano_session_auth')==='owner' || localStorage.getItem('isOwner')==='1'; }
+function isOwner(){ return sessionStorage.getItem('terikano_session_auth')==='owner' || localStorage.getItem('isOwner')==='1' || localStorage.getItem('ownerLock')==='1'; }
 function showWin(id){var el=document.getElementById(id);if(!el)return;var isOwnerDiv=el.classList.contains('owner-only-div');if(isOwnerDiv&&!isOwner()){if(id==='closingDiv'||id==='purDiv'||id==='cocoMillDiv'||id==='expiryDiv'||id==='clearanceDiv'||id==='wasteDiv'||id==='expenseDiv'||id==='bankDiv'||id==='drawingDiv'||id==='capDiv'||id==='targetDiv'||id==='analyticDiv'||id==='pwDiv'||id==='cocoSetDiv'||id==='backupDiv'||id==='renameDiv'||id==='wholesalerDebtDiv'){alert('OWNER ONLY! Staff: SALE, STOCK LIMITED, CREDITORS, COLLECT, COCO BUY, LEDGER, LOGOUT');return;}}document.querySelectorAll('div[id$="Div"]').forEach(d=>{if(d.id!==id && !el.contains(d))d.style.display='none';});el.style.display='block'; var sp=document.getElementById('staffPwDiv'); if(sp && id==='pwDiv') sp.style.display='block';}
 function hideWin(id){var e=document.getElementById(id);if(e)e.style.display='none';}
 function toggleDark(){document.body.classList.toggle('dark-mode');var isDark=document.body.classList.contains('dark-mode');localStorage.setItem('DARK_MODE',isDark?'1':'0');var btn=document.getElementById('themeBtn');if(btn)btn.innerText=isDark?'☀️ LIGHT':'🌙 DARK';}
@@ -1259,22 +1259,17 @@ function filterProfit(year){
     if(lb) lb.style.display = 'none';
   }
 
-  // On open: if already logged in this tab, hide box. If not, show box.
-     if(sessionStorage.getItem('terikano_session_auth')){
+  // Auto-login Owner if ownerLock = 1
+  if(localStorage.getItem('ownerLock') === '1'){
+    sessionStorage.setItem('terikano_session_auth','owner');
+    localStorage.setItem('isOwner','1');
+    document.body.classList.remove('staff-mode');
     hideLogin();
-    if(sessionStorage.getItem('terikano_session_auth') === 'staff') {
-      document.body.classList.add('staff-mode');
-      localStorage.setItem('isOwner','0');
-      localStorage.setItem('ownerLock','0');
-    } else {
-      document.body.classList.remove('staff-mode');
-      localStorage.setItem('isOwner','1');
-      localStorage.setItem('ownerLock','1');
-    }
+  } else if(sessionStorage.getItem('terikano_session_auth')){
+    hideLogin();
   } else {
     showLogin();
   }
-
   window.checkLogin = function(){
     var p = ($id('staffPass') ? $id('staffPass').value : '').trim();
     if(!p){ return; }
