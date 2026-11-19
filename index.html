@@ -1262,10 +1262,15 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
   }
 
   // On open: if already logged in this tab, hide box. If not, show box.
-  if(sessionStorage.getItem('terikano_session_auth')){
+ if(sessionStorage.getItem('terikano_session_auth')){
     hideLogin();
-    if(sessionStorage.getItem('terikano_session_auth') === 'staff') document.body.classList.add('staff-mode');
-    else document.body.classList.remove('staff-mode');
+    if(sessionStorage.getItem('terikano_session_auth') === 'staff') {
+      document.body.classList.add('staff-mode');
+      localStorage.setItem('isOwner','0');
+    } else {
+      document.body.classList.remove('staff-mode');
+      localStorage.setItem('isOwner','1');
+    }
   } else {
     showLogin();
   }
@@ -1275,11 +1280,13 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
     if(!p){ return; }
     if(p === getOwnerPw()){
       sessionStorage.setItem('terikano_session_auth','owner');
+      localStorage.setItem('isOwner','1');
       document.body.classList.remove('staff-mode');
       if($id('loginErr')) $id('loginErr').style.display = 'none';
       hideLogin();
     } else if(p === getStaffPw()){
       sessionStorage.setItem('terikano_session_auth','staff');
+      localStorage.setItem('isOwner','0');
       document.body.classList.add('staff-mode');
       if($id('loginErr')) $id('loginErr').style.display = 'none';
       hideLogin();
@@ -1293,12 +1300,16 @@ function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || windo
   var inp = $id('staffPass');
   if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
 
-  // LOGOUT - any button/link with "logout" text
+  // LOGOUT - ONLY exact logout button, not any button containing the word
   document.addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('button,a') : null;
-    if(b && (b.innerText||'').toLowerCase().includes('logout')){
+    if(!b) return;
+    var t = (b.innerText||'').trim().toLowerCase();
+    var isLogoutBtn = b.id === 'logoutBtn' || b.dataset.logout === '1' || t === 'logout' || t === '🚪 logout' || t === 'log out';
+    if(isLogoutBtn){
       e.preventDefault();
       sessionStorage.clear();
+      localStorage.setItem('isOwner','0');
       document.body.classList.remove('staff-mode');
       location.reload();
     }
