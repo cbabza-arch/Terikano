@@ -513,7 +513,7 @@ function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function doLogout(){ if(window.safeLogout) safeLogout(); else { sessionStorage.clear(); location.reload(); } }
+function safeLogout(){ sessionStorage.clear(); localStorage.setItem('ownerLock','0'); localStorage.setItem('isOwner','0'); location.reload(); } window.safeLogout = safeLogout; function doLogout(){ safeLogout(); }
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
 function save(){try{var d={purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts};localStorage.setItem('Terikano_storage_data',JSON.stringify(d));if(window.saveToCloud)saveToCloud(d);}catch(e){console.log('Save err',e);}}
 let terikanoSet={"bankInt":11,"bankCharge":50};
@@ -1302,40 +1302,25 @@ function filterProfit(year){
     if(!b) return;
     var t = (b.innerText||'').trim().toLowerCase();
     var isLogoutBtn = b.id === 'logoutBtn' || b.dataset.logout === '1' || t === 'logout' || t === '🚪 logout' || t === 'log out';
-    if(isLogoutBtn){
+        if(isLogoutBtn){
       e.preventDefault();
       sessionStorage.clear();
+      localStorage.setItem('ownerLock','0');
       localStorage.setItem('isOwner','0');
       document.body.classList.remove('staff-mode');
       location.reload();
     }
   }, true);
 })();
-    // === OWNER GUARD V2 - force Owner UI ===
-setInterval(function(){
+   setInterval(function(){
   try{
     if(localStorage.getItem('ownerLock') === '1'){
-      // 1. Force session + storage
       sessionStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('isOwner','1');
-
-      // 2. Force remove staff look
       document.body.classList.remove('staff-mode');
-      document.body.classList.add('owner-mode');
-
-      // 3. Force unlock ALL Owner buttons
-      document.querySelectorAll('button, a, [onclick]').forEach(function(el){
-        el.disabled = false;
-        el.style.pointerEvents = 'auto';
-        el.style.opacity = '1';
-        el.classList.remove('locked','disabled','owner-locked');
-      });
-
-      // 4. Force show Owner-only elements
-      document.querySelectorAll('.owner-only, [data-owner], [data-role="owner"], .owner-btn, #ownerPanel').forEach(function(el){
-        el.style.display = '';
-        el.style.visibility = 'visible';
-      });
+      if(typeof lockAll==='function') lockAll();
+    } else {
+      if(typeof lockAll==='function') lockAll();
     }
   }catch(e){}
 }, 500);
