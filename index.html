@@ -1256,18 +1256,26 @@ function filterProfit(year){
 <div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999; box-shadow:0 0 8px #0f0;">● Online</div>
 
 <script>
-// V28 FINAL - CLEAN - LOGIN + LOGOUT + PW CHANGE + HIDE BANK FOR STAFF + HIDE PW HINTS
+// V29 FINAL - NO AUTO LOGIN - NO WHITE SCREEN - SESSION ONLY
 (function(){
   const DEFAULT_OWNER='Terikano_2026';
   const DEFAULT_STAFF='Terikano_2005';
   const SESS='terikano_session_auth';
   function $id(i){return document.getElementById(i);}
 
-  // If ?logout=1 then clear session and clean URL
-  if(location.search.includes('logout')){
+  // 1. KILL OLD AUTO-LOGIN: if fresh open (no sessionStorage) ignore localStorage
+  if(!sessionStorage.getItem(SESS)){
+    // Fresh open = force login, ignore old localStorage staff
+    localStorage.removeItem(SESS);
     localStorage.removeItem('isOwner');
     localStorage.removeItem('isStaff');
-    localStorage.removeItem(SESS);
+    if(location.search.includes('logout')){
+      history.replaceState({},'',location.pathname);
+    }
+  }
+  // If ?logout in URL, clear everything
+  if(location.search.includes('logout')){
+    localStorage.removeItem(SESS); localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff');
     sessionStorage.removeItem(SESS);
     history.replaceState({},'',location.pathname);
   }
@@ -1279,61 +1287,67 @@ function filterProfit(year){
     var p = ($id('staffPass')?.value||'').trim();
     if(!p){ alert('Enter PW'); return; }
     if(p === window.getOwnerPw()){
-      localStorage.setItem('isOwner','1');
-      localStorage.removeItem('isStaff');
-      localStorage.setItem(SESS,'owner');
       sessionStorage.setItem(SESS,'owner');
-      location.href = location.pathname;
+      sessionStorage.setItem('isOwner','1');
+      localStorage.setItem(SESS,'owner'); // backup only, session is king
+      localStorage.setItem('isOwner','1');
+      showApp('owner');
     } else if(p === window.getStaffPw()){
-      localStorage.setItem('isOwner','0');
-      localStorage.setItem('isStaff','1');
-      localStorage.setItem(SESS,'staff');
       sessionStorage.setItem(SESS,'staff');
-      location.href = location.pathname;
+      sessionStorage.setItem('isOwner','0');
+      localStorage.setItem(SESS,'staff');
+      localStorage.setItem('isOwner','0');
+      showApp('staff');
     } else {
       alert('❌ WRONG PASSWORD!');
     }
   };
 
-  // SAFE LOGOUT - use onclick="safeLogout()" on your Logout button
+  function showApp(role){
+    var lb=$id('loginBox'); if(lb) lb.style.display='none';
+    var sl=$id('staffLock'); if(sl) sl.style.display='none';
+    if($id('staffPass')) $id('staffPass').value='';
+    var dot=$id('terikanoOnlineMain'); if(dot){ dot.style.display='inline-flex'; dot.style.zIndex='999999999'; }
+    if(window.HIDE_FOR_STAFF) window.HIDE_FOR_STAFF();
+  }
+
+  // 2. LOGOUT - NO RELOAD = NO WHITE SCREEN
   window.safeLogout=function(){
-    localStorage.removeItem(SESS);
-    localStorage.removeItem('isOwner');
-    localStorage.removeItem('isStaff');
-    sessionStorage.removeItem(SESS);
-    location.href = location.pathname + '?logout=1';
+    sessionStorage.removeItem(SESS); sessionStorage.removeItem('isOwner');
+    localStorage.removeItem(SESS); localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff');
+    var lb=$id('loginBox');
+    if(lb){ lb.style.display='flex'; lb.style.visibility='visible'; lb.style.opacity='1'; lb.style.background='rgba(0,0,0,0.95)'; }
+    if($id('staffPass')) $id('staffPass').value='';
+    document.body.style.background='#000';
+    document.body.style.visibility='visible';
+    document.body.style.display='block';
+    var dot=$id('terikanoOnlineMain'); if(dot){ dot.style.display='inline-flex'; dot.style.zIndex='999999999'; }
   };
   window.logout = window.safeLogout;
 
   window.changePw=function(){
-    let oldP = ($id('old_pw')?.value||'').trim();
-    let newP = ($id('new_pw')?.value||'').trim();
+    let oldP=($id('old_pw')?.value||'').trim();
+    let newP=($id('new_pw')?.value||'').trim();
     if(oldP !== window.getOwnerPw()){ alert('Wrong Old!'); return; }
-    if(!newP){ alert('Enter New PW'); return; }
-    localStorage.setItem('TERI_PW', newP);
-    localStorage.setItem('terikano_owner_pw', newP);
+    if(!newP) return;
+    localStorage.setItem('TERI_PW',newP); localStorage.setItem('terikano_owner_pw',newP);
     if($id('curPwLabel')) $id('curPwLabel').innerText=newP;
     alert('✅ OWNER PW CHANGED');
   };
-
   window.setStaffPw=function(){
-    let newP = ($id('new_staff_pw')?.value||'').trim();
+    let newP=($id('new_staff_pw')?.value||'').trim();
     if(!newP) return;
-    localStorage.setItem('TERI_STAFF_PW', newP);
-    localStorage.setItem('terikano_staff_custom_pw', newP);
+    localStorage.setItem('TERI_STAFF_PW',newP); localStorage.setItem('terikano_staff_custom_pw',newP);
     if($id('curStaffPwLabel')) $id('curStaffPwLabel').innerText=newP;
     alert('✅ STAFF PW CHANGED');
   };
-
   window.removeStaffPw=function(){
-    localStorage.removeItem('TERI_STAFF_PW');
-    localStorage.removeItem('terikano_staff_custom_pw');
+    localStorage.removeItem('TERI_STAFF_PW'); localStorage.removeItem('terikano_staff_custom_pw');
     alert('Reset to '+DEFAULT_STAFF);
   };
 
-  // HIDE OWNER STUFF FOR STAFF
-  function HIDE_FOR_STAFF(){
-    var isStaff = localStorage.getItem('isOwner')==='0' && localStorage.getItem(SESS)==='staff';
+  window.HIDE_FOR_STAFF=function(){
+    var isStaff = sessionStorage.getItem(SESS)==='staff';
     if(!isStaff){
       ['pwDiv','backupDiv','renameDiv','ownerDiv','settingsDiv','deleteDiv','adminDiv'].forEach(function(id){
         var el=$id(id); if(el) el.style.display='';
@@ -1343,82 +1357,38 @@ function filterProfit(year){
       });
       return;
     }
-    ['pwDiv','backupDiv','renameDiv'].forEach(function(id){
-      var el=$id(id); if(el) el.style.display='none';
-    });
+    ['pwDiv','backupDiv','renameDiv'].forEach(function(id){ var el=$id(id); if(el) el.style.display='none'; });
     document.querySelectorAll('button').forEach(function(b){
       let t=(b.innerText||'').toUpperCase();
-      if(t.includes('BANK') || t.includes('SETTING') || t.includes('CHANGE PW') || t.includes('BACKUP') || t.includes('RENAME') || t.includes('DELETE') || t.includes('OWNER')){
+      if(t.includes('BANK')||t.includes('SETTING')||t.includes('CHANGE PW')||t.includes('BACKUP')||t.includes('RENAME')||t.includes('DELETE')||t.includes('OWNER')){
         b.dataset.ownerHidden='1'; b.style.display='none';
       }
     });
-  }
-  window.HIDE_FOR_STAFF=HIDE_FOR_STAFF;
+  };
 
-  // SHOW / HIDE LOGIN ON LOAD
+  // 3. ON LOAD - ONLY sessionStorage counts!
   function initLogin(){
-    var sess = localStorage.getItem(SESS);
-    var flag = localStorage.getItem('isOwner');
-    var lb = $id('loginBox');
-    if(sess && (flag==='0' || flag==='1')){ if(lb) lb.style.display='none'; }
-    else { if(lb) lb.style.display='flex'; }
-    // NEVER show PW in hints - always empty
+    var sess = sessionStorage.getItem(SESS);
+    var lb=$id('loginBox');
+    if(sess==='owner' || sess==='staff'){
+      if(lb) lb.style.display='none';
+      window.HIDE_FOR_STAFF();
+    } else {
+      if(lb){ lb.style.display='flex'; lb.style.visibility='visible'; }
+    }
     if($id('loginOwnerHint')) $id('loginOwnerHint').innerText='';
     if($id('loginStaffHint')) $id('loginStaffHint').innerText='';
-    // Dot always on top
-    var dot=$id('terikanoOnlineMain'); if(dot){ dot.style.display='inline-flex'; dot.style.visibility='visible'; dot.style.zIndex='999999999'; }
-    HIDE_FOR_STAFF();
+    var dot=$id('terikanoOnlineMain'); if(dot){ dot.style.display='inline-flex'; dot.style.zIndex='999999999'; }
   }
   initLogin();
-  setInterval(initLogin, 1000);
-})();
-</script>
 
-<script>
-// HIDE WHOLE BANK SETTINGS BOX FOR STAFF - V2
-(function(){
-  function isStaff(){ return localStorage.getItem('isOwner')==='0' && localStorage.getItem('terikano_session_auth')==='staff'; }
-  function hideBankBox(){
-    if(!isStaff()) return;
-    document.querySelectorAll('div, section, fieldset, table').forEach(function(el){
-      var t=(el.innerText||'').toUpperCase();
-      if(t.includes('BANK SETTINGS') && t.includes('BANK INT')){
-        if(el.querySelectorAll('div').length < 5){ el.style.display='none'; }
-      }
-    });
-    document.querySelectorAll('input').forEach(function(inp){
-      var parentText=(inp.parentElement ? inp.parentElement.innerText : '').toUpperCase();
-      if(parentText.includes('BANK INT') || parentText.includes('BANK SETTINGS')){
-        var box=inp.closest('div'); if(box) box.style.display='none'; inp.style.display='none';
-      }
-    });
-    document.querySelectorAll('button').forEach(function(b){
-      var t=(b.innerText||'').toUpperCase();
-      if(t.includes('SAVE') && b.closest('div') && b.closest('div').innerText.toUpperCase().includes('BANK')){ b.style.display='none'; }
-    });
-  }
-  hideBankBox();
-  setInterval(hideBankBox, 500);
-})();
-</script>
-
-<script>
-// HIDE PW HINTS ON LOGIN PAGE - FINAL
-(function(){
-  function hidePw(){
-    ['loginOwnerHint','loginStaffHint'].forEach(function(id){
-      var e=document.getElementById(id);
-      if(e){ e.innerText=''; e.style.display='none'; }
-    });
-    document.querySelectorAll('div').forEach(function(el){
-      var t=(el.innerText||'');
-      if(t.includes('Owner:') && t.includes('Staff:') && el.querySelectorAll('div').length < 3){
-        // keep the div but hide the spans inside, so layout stays
-      }
-    });
-  }
-  hidePw();
-  setInterval(hidePw, 500);
+  // Hook logout buttons - instant, no reload
+  document.addEventListener('click', function(e){
+    var b=e.target.closest('button, a');
+    if(b && (b.innerText||'').toLowerCase().trim()==='logout'){
+      e.preventDefault(); e.stopPropagation(); window.safeLogout();
+    }
+  }, true);
 })();
 </script>
 </body>
