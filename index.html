@@ -1246,9 +1246,9 @@ function filterProfit(year){
 <script>
 // === TERIKANO LOGIN V31 FINAL - 1 SCRIPT ONLY ===
 (function(){
-    function getOwnerPw(){ return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234'; }
-  function getStaffPw(){ return localStorage.getItem('terikano_staff_custom_pw') || localStorage.getItem('terikano_staff_pw') || 'staff123'; }  function $id(i){ return document.getElementById(i); }
-
+  function getOwnerPw(){ return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234'; }
+  function getStaffPw(){ return localStorage.getItem('terikano_staff_custom_pw') || localStorage.getItem('terikano_staff_pw') || 'staff123'; }
+  function $id(i){ return document.getElementById(i); }
   function showLogin(){
     var lb = $id('loginBox');
     if(lb) lb.style.display = 'flex';
@@ -1258,14 +1258,14 @@ function filterProfit(year){
     var lb = $id('loginBox');
     if(lb) lb.style.display = 'none';
   }
-
-  // Auto-login Owner ONLY if ownerLock = 1 - Staff must always see login
+  // FIXED: Only Owner auto-login. Staff must ALWAYS see login.
   if(localStorage.getItem('ownerLock') === '1'){
     sessionStorage.setItem('terikano_session_auth','owner');
     localStorage.setItem('isOwner','1');
     document.body.classList.remove('staff-mode');
     hideLogin();
   } else {
+    sessionStorage.removeItem('terikano_session_auth');
     showLogin();
   }
   window.checkLogin = function(){
@@ -1290,17 +1290,14 @@ function filterProfit(year){
     }
     if($id('staffPass')) $id('staffPass').value = '';
   };
-  // Enter key = Login
   var inp = $id('staffPass');
   if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
-
-  // LOGOUT - ONLY exact logout button, not any button containing the word
   document.addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('button,a') : null;
     if(!b) return;
     var t = (b.innerText||'').trim().toLowerCase();
     var isLogoutBtn = b.id === 'logoutBtn' || b.dataset.logout === '1' || t === 'logout' || t === '🚪 logout' || t === 'log out';
-        if(isLogoutBtn){
+    if(isLogoutBtn){
       e.preventDefault();
       sessionStorage.clear();
       localStorage.setItem('ownerLock','0');
@@ -1310,7 +1307,7 @@ function filterProfit(year){
     }
   }, true);
 })();
-   setInterval(function(){
+setInterval(function(){
   try{
     if(localStorage.getItem('ownerLock') === '1'){
       sessionStorage.setItem('terikano_session_auth','owner');
