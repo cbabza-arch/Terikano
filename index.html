@@ -32,14 +32,7 @@ if(sessionStorage.getItem('v')!='v38'){caches.keys().then(a=>a.forEach(k=>caches
     localStorage.removeItem('isStaff');
     localStorage.removeItem('terikano_session_auth');
     try{sessionStorage.clear();}catch(e){}
-    // stop old script from re-setting
-    setTimeout(function(){
-      var lb=document.getElementById('loginBox');
-      if(lb) lb.style.display='flex';
-      var sl=document.getElementById('staffLock');
-      if(sl) sl.style.display='none';
-    },100);
-  }
+     }
   // If corrupted: isOwner=0 but no session -> force logout
   var flag = localStorage.getItem('isOwner');
   var sess = localStorage.getItem('terikano_session_auth');
@@ -605,13 +598,7 @@ function toggleDash(){var d=document.getElementById('dashContent');if(d)d.style.
 function togglePurIB(){var p=gv('p_pay');var s=document.getElementById('p_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleSaleIB(){var p=gv('s_pay');var s=document.getElementById('s_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
 function toggleCollIB(){var p=gv('coll_pay');var s=document.getElementById('coll_ib_span');if(s)s.style.display=p==='BANK'?'inline':'none';}
-function doLogout(){
-  localStorage.removeItem('isOwner');
-  localStorage.removeItem('isStaff');
-  localStorage.removeItem('terikano_session_auth');
-  try{sessionStorage.clear();}catch(e){}
-  location.href = location.pathname + '?logout=' + Date.now();
-}
+function doLogout(){ if(window.safeLogout) safeLogout(); else { sessionStorage.clear(); location.reload(); } }
 function todayKIR(){return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});}
 function save(){try{var d={purchases,sales,capitals,banks,expenses,collects,ownerTakes,tips,waste,clearance,dailyTarget,cocoRateG1,cocoRateG2,businessName,cocoBuys,cocoMills,millRatePerKg,millWeightPerCoco,badDebts,priceHistory,terikanoSet,wholesalerDebts};localStorage.setItem('Terikano_storage_data',JSON.stringify(d));if(window.saveToCloud)saveToCloud(d);}catch(e){console.log('Save err',e);}}
 let terikanoSet={"bankInt":11,"bankCharge":50};
@@ -1328,7 +1315,7 @@ function filterProfit(year){
     if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
-<div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="document.getElementById('staffLock').style.display='none'; document.getElementById('loginBox').style.display='flex';" style="padding:10px 20px; background:gold; border-radius:8px;">LOGIN</button></div></div>
+<div id="staffLock" style="display:none; position:fixed; inset:0; z-index:99999998; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;"><div style="background:#222; padding:20px; border-radius:12px; color:#fff; text-align:center;"><button onclick="safeLogout()"
 
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
 <div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
