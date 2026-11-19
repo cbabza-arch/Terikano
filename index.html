@@ -1492,97 +1492,54 @@ function HIDE_FOR_STAFF(){
 })();
 </script>
   <script>
-// V28.6 FIX - LOGOUT + PW SAVE + NO PW POPUP + NO WHITE SCREEN
+// V28.7 FIX - NO WHITE SCREEN + ONLINE DOT BACK
 (function(){
-  // 1. NEVER show pw in popup - hide pw in any alert
-  var oldAlert = window.alert;
-  window.alert = function(msg){
-    if(typeof msg === 'string'){
-      // if msg contains a pw-like word, mask it
-      msg = msg.replace(/password[:\s]*[^\n]+/gi, 'Password: ***');
-      msg = msg.replace(/pw[:\s]*[^\n]+/gi, 'PW: ***');
-      if(msg.toLowerCase().includes('wrong') && msg.length > 40) msg = 'Wrong password! Try again.';
-    }
-    return oldAlert(msg);
-  };
-
-  // 2. SAFE LOGOUT - never auto-login as staff, never white screen
-  window.safeLogout = function(){
-    // clear session only, keep saved PWs
-    ['terikano_session_auth','terikano_session','isOwner','sessionAuth','currentUser','loggedIn'].forEach(function(k){ localStorage.removeItem(k); });
-    sessionStorage.clear();
-    // show login, hide main
-    var login = document.getElementById('loginBox');
-    var mains = document.querySelectorAll('#mainApp, #app, #terikanoOnlineMain, .main-content');
-    if(login) login.style.display = 'block';
-    mains.forEach(function(m){ if(m.id!=='loginBox') m.style.display='none'; });
-    // clear pw inputs
-    document.querySelectorAll('input[type="password"]').forEach(function(i){ i.value=''; });
-    // go to login without white screen - no full reload loop
-    setTimeout(function(){ window.location.hash = ''; window.location.href = window.location.pathname + '?logout=1'; }, 100);
-  };
-
-  // Replace all logout buttons
-  function fixLogoutBtns(){
-    document.querySelectorAll('button, a').forEach(function(b){
-      var t = (b.innerText||'').toLowerCase();
-      if(t.trim()==='logout' || t.includes('log out')){
-        b.onclick = function(e){ e.preventDefault(); window.safeLogout(); };
-      }
-    });
+  // Stop old reload loop
+  if(window.location.search.includes('logout=1')){
+    window.history.replaceState({},'',window.location.pathname);
   }
-  fixLogoutBtns();
-  setInterval(fixLogoutBtns, 1000);
 
-  // 3. FIX PW SAVE - save to ALL keys so reopen uses NEW pw
-  function fixPwSave(){
-    document.querySelectorAll('button').forEach(function(b){
-      var t = (b.innerText||'').toLowerCase();
-      if(t.includes('save') && b.closest('div') && b.closest('div').innerText.toLowerCase().includes('password')){
-        if(b.dataset.pwFixed) return;
-        b.dataset.pwFixed = '1';
-        b.addEventListener('click', function(){
-          setTimeout(function(){
-            var inputs = document.querySelectorAll('input[type="password"], input[type="text"]');
-            inputs.forEach(function(inp){
-              var val = inp.value.trim();
-              if(val.length < 3) return;
-              var id = (inp.id||'').toLowerCase();
-              var ph = (inp.placeholder||'').toLowerCase();
-              if(id.includes('owner') || ph.includes('owner')){
-                localStorage.setItem('terikano_owner_pw', val);
-                localStorage.setItem('ownerPw', val);
-                localStorage.setItem('ownerPassword', val);
-              }
-              if(id.includes('staff') || ph.includes('staff')){
-                localStorage.setItem('terikano_staff_pw', val);
-                localStorage.setItem('staffPw', val);
-                localStorage.setItem('staffPassword', val);
-              }
-            });
-          }, 300);
-        });
-      }
-    });
-  }
-  setInterval(fixPwSave, 1000);
-
-  // 4. PREVENT AUTO-LOGIN AS STAFF - if no session, stay on login
-  if(!localStorage.getItem('terikano_session_auth') && !localStorage.getItem('isOwner')){
-    var loginBox = document.getElementById('loginBox');
-    if(loginBox) loginBox.style.display = 'block';
-  }
-})();
-</script>
-  <script>
-// BRING BACK ONLINE DOT
-(function(){
+  // 1. BRING BACK ONLINE DOT - find by ID OR by text "Online"
   function showOnline(){
     var e = document.getElementById('terikanoOnlineMain');
-    if(e){ e.style.display='inline-flex'; e.style.visibility='visible'; e.style.opacity='1'; }
+    if(e){ e.style.display='inline-flex'; e.style.visibility='visible'; e.style.opacity='1'; return; }
+    // fallback: find any element that says Online
+    document.querySelectorAll('div, span, p').forEach(function(el){
+      if((el.innerText||'').trim() === '● Online' || (el.innerText||'').trim() === 'Online'){
+        el.style.display='inline-flex'; el.style.visibility='visible'; el.style.opacity='1';
+      }
+    });
   }
   showOnline();
-  setInterval(showOnline, 500);
+  setInterval(showOnline, 800);
+
+  // 2. SAFE LOGOUT - NO RELOAD, NO WHITE SCREEN
+  window.safeLogout = function(){
+    localStorage.removeItem('terikano_session_auth');
+    localStorage.removeItem('isOwner');
+    sessionStorage.clear();
+    // Show login
+    var login = document.getElementById('loginBox');
+    if(login){ login.style.display='block'; login.style.visibility='visible'; }
+    // Hide main app ONLY, NOT online dot, NOT body
+    ['mainApp','app','main','dashboard'].forEach(function(id){
+      var m = document.getElementById(id);
+      if(m) m.style.display='none';
+    });
+    document.querySelectorAll('input[type="password"]').forEach(function(i){ i.value=''; });
+    document.body.style.display='block';
+    document.body.style.visibility='visible';
+    document.body.style.background='#fff';
+    showOnline();
+  };
+
+  // Hook all logout buttons again
+  document.querySelectorAll('button, a').forEach(function(b){
+    var t=(b.innerText||'').toLowerCase().trim();
+    if(t==='logout' || t==='log out'){
+      b.onclick = function(e){ e.preventDefault(); window.safeLogout(); };
+    }
+  });
 })();
 </script>
 </body>
