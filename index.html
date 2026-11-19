@@ -1247,8 +1247,8 @@ function filterProfit(year){
 <script>
 // === TERIKANO LOGIN V31 FINAL - 1 SCRIPT ONLY ===
 (function(){
-  function getOwnerPw(){ return window.OWNER_PW || 'owner123'; }
-  function getStaffPw(){ return window.STAFF_PW || 'staff123'; }
+  function getOwnerPw(){ return localStorage.getItem('terikano_owner_pw') || window.OWNER_PW || 'owner123'; }
+function getStaffPw(){ return localStorage.getItem('terikano_staff_pw') || window.STAFF_PW || 'staff123'; }  
   function $id(i){ return document.getElementById(i); }
 
   function showLogin(){
