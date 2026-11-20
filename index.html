@@ -1273,7 +1273,7 @@ function filterProfit(year){
   };
   var inp = $id('staffPass');
   if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
-  document.addEventListener('click', function(e){
+    document.addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('button,a') : null;
     if(!b) return;
     var t = (b.innerText||'').trim().toLowerCase();
@@ -1283,7 +1283,9 @@ function filterProfit(year){
       sessionStorage.clear();
       localStorage.removeItem('ownerLock');
       localStorage.removeItem('isOwner');
-      location.reload();
+      localStorage.removeItem('isStaff');
+      localStorage.removeItem('terikano_session_auth');
+      location.href = location.pathname + '?logout=1';
     }
   }, true);
 })();
