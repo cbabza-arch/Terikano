@@ -1442,79 +1442,128 @@ function filterProfit(year){
   }
 })();
 </script>
-  <<style>
+ <style>
   /* ===== PRO VERSION - NEAT TABLES ===== */
-  /* Each section = clean card */
   div { box-sizing: border-box !important; }
-
-  /* Table wrapper - scroll INSIDE, not spill */
-  table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }
-  table thead th { position: sticky !important; top: 0 !important; background: #222 !important; color: #fff !important; z-index: 2 !important; }
+  table { width: 100% !important; border-collapse: collapse !important; }
+  table thead th { position: sticky !important; top: 0 !important; background: #222 !important; color: #fff !important; }
   th, td { white-space: nowrap !important; padding: 8px 10px !important; font-size: 12px !important; text-align: left !important; border-bottom: 1px solid #ddd !important; }
   tr:nth-child(even) td { background: #f9f9f9 !important; }
-
-  /* Make the container of each table scroll nicely */
   div:has(> table) { overflow-x: auto !important; overflow-y: auto !important; max-height: 400px !important; display: block !important; border-radius: 10px !important; background: #fff !important; }
-
-  /* Stop page sideways scroll */
   html, body { overflow-x: hidden !important; max-width: 100% !important; }
-
-  /* PRO Remove Button inside Manage */
-  #removeStaffBtnPro { width: 100% !important; margin-top: 10px !important; background: #d32f2f !important; color: #fff !important; padding: 12px !important; border: none !important; border-radius: 10px !important; font-weight: bold !important; font-size: 13px !important; }
+  #removeStaffBtnPro { width: 100% !important; margin-top: 10px !important; background: #d32f2f !important; color: #fff !important; padding: 12px !important; border: none !important; border-radius: 10px !important; font-weight: bold !important; }
 </style>
 
 <script>
   (function(){
     function run(){
       var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-      var isStaff = (auth === 'staff');
-
-      // --- STAFF: Hide Bank + Device + Green Dot ---
-      if(isStaff){
+      if(auth === 'staff'){
         document.querySelectorAll('div').forEach(function(el){
           var t = (el.innerText || '').trim();
-          if(t.startsWith('BANK SETTINGS') || t.startsWith('DEVICE')){
+          if(t.startsWith('BANK SETTINGS')){
             var card = el.closest('div');
             if(card) card.style.display = 'none';
           }
         });
-        document.querySelectorAll('span, i').forEach(function(s){
-          if(s.offsetWidth > 0 && s.offsetWidth < 18 && s.offsetHeight < 18) s.style.display = 'none';
-        });
       }
-
-      // --- OWNER: Put REMOVE button INSIDE Device Manage / Manage ---
       if(auth === 'owner' && !document.getElementById('removeStaffBtnPro')){
-        // Find Device Manage card
         var target = null;
         document.querySelectorAll('div').forEach(function(el){
-          var t = (el.innerText || '').trim();
-          if(t.startsWith('DEVICE') || t.startsWith('MANAGE') || t.includes('DEVICE MANAGE')){
-            target = el;
-          }
+          if((el.innerText || '').trim().startsWith('DEVICE')) target = el;
         });
         var btn = document.createElement('button');
         btn.id = 'removeStaffBtnPro';
         btn.innerText = '🔒 REMOVE STAFF DEVICE - Staff Must Enter Password Again';
         btn.onclick = function(){
-          if(confirm('Remove Staff Device? Staff will need password again.')){
+          if(confirm('Remove Staff Device?')){
             localStorage.removeItem('terikano_session_auth');
             sessionStorage.removeItem('terikano_session_auth');
-            alert('Staff device removed! Staff must enter password again.');
+            alert('Staff device removed!');
             location.reload();
           }
         };
-        if(target){
-          target.appendChild(btn); // INSIDE Manage button
-        } else {
-          // Fallback: put it at top if Manage not found
-          document.body.prepend(btn);
-        }
+        if(target) target.appendChild(btn);
+        else document.body.prepend(btn);
       }
     }
-    run();
-    setInterval(run, 1500);
+    run(); setInterval(run, 1500);
+  })();
+</script>
+
+<style>
+  /* ===== PRO ACCORDION ===== */
+  .pro-section { border: 2px solid #333 !important; border-radius: 12px !important; margin-bottom: 10px !important; overflow: hidden !important; background: #fff !important; }
+  .pro-section.open { border-color: #ff9800 !important; }
+</style>
+
+<script>
+  (function(){
+    function makeAccordion(){
+      var titles = ['SALE', 'STOCK', 'LEDGER', 'CREDITORS', 'COLLECT', 'DAILY NOTES', 'BANK SETTINGS'];
+      document.querySelectorAll('div').forEach(function(el){
+        var t = (el.innerText || '').trim();
+        if(titles.some(function(title){ return t.startsWith(title); })){
+          if(el.classList.contains('pro-section')) return;
+          if(el.querySelector('table') || el.querySelector('button')){
+            el.classList.add('pro-section');
+            el.addEventListener('click', function(e){
+              if(e.target.closest('table') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+              var isOpen = el.classList.contains('open');
+              document.querySelectorAll('.pro-section').forEach(function(s){ s.classList.remove('open'); });
+              if(!isOpen) el.classList.add('open');
+            });
+          }
+        }
+      });
+    }
+    makeAccordion(); setInterval(makeAccordion, 2000);
+  })();
+</script>
+
+<style>
+  /* ===== PRO ONLINE STATUS ===== */
+  #proOnlineBadge { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 6px 12px !important; border-radius: 20px !important; font-size: 12px !important; font-weight: bold !important; color: #fff !important; margin-left: 8px !important; }
+  #proOnlineBadge.online { background: #00c853 !important; box-shadow: 0 0 10px #00c853 !important; }
+  #proOnlineBadge.offline { background: #ff1744 !important; box-shadow: 0 0 10px #ff1744 !important; }
+  #proOnlineDot { width: 10px !important; height: 10px !important; border-radius: 50% !important; background: #fff !important; display: inline-block !important; }
+</style>
+
+<script>
+  (function(){
+    function showBadge(){
+      if(document.getElementById('proOnlineBadge')) return;
+      var devEl = null;
+      document.querySelectorAll('*').forEach(function(el){
+        if((el.innerText || '').includes('DEV-') && el.innerText.length < 50 && !devEl) devEl = el;
+      });
+      var badge = document.createElement('span');
+      badge.id = 'proOnlineBadge';
+      badge.innerHTML = '<span id="proOnlineDot"></span><span id="proOnlineText">ONLINE</span>';
+      function update(){
+        var isOnline = navigator.onLine;
+        var txt = document.getElementById('proOnlineText');
+        if(txt) txt.innerText = isOnline ? '● ONLINE' : '● OFFLINE';
+        badge.className = isOnline ? 'online' : 'offline';
+        badge.style.background = isOnline ? '#00c853' : '#ff1744';
+      }
+      update();
+      window.addEventListener('online', update);
+      window.addEventListener('offline', update);
+      setInterval(update, 3000);
+      if(devEl){
+        devEl.appendChild(badge);
+        devEl.style.display = 'flex';
+        devEl.style.justifyContent = 'space-between';
+        devEl.style.alignItems = 'center';
+      } else {
+        badge.style.cssText = 'position:fixed; top:10px; right:10px; z-index:9999;';
+        document.body.appendChild(badge);
+      }
+    }
+    showBadge(); setInterval(showBadge, 2000);
   })();
 </script>
 </body>
 </html>
+       
