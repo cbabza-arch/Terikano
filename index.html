@@ -1376,18 +1376,28 @@ function filterProfit(year){
     });
   }catch(e){ PW_READY = true; }
 
-  function doLogin(){
+    function doLogin(){
     if(!PW_READY){
       document.getElementById('loginErr').textContent = 'Still loading from cloud, wait 1 sec...';
       return;
     }
     var pw = document.getElementById('pwInput').value;
     if(pw === OWNER_PW){
+      // OWNER
       sessionStorage.setItem('terikano_session_auth','owner');
+      localStorage.setItem('terikano_session_auth','owner');
+      localStorage.setItem('isOwner','1');
+      localStorage.setItem('isStaff','0');
       box.style.display='none';
+      location.reload();
     } else if(pw === STAFF_PW){
+      // STAFF - NOT OWNER!
       sessionStorage.setItem('terikano_session_auth','staff');
+      localStorage.setItem('terikano_session_auth','staff');
+      localStorage.setItem('isOwner','0');
+      localStorage.setItem('isStaff','1');
       box.style.display='none';
+      location.reload();
     } else {
       document.getElementById('loginErr').textContent = 'Wrong password';
     }
@@ -1395,7 +1405,8 @@ function filterProfit(year){
   document.getElementById('loginBtn').onclick = doLogin;
   document.getElementById('pwInput').onkeydown = function(e){ if(e.key==='Enter') doLogin(); };
 
-  if(sessionStorage.getItem('terikano_session_auth') !== 'owner' && sessionStorage.getItem('terikano_session_auth') !== 'staff'){
+  var savedAuth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  if(savedAuth !== 'owner' && savedAuth !== 'staff'){
     box.style.display = 'flex';
   } else {
     box.style.display = 'none';
@@ -1403,6 +1414,9 @@ function filterProfit(year){
 
   window.safeLogout = function(){
     sessionStorage.clear();
+    localStorage.removeItem('isOwner');
+    localStorage.removeItem('isStaff');
+    localStorage.removeItem('terikano_session_auth');
     location.href = location.pathname + '?logout=1';
   };
   window.doLogout = window.safeLogout;
