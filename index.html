@@ -1638,46 +1638,13 @@ function filterProfit(year){
     fixAccordion(); setInterval(fixAccordion, 2000);
   })();
 </script>
-  <script>
-// === STAFF HIDE WHOLE CARD - V2 ===
+ <script>
+// === STAFF SAFE - NO WHITE SCREEN ===
 (function(){
-  function hideForStaff(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth !== 'staff'){
-      document.body.classList.remove('staff-mode');
-      return;
-    }
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  if(auth === 'staff'){
     document.body.classList.add('staff-mode');
-    var words = ['settings','password','owner','admin','config'];
-    // Find all big cards
-    document.querySelectorAll('div').forEach(function(card){
-      var t = (card.innerText||'').toLowerCase();
-      // Only check cards that look like a section header (short + has button)
-      if(card.querySelector('button') && t.length < 500){
-        for(var i=0;i<words.length;i++){
-          if(t.indexOf(words[i])!==-1){
-            // Hide the whole big card - go up 2 levels
-            var big = card.parentElement ? card.parentElement.parentElement : card;
-            if(big) big.style.display = 'none';
-          }
-        }
-      }
-    });
-    // Also collapse all sections except SALE for staff
-    document.querySelectorAll('button').forEach(function(b){
-      var txt = (b.innerText||'').trim();
-      if(txt === 'HIDE'){
-        var cardText = (b.closest('div').innerText||'');
-        if(cardText.indexOf('SALE')===-1 && b.closest('div').offsetHeight > 150){
-          b.click();
-        }
-      }
-    });
   }
-  hideForStaff();
-  setTimeout(hideForStaff, 800);
-  setTimeout(hideForStaff, 2000);
-  setTimeout(hideForStaff, 4000);
 })();
 </script>
 <style>
