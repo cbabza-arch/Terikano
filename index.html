@@ -1638,6 +1638,40 @@ function filterProfit(year){
     fixAccordion(); setInterval(fixAccordion, 2000);
   })();
 </script>
+  <script>
+// === FIX STAFF MODE - PASTE AT BOTTOM ===
+(function(){
+  function applyMode(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    // If no auth, force login, no mode
+    if(auth !== 'owner' && auth !== 'staff'){
+      document.body.classList.remove('staff-mode');
+      document.body.classList.remove('owner-mode');
+      return;
+    }
+    if(auth === 'owner'){
+      document.body.classList.remove('staff-mode');
+      document.body.classList.add('owner-mode');
+      localStorage.setItem('isOwner','1');
+      localStorage.setItem('isStaff','0');
+    } else {
+      document.body.classList.add('staff-mode');
+      document.body.classList.remove('owner-mode');
+      localStorage.setItem('isOwner','0');
+      localStorage.setItem('isStaff','1');
+    }
+  }
+  applyMode();
+  // Re-apply after 500ms because Firebase loads late
+  setTimeout(applyMode, 500);
+  setTimeout(applyMode, 1500);
+})();
+</script>
+<style>
+/* Staff should NOT see owner-only stuff */
+body.staff-mode .owner-only { display: none !important; }
+body.staff-mode .settings-btn, body.staff-mode #settingsBtn { display: none !important; }
+</style>
 </body>
 </html>
        
