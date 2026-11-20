@@ -1639,23 +1639,37 @@ function filterProfit(year){
   })();
 </script>
   <script>
-// === STAFF HIDE - REAL FIX ===
+// === STAFF HIDE WHOLE CARD - V2 ===
 (function(){
   function hideForStaff(){
     var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth !== 'staff') {
+    if(auth !== 'staff'){
       document.body.classList.remove('staff-mode');
       return;
     }
     document.body.classList.add('staff-mode');
-    // Hide anything with these words in it
-    var words = ['settings','password','owner','admin','config','edit price','delete'];
-    document.querySelectorAll('button,a,div,section').forEach(function(el){
-      var t = (el.innerText||'').toLowerCase().trim();
-      // Only hide small buttons / headers, not big content
-      if(el.tagName==='BUTTON' || el.tagName==='A'){
+    var words = ['settings','password','owner','admin','config'];
+    // Find all big cards
+    document.querySelectorAll('div').forEach(function(card){
+      var t = (card.innerText||'').toLowerCase();
+      // Only check cards that look like a section header (short + has button)
+      if(card.querySelector('button') && t.length < 500){
         for(var i=0;i<words.length;i++){
-          if(t.indexOf(words[i])!==-1){ el.style.display='none'; }
+          if(t.indexOf(words[i])!==-1){
+            // Hide the whole big card - go up 2 levels
+            var big = card.parentElement ? card.parentElement.parentElement : card;
+            if(big) big.style.display = 'none';
+          }
+        }
+      }
+    });
+    // Also collapse all sections except SALE for staff
+    document.querySelectorAll('button').forEach(function(b){
+      var txt = (b.innerText||'').trim();
+      if(txt === 'HIDE'){
+        var cardText = (b.closest('div').innerText||'');
+        if(cardText.indexOf('SALE')===-1 && b.closest('div').offsetHeight > 150){
+          b.click();
         }
       }
     });
@@ -1663,6 +1677,7 @@ function filterProfit(year){
   hideForStaff();
   setTimeout(hideForStaff, 800);
   setTimeout(hideForStaff, 2000);
+  setTimeout(hideForStaff, 4000);
 })();
 </script>
 <style>
