@@ -1494,5 +1494,54 @@ function filterProfit(year){
   setInterval(function(){ try{ if(window.lockAll) window.lockAll(); }catch(e){} }, 1000);
 })();
 </script>
+  <script>
+// === LOGOUT FIX - MUST BE LAST - BEATS BAD safeLogout ===
+(function(){
+  function realLogout(){
+    try{ sessionStorage.clear(); }catch(e){}
+    try{
+      localStorage.removeItem('terikano_session_auth');
+      localStorage.removeItem('isOwner');
+      localStorage.removeItem('isStaff');
+      localStorage.removeItem('ownerLock');
+      localStorage.removeItem('isOwnerLock');
+    }catch(e){}
+    // Show login, don't let any old code hide it
+    var lb = document.getElementById('loginBox');
+    if(lb){ lb.style.display='flex'; lb.style.visibility='visible'; lb.style.opacity='1'; }
+    var pw = document.getElementById('pwInput') || document.getElementById('staffPass');
+    if(pw) pw.value='';
+    // ?logout=1 stops auto-login on reload
+    setTimeout(function(){
+      if(location.href.indexOf('logout')===-1){
+        location.href = location.pathname + '?logout=1';
+      } else {
+        location.reload();
+      }
+    }, 200);
+  }
+  // Override ALL versions - this is LAST so it wins
+  window.safeLogout = realLogout;
+  window.doLogout = realLogout;
+  window.logout = realLogout;
+  window.checkLogout = realLogout;
+
+  // If URL has ?logout, stay logged out and show login
+  if(location.href.toLowerCase().indexOf('logout')!==-1){
+    try{ sessionStorage.clear(); }catch(e){}
+    try{
+      localStorage.removeItem('terikano_session_auth');
+      localStorage.removeItem('isOwner');
+      localStorage.removeItem('isStaff');
+      localStorage.removeItem('ownerLock');
+    }catch(e){}
+    var lb2 = document.getElementById('loginBox');
+    if(lb2){ lb2.style.display='flex'; lb2.style.visibility='visible'; }
+    if(window.history && window.history.replaceState){
+      window.history.replaceState(null,'',location.pathname);
+    }
+  }
+})();
+</script>
 </body>
 </html>
