@@ -1444,175 +1444,66 @@ function filterProfit(year){
   }
 })();
 </script>
-  <script>
-// === STAFF HIDER - FORCE STAFF = NO OWNER STUFF ===
-(function(){
-  function hideOwnerStuff(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    var isStaff = (auth === 'staff') || (localStorage.getItem('isStaff') === '1');
-    if(!isStaff) return; // Owner - show all
-
-    // Hide by ID - add your IDs here if you know them
-    var idsToHide = ['ownerSection','ownerSettings','changePwSection','ownerDashboard','adminPanel','settingsPanel'];
-    idsToHide.forEach(function(id){
-      var el = document.getElementById(id);
-      if(el) el.style.display = 'none';
-    });
-
-    // Hide by TEXT - Settings, Change PW, Owner, Admin, Delete, Markup
-    var badWords = ['change pw','change password','owner pw','owner settings','admin','markup','delete all','clear all','remove staff'];
-    document.querySelectorAll('button, a, div, h2, h3, label, span').forEach(function(el){
-      var t = (el.innerText || '').toLowerCase().trim();
-      if(badWords.some(function(w){ return t === w || t.indexOf(w) !== -1; })){
-        // Don't hide whole page, only hide the button / row
-        if(el.tagName === 'BUTTON' || el.tagName === 'A'){
-          el.style.display = 'none';
-        }
-      }
-    });
-
-    // Hide all inputs for PW change
-    ['new_pw','old_pw','new_staff_pw'].forEach(function(id){
-      var el = document.getElementById(id);
-      if(el){
-        el.style.display = 'none';
-        if(el.parentElement) el.parentElement.style.display = 'none';
-      }
-    });
-  }
-  // Run now + every 1 sec for 5 sec (because dashboard renders late)
-  hideOwnerStuff();
-  setTimeout(hideOwnerStuff, 500);
-  setTimeout(hideOwnerStuff, 1000);
-  setTimeout(hideOwnerStuff, 2000);
-  setTimeout(hideOwnerStuff, 5000);
-  setInterval(hideOwnerStuff, 2000);
-})();
-</script>
-  <script>
-// === FORCE STAFF MODE ===
-(function(){
-  function staffMode(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth !== 'staff') return;
-
-    // Add STAFF banner so you know it worked
-    if(!document.getElementById('staffBanner')){
-      var b = document.createElement('div');
-      b.id = 'staffBanner';
-      b.textContent = 'STAFF MODE - Owner features hidden';
-      b.style.cssText = 'background:#ff9800;color:#fff;text-align:center;padding:8px;font-weight:bold;position:fixed;top:0;left:0;right:0;z-index:9999;';
-      document.body.prepend(b);
-      document.body.style.paddingTop = '35px';
-    }
-
-    // Hide owner buttons by text
-    var hideWords = ['settings','change pw','change password','owner','admin','markup','delete','remove staff','edit price','clear data','reset'];
-    document.querySelectorAll('button, a').forEach(function(el){
-      var t = (el.innerText || '').toLowerCase();
-      if(hideWords.some(function(w){ return t.includes(w); })){
-        el.style.display = 'none';
-      }
-    });
-
-    // Hide owner sections by id/class
-    ['settings','owner','admin','changePw','change-pw'].forEach(function(part){
-      document.querySelectorAll('[id*="'+part+'"], [class*="'+part+'"]').forEach(function(el){
-        // Don't hide the whole page if it's big
-        if(el.tagName !== 'BODY' && el.tagName !== 'HTML') el.style.display = 'none';
-      });
-    });
-  }
-  staffMode();
-  setInterval(staffMode, 1000);
-})();
-</script>
-  <script>
-  // FIX FLASH - Hide page until we know who you are
-  (function(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth === 'staff'){
-      document.body.style.visibility = 'hidden';
-      setTimeout(function(){ document.body.style.visibility = 'visible'; }, 800);
-    }
-    if(auth !== 'owner' && auth !== 'staff'){
-      document.body.style.visibility = 'hidden';
-      setTimeout(function(){ document.body.style.visibility = 'visible'; }, 800);
-    }
-  })();
-</script>
-  <script>
-  // PRO FIX - Hide Bank Settings card only, keep layout
-  document.addEventListener('DOMContentLoaded', function(){
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.innerText && el.innerText.trim().startsWith('BANK SETTINGS')){
-        var card = el.closest('div');
-        if(card) card.style.display = 'none';
-      }
-    });
-  });
-</script>
-<style>
-  /* PRO FIX 3 - Green Dot + Off Grid */
-  /* Hide green dot for STAFF only */
-  html.staff-mode .online-dot, 
-  html.staff-mode [class*="dot"] { display: none !important; }
-
-  /* FIX TABLES OFF GRID - make tables scroll INSIDE card, not spill out */
-  div { overflow-x: hidden !important; }
-  table { width: 100% !important; max-width: 100% !important; table-layout: auto !important; }
-  
-  /* Let each section scroll sideways INSIDE its box */
-  div:has(> table) { overflow-x: auto !important; display: block !important; }
-  
-  /* Stop columns from being cut */
+  <style>
+  /* FIX OFF GRID - tables scroll INSIDE card */
+  .card, section { overflow-x: auto !important; max-width: 100% !important; }
+  table { width: 100% !important; }
   th, td { white-space: nowrap !important; padding: 6px 8px !important; font-size: 12px !important; }
+  html, body { overflow-x: hidden !important; }
 </style>
 
 <script>
-  // Hide GREEN DOT next to DEV- name
-  document.addEventListener('DOMContentLoaded', function(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth !== 'staff') return;
-    // Find DEV- text and hide dot next to it
-    document.querySelectorAll('*').forEach(function(el){
-      if(el.innerText && el.innerText.includes('DEV-')){
-        var dot = el.querySelector('span, i, div');
-        if(dot) dot.style.display = 'none';
-        // Also hide any small green circle in same parent
-        el.parentElement.querySelectorAll('span').forEach(function(s){
-          if(s.offsetWidth < 20 && s.offsetHeight < 20) s.style.display = 'none';
+  // ONE CLEAN STAFF + OWNER CODE
+  (function(){
+    function run(){
+      var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+      var isStaff = (auth === 'staff');
+
+      // --- STAFF ONLY: Hide Owner stuff ---
+      if(isStaff){
+        // Hide by exact card title - BANK SETTINGS, DEVICE MANAGE
+        document.querySelectorAll('div').forEach(function(el){
+          var t = (el.innerText || '').trim();
+          if(t.startsWith('BANK SETTINGS') || t.startsWith('DEVICE')){
+            var card = el.closest('div');
+            if(card) card.style.display = 'none';
+          }
+        });
+        // Hide green dot next to DEV-
+        document.querySelectorAll('span, i').forEach(function(s){
+          if(s.offsetWidth < 18 && s.offsetHeight < 18 && s.offsetWidth > 0){
+            s.style.display = 'none';
+          }
+        });
+        // Hide Owner buttons by exact text - NOT broad words
+        document.querySelectorAll('button, a').forEach(function(el){
+          var t = (el.innerText || '').toLowerCase().trim();
+          if(t === 'change pw' || t === 'owner settings' || t === 'admin' || t === 'markup'){
+            el.style.display = 'none';
+          }
         });
       }
-    });
-  });
-</script>
-  <script>
-  // PRO - REMOVE DEVICE BUTTON - Owner Only
-  document.addEventListener('DOMContentLoaded', function(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    
-    // Only show for OWNER
-    if(auth !== 'owner') return;
 
-    // Create button
-    var btn = document.createElement('button');
-    btn.innerText = '🔒 REMOVE STAFF DEVICE - Require Password Again';
-    btn.style.cssText = 'position:fixed; bottom:70px; right:10px; z-index:9999; background:#ff0000; color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; font-size:13px;';
-    
-    btn.onclick = function(){
-      if(confirm('Remove Staff Device? Staff will need password again to login.')){
-        // Kick staff out - clear staff session
-        localStorage.removeItem('terikano_session_auth');
-        sessionStorage.removeItem('terikano_session_auth');
-        localStorage.removeItem('terikano_staff_device');
-        sessionStorage.removeItem('terikano_staff_device');
-        alert('Staff device removed! Staff must enter password again.');
-        location.reload();
+      // --- OWNER ONLY: Show Remove Device button ---
+      if(auth === 'owner' && !document.getElementById('removeStaffBtn')){
+        var btn = document.createElement('button');
+        btn.id = 'removeStaffBtn';
+        btn.innerText = '🔒 REMOVE STAFF DEVICE';
+        btn.style.cssText = 'position:fixed; bottom:70px; right:10px; z-index:9999; background:#ff0000; color:white; padding:12px; border:none; border-radius:10px; font-weight:bold;';
+        btn.onclick = function(){
+          if(confirm('Remove Staff Device? Staff will need password again.')){
+            localStorage.removeItem('terikano_session_auth');
+            sessionStorage.removeItem('terikano_session_auth');
+            alert('Staff device removed! Staff must enter password again.');
+            location.reload();
+          }
+        };
+        document.body.appendChild(btn);
       }
-    };
-    document.body.appendChild(btn);
-  });
+    }
+    run();
+    setInterval(run, 1500);
+  })();
 </script>
 </body>
 </html>
