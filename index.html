@@ -1,4 +1,24 @@
-<html><head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<html><head>
+  <style>
+  /* Prevent Owner flash for Staff */
+  html.staff-mode .owner-only { display: none !important; }
+  html.staff-mode body { visibility: hidden; }
+  html.staff-mode.staff-ready body { visibility: visible; }
+</style>
+<script>
+  // EARLY CHECK - runs before page shows
+  (function(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(auth === 'staff'){
+      document.documentElement.classList.add('staff-mode');
+    }
+    // If logged out, don't show dashboard at all
+    if(auth !== 'owner' && auth !== 'staff'){
+      document.documentElement.classList.add('staff-mode');
+    }
+  })();
+</script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
@@ -1506,6 +1526,20 @@ function filterProfit(year){
   staffMode();
   setInterval(staffMode, 1000);
 })();
+</script>
+  <script>
+  // FIX FLASH - Hide page until we know who you are
+  (function(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(auth === 'staff'){
+      document.body.style.visibility = 'hidden';
+      setTimeout(function(){ document.body.style.visibility = 'visible'; }, 800);
+    }
+    if(auth !== 'owner' && auth !== 'staff'){
+      document.body.style.visibility = 'hidden';
+      setTimeout(function(){ document.body.style.visibility = 'visible'; }, 800);
+    }
+  })();
 </script>
 </body>
 </html>
