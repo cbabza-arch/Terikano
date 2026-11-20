@@ -1668,55 +1668,50 @@ function filterProfit(year){
   }, 1000);
 })();
 </script>
-  <script>
-// === TERIKANO - STAFF WHOLE CODE - PASTE AT BOTTOM ===
+<script>
+// === TERIKANO STAFF - FINAL - PASTE AT VERY BOTTOM ===
 (function(){
-  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-  if(auth !== 'staff') return;
-
-  // STAFF MENU ONLY THESE 7 - YOUR FORMAT
-  var menuAllowed = ['sale','stock','creditors','collect','ledger','logout','daily notes','daily note'];
-
+  function isStaff(){
+    var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '';
+    return a.toLowerCase().indexOf('staff')!==-1;
+  }
   setInterval(function(){
+    if(!isStaff()) return;
 
-    // 1. MENU - Hide big buttons NOT in your 7
+    // STAFF ONLY THESE 7
+    var allowed = ['sale','stock','creditors','collect','ledger','logout','daily notes','daily note'];
+
     document.querySelectorAll('button, a').forEach(function(b){
       var txt = (b.innerText||'').toLowerCase().trim();
       if(!txt) return;
-      // Only check BIG menu buttons, keep small buttons inside SALE like ADD TO CART, QTY, CASH, HIDE
-      if(b.offsetHeight > 40){
+
+      // KEEP small buttons inside SALE - ADD TO CART, QTY, CASH, HIDE, CUSTOMER
+      if(txt.indexOf('add to cart')!==-1) return;
+      if(txt.indexOf('qty')!==-1) return;
+      if(txt.indexOf('cash')!==-1) return;
+      if(txt === 'hide') return;
+      if(txt.indexOf('customer')!==-1) return;
+      if(txt.indexOf('price')!==-1) return;
+      if(txt.indexOf('change')!==-1) return;
+      if(txt.indexOf('owed')!==-1) return;
+
+      // If button text is a MENU word but NOT in allowed, hide it
+      // This catches WHOLESALER, WHOLESALE DEBT, BANK, ADMIN, etc
+      var isMenuWord = txt.length < 30; // menu buttons are short
+      if(isMenuWord){
         var ok = false;
-        for(var i=0;i<menuAllowed.length;i++){
-          if(txt.indexOf(menuAllowed[i])!==-1){ ok=true; break; }
+        for(var i=0;i<allowed.length;i++){
+          if(txt.indexOf(allowed[i])!==-1){ ok=true; break; }
         }
         if(!ok) b.style.display = 'none';
       }
-    });
 
-    // 2. HIDE WHOLESALE / WHOLESALER DEBT FOR STAFF - CREDITORS STAYS
-    document.querySelectorAll('button, a, label, div').forEach(function(el){
-      var txt = (el.innerText||'').toLowerCase().trim();
-      if(el.children.length < 3 && txt.indexOf('wholesaler')!==-1){
-        if(el.tagName==='BUTTON' || el.tagName==='A'){
-          el.style.display = 'none';
-        }
-      }
-      if(el.children.length < 3 && txt === 'wholesale debt'){
-        if(el.tagName==='BUTTON' || el.tagName==='A'){
-          el.style.display = 'none';
-        }
-      }
+      // ALWAYS hide these words for staff, even if long
+      if(txt.indexOf('wholesaler')!==-1) b.style.display='none';
+      if(txt.indexOf('wholesale debt')!==-1) b.style.display='none';
+      if(txt.indexOf('bank')!==-1) b.style.display='none';
     });
-
-    // 3. HIDE BANK SETTING INSIDE STOCK FOR STAFF
-    document.querySelectorAll('button, a, label').forEach(function(el){
-      var txt = (el.innerText||'').toLowerCase().trim();
-      if(txt.indexOf('bank')!==-1){
-        el.style.display = 'none';
-      }
-    });
-
-  }, 1000);
+  }, 500);
 })();
 </script>
 <style>
