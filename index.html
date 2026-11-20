@@ -1382,7 +1382,7 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === FINAL: HIDE DASHBOARD + MENU, KEEP STOCK + LEDGER ===
+// === HIDE STOCK SETTINGS FROM STAFF - KEEP STOCK TABLE ===
 (function(){
   var badge = document.getElementById('roleBadge');
   if(!badge){
@@ -1420,28 +1420,19 @@ function filterProfit(year){
     badge.style.background = role === 'staff' ? 'green' : 'red';
     if(role !== 'staff') return;
 
-    // 1. HIDE DASHBOARD OWNER ONLY - whole box
+    // 1. HIDE DASHBOARD + TARGET + 2nd CASH row
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
-      if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30){
-        el.style.display='none';
-      }
-      // TARGET bar - small bar only
-      if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5){
-        el.style.display='none';
-      }
-      // Second CASH/BANK/COCO row - the one with "6.00 TIP"
-      if(t.includes('6.00 TIP') && el.children.length < 10){
-        el.style.display='none';
-      }
+      if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30) el.style.display='none';
+      if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5) el.style.display='none';
+      if(t.includes('6.00 TIP') && el.children.length < 10) el.style.display='none';
     });
 
-    // 2. HIDE MENU BUTTONS ONLY - must be inside MENU
+    // 2. HIDE MENU BUTTONS ONLY
     document.querySelectorAll('button, div, a').forEach(function(el){
       var t = (el.textContent||'').toUpperCase().trim();
       if(!t || t.length > 90) return;
       if(el.children.length > 2) return;
-      // NEVER hide these
       if(t.includes('STOCK')) return;
       if(t === 'SALE' || (t.includes('SALE') && t.length < 15)) return;
       if(t.includes('CREDITORS')) return;
@@ -1449,7 +1440,6 @@ function filterProfit(year){
       if(t.includes('COLLECT')) return;
       if(t.includes('LOGOUT')) return;
       if(t.includes('MENU')) return;
-      // Only hide if inside MENU
       if(!isInsideMenu(el)) return;
       for(var i=0;i<HIDE.length;i++){
         if(t.includes(HIDE[i])){
@@ -1459,6 +1449,30 @@ function filterProfit(year){
         }
       }
       if(t === 'PW' || t.endsWith(' PW')) el.style.display='none';
+    });
+
+    // 3. HIDE STOCK SETTINGS ONLY - keep STOCK table
+    // Settings panels are small divs with these titles
+    document.querySelectorAll('div, button').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase();
+      // Must be settings panel, not whole STOCK box (whole STOCK box is huge, >1000 chars)
+      if(t.length > 400) return;
+      if(t.includes('MANUAL ADJUST') || t.includes('BANK SETTINGS') || t.includes('UPDATE SELL PRICE') || t.includes('ADJUST DIFF') || t.includes('SAVE BANK')){
+        // Hide this panel + its wrapper
+        el.style.display='none';
+        // If parent is just this panel, hide parent too
+        if(el.parentElement && el.parentElement.textContent.toUpperCase().includes('MANUAL ADJUST') && el.parentElement.children.length < 4){
+          // Don't hide if parent is whole STOCK - check length
+          if((el.parentElement.textContent||'').length < 600) el.parentElement.style.display='none';
+        }
+      }
+    });
+    // Hide buttons ADJUST DIFF / SAVE BANK% / UPDATE SELL directly
+    document.querySelectorAll('button, div').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase().trim();
+      if(t === 'ADJUST DIFF' || t === 'SAVE BANK%' || t === 'UPDATE SELL' || t.includes('SAVE BANK%')){
+        if(t.length < 30) el.style.display='none';
+      }
     });
   }
 
