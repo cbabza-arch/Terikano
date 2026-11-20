@@ -1520,27 +1520,136 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === STEP 1 - SALE REAL FIX - Photo 2 bug ===
+// === TERIKANO FINAL - CLEAN - ONE SCRIPT ONLY ===
 (function(){
-  var css = document.createElement('style');
-  css.innerHTML = `
-    .sale-root{ display:block !important; width:100% !important; max-width:100% !important; }
-    .sale-root > div{ display:block !important; width:100% !important; max-width:100% !important; }
-    .sale-root div{ max-width:100% !important; }
-    .sale-root input, .sale-root select{ width:100% !important; min-height:48px !important; font-size:16px !important; display:block !important; margin-bottom:8px !important; }
-    .sale-avg{ font-size:11px !important; line-height:1.3 !important; padding:8px !important; text-align:center !important; }
+  // ---------- 1. ROLE ----------
+  var badge = document.getElementById('roleBadge');
+  if(!badge){
+    badge = document.createElement('div');
+    badge.id = 'roleBadge';
+    badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:15px;';
+    badge.textContent = 'ROLE: NONE';
+    document.body.appendChild(badge);
+  }
+  function getRole(){
+    return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || '';
+  }
+  function setRole(role){
+    sessionStorage.setItem('terikano_session_auth', role);
+    localStorage.setItem('terikano_session_auth', role);
+    localStorage.setItem('terikano_role', role);
+    badge.textContent = 'ROLE: ' + role.toUpperCase();
+    badge.style.background = role === 'staff' ? 'green' : 'red';
+  }
+  function doLogout(){
+    ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){
+      sessionStorage.removeItem(k); localStorage.removeItem(k);
+    });
+    badge.textContent = 'ROLE: NONE';
+    badge.style.background = 'red';
+    location.reload();
+  }
+  function tryLogin(){
+    var pwEl = document.getElementById('pwInput');
+    var p = pwEl && pwEl.value ? pwEl.value.trim() : '';
+    if(!p){
+      var inputs = document.querySelectorAll('input');
+      for(var i=0;i<inputs.length;i++){ var v=(inputs[i].value||'').trim(); if(v==='1234'||v==='200175') p=v; }
+    }
+    if(!p){ alert('Type PW first'); return; }
+    var role = '';
+    if(p === '1234') role = 'staff';
+    else if(p === '200175') role = 'owner';
+    if(!role){ alert('Wrong PW'); return; }
+    setRole(role);
+    alert(role.toUpperCase() + ' LOGIN OK');
+    document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
+  }
+  window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
+
+  // ---------- 2. HIDE OWNER SECTIONS FROM STAFF ----------
+  var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
+
+  function isInsideMenu(el){
+    var cur = el;
+    for(var i=0;i<6;i++){
+      if(!cur.parentElement) break;
+      cur = cur.parentElement;
+      if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true;
+    }
+    return false;
+  }
+
+  function fixStaff(){
+    var role = getRole();
+    badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
+    badge.style.background = role === 'staff' ? 'green' : 'red';
+    if(role !== 'staff') return;
+
+    // A. Kill CLOSE 2025 popup + YEAR END CLOSE + STAFF PASSWORD - staff never sees
+    document.querySelectorAll('div').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('CONFIRM') && t.includes('CLOSE 2025') && el.children.length < 10){
+        el.style.display = 'none';
+      }
+      if(t.length < 300 && (t.includes('CLOSE YEAR') || t.includes('YEAR END CLOSE') || t.includes('STAFF PASSWORD'))){
+        el.style.display = 'none';
+      }
+      if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30) el.style.display = 'none';
+      if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5) el.style.display = 'none';
+    });
+
+    // B. Hide MENU buttons - keep SALE, STOCK, CREDITORS, LEDGER, COLLECT, LOGOUT
+    document.querySelectorAll('button, div, a').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase().trim();
+      if(!t || t.length > 90) return;
+      if(el.children.length > 2) return;
+      if(t.includes('STOCK')) return;
+      if(t === 'SALE' || t.includes('SALE')) return;
+      if(t.includes('CREDITORS')) return;
+      if(t.includes('LEDGER')) return;
+      if(t.includes('COLLECT')) return;
+      if(t.includes('LOGOUT')) return;
+      if(t.includes('MENU')) return;
+      if(!isInsideMenu(el)) return;
+      for(var i=0;i<HIDE_MENU.length;i++){
+        if(t.includes(HIDE_MENU[i])){
+          el.style.display = 'none';
+          if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display = 'none';
+          break;
+        }
+      }
+      if(t === 'PW' || t.endsWith(' PW')) el.style.display = 'none';
+    });
+
+    // C. Hide STOCK settings only - keep STOCK table
+    document.querySelectorAll('div, button').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase();
+      if(t.length > 400) return;
+      if(t.includes('MANUAL ADJUST') || t.includes('BANK SETTINGS') || t.includes('UPDATE SELL PRICE') || t.includes('ADJUST DIFF') || t.includes('SAVE BANK')){
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  // ---------- 3. SALE LAYOUT - BLOCK ONLY, NO FLEX TRICK ----------
+  var saleCss = document.createElement('style');
+  saleCss.innerHTML = `
+    .sale-pro{ display:block !important; width:100% !important; max-width:100% !important; }
+    .sale-pro input, .sale-pro select{ width:100% !important; min-height:48px !important; font-size:16px !important; display:block !important; margin-bottom:8px !important; }
+    .sale-pro-table-wrap{ overflow-x:auto !important; width:100% !important; border:1px solid #ddd !important; border-radius:10px !important; background:#fff !important; }
+    .sale-pro-table-wrap table{ min-width:650px !important; border-collapse:collapse !important; width:100% !important; font-size:14px !important; }
+    .sale-pro-table-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:10px 8px !important; white-space:nowrap !important; }
+    .sale-pro-table-wrap td{ padding:10px 8px !important; text-align:center !important; border-bottom:1px solid #eee !important; white-space:nowrap !important; }
   `;
-  document.head.appendChild(css);
+  document.head.appendChild(saleCss);
 
   function fixSale(){
-    // 1. Find SALE title
     var titleEl = null;
     document.querySelectorAll('div, b, span').forEach(function(el){
       if((el.textContent||'').includes('SALE - Average Cost') && (el.textContent||'').length < 100) titleEl = el;
     });
     if(!titleEl) return;
-
-    // 2. Climb up until we find the whole SALE panel (has QTY KEYPAD + ADD TO CART)
     var root = titleEl;
     for(var i=0;i<6;i++){
       if(!root.parentElement) break;
@@ -1548,63 +1657,46 @@ function filterProfit(year){
       var t = (root.textContent||'');
       if(t.includes('QTY KEYPAD') && t.includes('ADD TO CART') && t.includes('Customer')) break;
     }
-    if(!root || !root.classList) return;
-    if(root.classList.contains('sale-root')) return;
-    root.classList.add('sale-root');
-
-    // 3. Force root to BLOCK - kills sideways flex
+    if(!root || !root.classList || root.classList.contains('sale-pro')) return;
+    root.classList.add('sale-pro');
     root.style.setProperty('display','block','important');
-    root.style.setProperty('width','100%','important');
-
-    // 4. Every direct row inside SALE -> BLOCK + full width
-    // This fixes Date+Cust row and Item+Qty+Price+CASH row
     root.querySelectorAll('div').forEach(function(d){
-      // Only rows that have inputs - make them block
       if(d.querySelector('input, select')){
         d.style.setProperty('display','block','important');
         d.style.setProperty('width','100%','important');
-        d.style.setProperty('max-width','100%','important');
-      }
-      // Shrink AVERAGE COST black box - don't let it be tall column
-      if((d.textContent||'').includes('AVERAGE COST: Stock avg cost')){
-        d.classList.add('sale-avg');
-        d.style.setProperty('width','100%','important');
-        d.style.setProperty('min-height','auto','important');
-        d.style.setProperty('height','auto','important');
       }
     });
-
-    // 5. All inputs full width
-    root.querySelectorAll('input, select').forEach(function(inp){
-      inp.style.setProperty('width','100%','important');
-      inp.style.setProperty('display','block','important');
-    });
-
-    // 6. Table inside SALE - scroll
     root.querySelectorAll('table').forEach(function(tbl){
-      if(tbl.parentElement.classList.contains('sale-scroll')) return;
+      if(tbl.parentElement.classList.contains('sale-pro-table-wrap')) return;
       var wrap = document.createElement('div');
-      wrap.className = 'sale-scroll';
-      wrap.style.cssText = 'overflow-x:auto;width:100%;border:1px solid #ddd;border-radius:10px;background:#fff;';
+      wrap.className = 'sale-pro-table-wrap';
       tbl.parentNode.insertBefore(wrap, tbl);
       wrap.appendChild(tbl);
-      tbl.style.setProperty('min-width','650px','important');
     });
   }
 
-  // Catch FIRST open + HIDE/OPEN again
+  // ---------- 4. CLICKS - NO CAPTURE, NO BLOCKING ----------
+  // Normal listener, no stopPropagation, so CANCEL / OK always work
   document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, div, a') : null;
+    var btn = e.target.closest ? e.target.closest('button, a') : null;
     if(!btn) return;
-    var t = (btn.textContent||'').toUpperCase();
-    if(t.includes('SALE') || t.includes('HIDE')){
-      setTimeout(fixSale, 100);
-      setTimeout(fixSale, 400);
-      setTimeout(fixSale, 900);
-      setTimeout(fixSale, 1600);
+    var t = (btn.textContent||'').toUpperCase().trim();
+    if(t === 'LOGOUT' || t.includes('LOGOUT')){
+      doLogout();
+      return;
     }
-  }, true);
-  setInterval(fixSale, 600);
+    if(t.includes('LOGIN') && t.length < 30){
+      tryLogin();
+      return;
+    }
+    if(t === 'SALE' || t.includes('SALE')){
+      setTimeout(fixSale, 100);
+      setTimeout(fixSale, 500);
+      setTimeout(fixSale, 1000);
+    }
+  });
+
+  setInterval(function(){ fixStaff(); fixSale(); }, 600);
 })();
 </script>
 </body>
