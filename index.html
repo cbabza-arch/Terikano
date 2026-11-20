@@ -1639,32 +1639,30 @@ function filterProfit(year){
   })();
 </script>
   <script>
-// === FIX STAFF MODE - PASTE AT BOTTOM ===
+// === STAFF HIDE - REAL FIX ===
 (function(){
-  function applyMode(){
+  function hideForStaff(){
     var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    // If no auth, force login, no mode
-    if(auth !== 'owner' && auth !== 'staff'){
+    if(auth !== 'staff') {
       document.body.classList.remove('staff-mode');
-      document.body.classList.remove('owner-mode');
       return;
     }
-    if(auth === 'owner'){
-      document.body.classList.remove('staff-mode');
-      document.body.classList.add('owner-mode');
-      localStorage.setItem('isOwner','1');
-      localStorage.setItem('isStaff','0');
-    } else {
-      document.body.classList.add('staff-mode');
-      document.body.classList.remove('owner-mode');
-      localStorage.setItem('isOwner','0');
-      localStorage.setItem('isStaff','1');
-    }
+    document.body.classList.add('staff-mode');
+    // Hide anything with these words in it
+    var words = ['settings','password','owner','admin','config','edit price','delete'];
+    document.querySelectorAll('button,a,div,section').forEach(function(el){
+      var t = (el.innerText||'').toLowerCase().trim();
+      // Only hide small buttons / headers, not big content
+      if(el.tagName==='BUTTON' || el.tagName==='A'){
+        for(var i=0;i<words.length;i++){
+          if(t.indexOf(words[i])!==-1){ el.style.display='none'; }
+        }
+      }
+    });
   }
-  applyMode();
-  // Re-apply after 500ms because Firebase loads late
-  setTimeout(applyMode, 500);
-  setTimeout(applyMode, 1500);
+  hideForStaff();
+  setTimeout(hideForStaff, 800);
+  setTimeout(hideForStaff, 2000);
 })();
 </script>
 <style>
@@ -1672,6 +1670,7 @@ function filterProfit(year){
 body.staff-mode .owner-only { display: none !important; }
 body.staff-mode .settings-btn, body.staff-mode #settingsBtn { display: none !important; }
 </style>
+  
 </body>
 </html>
        
