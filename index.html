@@ -1376,14 +1376,15 @@ function filterProfit(year){
     });
   }catch(e){ PW_READY = true; }
 
-    function doLogin(){
+      function doLogin(){
     if(!PW_READY){
       document.getElementById('loginErr').textContent = 'Still loading from cloud, wait 1 sec...';
       return;
     }
     var pw = document.getElementById('pwInput').value;
+    alert('DEBUG: You typed: ' + pw + ' | OwnerPW in Cloud: ' + OWNER_PW + ' | StaffPW in Cloud: ' + STAFF_PW);
     if(pw === OWNER_PW){
-      // OWNER
+      alert('LOGGED AS OWNER');
       sessionStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('isOwner','1');
@@ -1391,7 +1392,7 @@ function filterProfit(year){
       box.style.display='none';
       location.reload();
     } else if(pw === STAFF_PW){
-      // STAFF - NOT OWNER!
+      alert('LOGGED AS STAFF');
       sessionStorage.setItem('terikano_session_auth','staff');
       localStorage.setItem('terikano_session_auth','staff');
       localStorage.setItem('isOwner','0');
