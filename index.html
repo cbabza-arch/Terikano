@@ -1426,5 +1426,50 @@ function filterProfit(year){
   }
 })();
 </script>
+  <script>
+// === STAFF HIDER - FORCE STAFF = NO OWNER STUFF ===
+(function(){
+  function hideOwnerStuff(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    var isStaff = (auth === 'staff') || (localStorage.getItem('isStaff') === '1');
+    if(!isStaff) return; // Owner - show all
+
+    // Hide by ID - add your IDs here if you know them
+    var idsToHide = ['ownerSection','ownerSettings','changePwSection','ownerDashboard','adminPanel','settingsPanel'];
+    idsToHide.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+
+    // Hide by TEXT - Settings, Change PW, Owner, Admin, Delete, Markup
+    var badWords = ['change pw','change password','owner pw','owner settings','admin','markup','delete all','clear all','remove staff'];
+    document.querySelectorAll('button, a, div, h2, h3, label, span').forEach(function(el){
+      var t = (el.innerText || '').toLowerCase().trim();
+      if(badWords.some(function(w){ return t === w || t.indexOf(w) !== -1; })){
+        // Don't hide whole page, only hide the button / row
+        if(el.tagName === 'BUTTON' || el.tagName === 'A'){
+          el.style.display = 'none';
+        }
+      }
+    });
+
+    // Hide all inputs for PW change
+    ['new_pw','old_pw','new_staff_pw'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el){
+        el.style.display = 'none';
+        if(el.parentElement) el.parentElement.style.display = 'none';
+      }
+    });
+  }
+  // Run now + every 1 sec for 5 sec (because dashboard renders late)
+  hideOwnerStuff();
+  setTimeout(hideOwnerStuff, 500);
+  setTimeout(hideOwnerStuff, 1000);
+  setTimeout(hideOwnerStuff, 2000);
+  setTimeout(hideOwnerStuff, 5000);
+  setInterval(hideOwnerStuff, 2000);
+})();
+</script>
 </body>
 </html>
