@@ -1381,6 +1381,15 @@ function filterProfit(year){
   }
 })();
 </script>
-  
+  <script>
+// TEST BUTTON ONLY
+document.addEventListener('click', function(e){
+  if(e.target && e.target.textContent && e.target.textContent.trim().toUpperCase() === 'LOGIN'){
+    var v = document.getElementById('pwInput') ? document.getElementById('pwInput').value : 'NO pwInput';
+    var v2 = document.getElementById('staffPass') ? document.getElementById('staffPass').value : 'NO staffPass';
+    alert('BUTTON WORKS! pwInput=' + v + ' | staffPass=' + v2);
+  }
+});
+</script>
 </body>
 </html>
