@@ -1382,8 +1382,44 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === HIDE STOCK SETTINGS FROM STAFF - KEEP STOCK TABLE ===
+// === PRO TABLES + STAFF HIDES ===
 (function(){
+  // --- PRO TABLE CSS ---
+  var css = document.createElement('style');
+  css.innerHTML = `
+    /* PRO TABLE LAYOUT */
+    table{ width:100% !important; min-width:720px !important; border-collapse:collapse !important; font-size:14px !important; }
+    /* Wrap every table in scroll box */
+    .pro-scroll{ overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; width:100% !important; max-width:100% !important; border-radius:12px !important; border:1px solid #ddd !important; background:#fff !important; }
+    .pro-scroll table{ min-width:720px !important; }
+    table th{
+      position:sticky !important; top:0 !important; z-index:2 !important;
+      background:#1a5c2a !important; color:#fff !important;
+      padding:10px 8px !important; text-align:center !important; font-size:13px !important; font-weight:800 !important; white-space:nowrap !important;
+    }
+    table td{ padding:10px 8px !important; text-align:center !important; border-bottom:1px solid #eee !important; white-space:nowrap !important; font-size:14px !important; }
+    table tr:nth-child(even) td{ background:#f6fff6 !important; }
+    table tr:hover td{ background:#fff3cd !important; }
+    /* First column - Item name - sticky left + left align */
+    table td:first-child, table th:first-child{ text-align:left !important; font-weight:700 !important; position:sticky !important; left:0 !important; background:#fff !important; z-index:1 !important; min-width:110px !important; }
+    table th:first-child{ background:#1a5c2a !important; color:#fff !important; z-index:3 !important; }
+    /* Inputs inside tables - not crushed */
+    table input, table select{ min-width:70px !important; height:38px !important; font-size:14px !important; padding:6px !important; }
+    /* Boxes - no overflow cut */
+    div{ max-width:100% !important; }
+  `;
+  document.head.appendChild(css);
+
+  function proTables(){
+    document.querySelectorAll('table').forEach(function(tbl){
+      if(tbl.parentElement && tbl.parentElement.classList.contains('pro-scroll')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'pro-scroll';
+      tbl.parentNode.insertBefore(wrap, tbl);
+      wrap.appendChild(tbl);
+    });
+  }
+
   var badge = document.getElementById('roleBadge');
   if(!badge){
     badge = document.createElement('div');
@@ -1400,35 +1436,24 @@ function filterProfit(year){
     badge.textContent = 'ROLE: ' + role.toUpperCase();
     badge.style.background = role === 'staff' ? 'green' : 'red';
   }
-
   var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
-
   function isInsideMenu(el){
     var cur = el;
-    for(var i=0;i<6;i++){
-      if(!cur.parentElement) break;
-      cur = cur.parentElement;
-      var t = (cur.textContent||'').toUpperCase();
-      if(t.includes('MENU V28')) return true;
-    }
+    for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur = cur.parentElement; var t=(cur.textContent||'').toUpperCase(); if(t.includes('MENU V28')) return true; }
     return false;
   }
-
   function fixStaff(){
     var role = getRole();
     badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
     badge.style.background = role === 'staff' ? 'green' : 'red';
+    proTables(); // Pro tables for BOTH owner + staff
     if(role !== 'staff') return;
-
-    // 1. HIDE DASHBOARD + TARGET + 2nd CASH row
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
       if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30) el.style.display='none';
       if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5) el.style.display='none';
       if(t.includes('6.00 TIP') && el.children.length < 10) el.style.display='none';
     });
-
-    // 2. HIDE MENU BUTTONS ONLY
     document.querySelectorAll('button, div, a').forEach(function(el){
       var t = (el.textContent||'').toUpperCase().trim();
       if(!t || t.length > 90) return;
@@ -1441,41 +1466,22 @@ function filterProfit(year){
       if(t.includes('LOGOUT')) return;
       if(t.includes('MENU')) return;
       if(!isInsideMenu(el)) return;
-      for(var i=0;i<HIDE.length;i++){
-        if(t.includes(HIDE[i])){
-          el.style.display='none';
-          if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display='none';
-          break;
-        }
-      }
+      for(var i=0;i<HIDE.length;i++){ if(t.includes(HIDE[i])){ el.style.display='none'; if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display='none'; break; } }
       if(t === 'PW' || t.endsWith(' PW')) el.style.display='none';
     });
-
-    // 3. HIDE STOCK SETTINGS ONLY - keep STOCK table
-    // Settings panels are small divs with these titles
     document.querySelectorAll('div, button').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
-      // Must be settings panel, not whole STOCK box (whole STOCK box is huge, >1000 chars)
       if(t.length > 400) return;
       if(t.includes('MANUAL ADJUST') || t.includes('BANK SETTINGS') || t.includes('UPDATE SELL PRICE') || t.includes('ADJUST DIFF') || t.includes('SAVE BANK')){
-        // Hide this panel + its wrapper
         el.style.display='none';
-        // If parent is just this panel, hide parent too
-        if(el.parentElement && el.parentElement.textContent.toUpperCase().includes('MANUAL ADJUST') && el.parentElement.children.length < 4){
-          // Don't hide if parent is whole STOCK - check length
-          if((el.parentElement.textContent||'').length < 600) el.parentElement.style.display='none';
-        }
+        if(el.parentElement && (el.parentElement.textContent||'').length < 600) el.parentElement.style.display='none';
       }
     });
-    // Hide buttons ADJUST DIFF / SAVE BANK% / UPDATE SELL directly
     document.querySelectorAll('button, div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase().trim();
-      if(t === 'ADJUST DIFF' || t === 'SAVE BANK%' || t === 'UPDATE SELL' || t.includes('SAVE BANK%')){
-        if(t.length < 30) el.style.display='none';
-      }
+      if((t === 'ADJUST DIFF' || t === 'SAVE BANK%' || t === 'UPDATE SELL') && t.length < 30) el.style.display='none';
     });
   }
-
   function getPW(){
     var el = document.getElementById('pwInput');
     if(el && el.value) return el.value.trim();
@@ -1495,14 +1501,12 @@ function filterProfit(year){
       if(p===co && co) role='owner'; else if(p===cs && cs) role='staff';
     }
     if(!role){ alert('Wrong PW: '+p); return; }
-    setRole(role);
-    alert(role.toUpperCase()+' LOGIN OK');
+    setRole(role); alert(role.toUpperCase()+' LOGIN OK');
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
   }
   function doLogout(){
     ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); });
-    badge.textContent='ROLE: NONE'; badge.style.background='red';
-    alert('Logged out'); location.reload();
+    badge.textContent='ROLE: NONE'; badge.style.background='red'; alert('Logged out'); location.reload();
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
   document.addEventListener('click', function(e){
