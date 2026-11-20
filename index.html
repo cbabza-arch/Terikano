@@ -1669,48 +1669,66 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === TERIKANO STAFF - FINAL - PASTE AT VERY BOTTOM ===
+// === TERIKANO STAFF - HIDE WHOLE SECTIONS - PASTE AT VERY BOTTOM ===
 (function(){
   function isStaff(){
     var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '';
     return a.toLowerCase().indexOf('staff')!==-1;
   }
+
+  function hideSection(el){
+    // Go up 5 levels to hide whole box
+    var p = el;
+    for(var i=0;i<5;i++){
+      if(!p || !p.parentElement) break;
+      p = p.parentElement;
+      // Stop at big box - div with border or big height
+      if(p.tagName==='DIV' && p.offsetHeight > 150){
+        p.style.display = 'none';
+        break;
+      }
+    }
+    el.style.display = 'none';
+  }
+
   setInterval(function(){
     if(!isStaff()) return;
 
-    // STAFF ONLY THESE 7
+    // 1. HIDE MENU BUTTONS NOT IN YOUR 7
     var allowed = ['sale','stock','creditors','collect','ledger','logout','daily notes','daily note'];
-
     document.querySelectorAll('button, a').forEach(function(b){
       var txt = (b.innerText||'').toLowerCase().trim();
       if(!txt) return;
-
-      // KEEP small buttons inside SALE - ADD TO CART, QTY, CASH, HIDE, CUSTOMER
       if(txt.indexOf('add to cart')!==-1) return;
       if(txt.indexOf('qty')!==-1) return;
       if(txt.indexOf('cash')!==-1) return;
       if(txt === 'hide') return;
       if(txt.indexOf('customer')!==-1) return;
-      if(txt.indexOf('price')!==-1) return;
       if(txt.indexOf('change')!==-1) return;
       if(txt.indexOf('owed')!==-1) return;
-
-      // If button text is a MENU word but NOT in allowed, hide it
-      // This catches WHOLESALER, WHOLESALE DEBT, BANK, ADMIN, etc
-      var isMenuWord = txt.length < 30; // menu buttons are short
-      if(isMenuWord){
+      if(txt.length < 30){
         var ok = false;
-        for(var i=0;i<allowed.length;i++){
-          if(txt.indexOf(allowed[i])!==-1){ ok=true; break; }
-        }
-        if(!ok) b.style.display = 'none';
+        for(var i=0;i<allowed.length;i++){ if(txt.indexOf(allowed[i])!==-1){ ok=true; break; } }
+        if(!ok) b.style.display='none';
       }
-
-      // ALWAYS hide these words for staff, even if long
       if(txt.indexOf('wholesaler')!==-1) b.style.display='none';
       if(txt.indexOf('wholesale debt')!==-1) b.style.display='none';
       if(txt.indexOf('bank')!==-1) b.style.display='none';
     });
+
+    // 2. HIDE WHOLE SECTIONS - WHOLESALER, WHOLESALE DEBT, BANK SETTING
+    document.querySelectorAll('div, label, h1, h2, h3, h4, span, p').forEach(function(el){
+      if(el.children.length > 2) return;
+      var txt = (el.innerText||'').toLowerCase().trim();
+      if(!txt) return;
+      if(txt.indexOf('wholesaler')!==-1 || txt.indexOf('wholesale debt')!==-1 || txt.indexOf('bank setting')!==-1 || txt === 'bank'){
+        hideSection(el);
+      }
+    });
+
+    // 3. YOUR NOTES ARE SAFE - DO NOT TOUCH NOTES
+    // Daily Notes + Change $3 / Owed $2 code is NOT touched here
+
   }, 500);
 })();
 </script>
