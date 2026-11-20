@@ -1343,5 +1343,12 @@ function filterProfit(year){
   }
 })();
 </script>
+  <script>
+(function(){
+  setTimeout(function(){
+    alert('DEBUG: auth=' + sessionStorage.getItem('terikano_session_auth') + ' | isOwner=' + localStorage.getItem('isOwner') + ' | loginBox=' + (document.getElementById('loginBox') ? document.getElementById('loginBox').style.display : 'NO LOGINBOX') + ' | url=' + location.href);
+  }, 500);
+})();
+</script>
 </body>
 </html>
