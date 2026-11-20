@@ -1382,25 +1382,87 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === STAFF KEEP LIST - USE THIS ONE ONLY ===
+// === FIX: WATCH YOUR LOGIN BUTTON + SHOW ROLE BADGE ===
 (function(){
-  var css = document.createElement('style');
-  css.innerHTML = `
-    *{ box-sizing:border-box !important; }
-    body.staff-mode input, body.staff-mode select, body.staff-mode textarea{
-      width:100% !important; min-height:48px !important; font-size:16px !important;
-      padding:10px !important; border-radius:10px !important; margin:0 0 10px 0 !important;
-    }
-    body.staff-mode label{ display:block !important; font-size:14px !important; font-weight:700 !important; margin:8px 0 4px !important; }
-  `;
-  document.head.appendChild(css);
+  // 1. Show badge so we can see role - top left
+  var badge = document.createElement('div');
+  badge.id = 'roleBadge';
+  badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:16px;';
+  badge.textContent = 'ROLE: NONE';
+  document.body.appendChild(badge);
 
-  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || ''; }
+  function setRole(role){
+    sessionStorage.setItem('terikano_session_auth', role);
+    localStorage.setItem('terikano_session_auth', role);
+    localStorage.setItem('terikano_role', role);
+    badge.textContent = 'ROLE: ' + role.toUpperCase();
+    badge.style.background = role === 'staff' ? 'green' : 'red';
+    if(role === 'staff') document.body.classList.add('staff-mode');
+    else document.body.classList.remove('staff-mode');
+  }
+
+  function getRole(){
+    return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || '';
+  }
+
+  function getPWFromPage(){
+    // Find ANY input that looks like PW - not just #pwInput
+    var inputs = document.querySelectorAll('input');
+    for(var i=0;i<inputs.length;i++){
+      var v = (inputs[i].value||'').trim();
+      if(v === '1234' || v === '200175') return v;
+      // If input is password type or near LOGIN
+      if(inputs[i].type === 'password' && v) return v;
+    }
+    return '';
+  }
+
+  function tryLogin(){
+    var p = getPWFromPage();
+    // Also try #pwInput
+    var el = document.getElementById('pwInput');
+    if(el && el.value) p = el.value.trim();
+    if(!p){ alert('Type PW first - I cant find PW box. Badge says NONE'); return; }
+    var role = '';
+    if(p === '1234') role = 'staff';
+    else if(p === '200175') role = 'owner';
+    else {
+      var co = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '');
+      var cs = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '');
+      if(p === co && co) role = 'owner';
+      else if(p === cs && cs) role = 'staff';
+    }
+    if(!role){ alert('Wrong PW: ' + p); return; }
+    setRole(role);
+    alert(role.toUpperCase() + ' LOGIN OK - Badge should say ' + role.toUpperCase());
+    document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
+  }
+
+  function doLogout(){
+    ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){
+      sessionStorage.removeItem(k); localStorage.removeItem(k);
+    });
+    badge.textContent = 'ROLE: NONE'; badge.style.background = 'red';
+    document.body.classList.remove('staff-mode');
+    alert('Logged out'); location.reload();
+  }
+
+  // Hook ALL possible login functions
+  window.checkLogin = tryLogin;
+  window.login = tryLogin;
+  window.doLogin = tryLogin;
+  window.staffLogin = tryLogin;
+  window.logout = doLogout;
+
   var KEEP = ['SALE','CREDITORS','COLLECT','STOCK','LEDGER','LOGOUT'];
 
   function fixStaff(){
-    if(getRole() !== 'staff') return;
+    var role = getRole();
+    badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
+    badge.style.background = role === 'staff' ? 'green' : 'red';
+    if(role !== 'staff') return;
     document.body.classList.add('staff-mode');
+    // Hide TOP CASH / BANK / COCO
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
       if(el.children.length > 5) return;
@@ -1411,6 +1473,7 @@ function filterProfit(year){
       }
       if(t.trim().startsWith('BANK') && t.includes('$') && t.length < 100) el.style.display='none';
     });
+    // MENU - keep only 6
     document.querySelectorAll('div').forEach(function(menu){
       var mt = (menu.textContent||'').toUpperCase();
       if(!mt.includes('MENU')) return;
@@ -1434,44 +1497,30 @@ function filterProfit(year){
     });
   }
 
-  function doLogin(){
-    var el = document.getElementById('pwInput');
-    var p = el ? (el.value||'').trim() : '';
-    if(!p){ alert('Type PW first'); return; }
-    var role = '';
-    if(p === '1234') role = 'staff';
-    else if(p === '200175') role = 'owner';
-    else {
-      var co = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '');
-      var cs = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '');
-      if(p === co && co) role = 'owner';
-      else if(p === cs && cs) role = 'staff';
-    }
-    if(!role){ alert('Wrong PW: ' + p); return; }
-    sessionStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_session_auth', role);
-    if(role === 'owner') document.body.classList.remove('staff-mode');
-    else document.body.classList.add('staff-mode');
-    alert(role.toUpperCase() + ' LOGIN OK');
-    document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-  }
-  function doLogout(){
-    ['terikano_session_auth','terikano_auth','auth','loggedIn'].forEach(function(k){
-      sessionStorage.removeItem(k); localStorage.removeItem(k);
-    });
-    document.body.classList.remove('staff-mode');
-    alert('Logged out'); location.reload();
-  }
-  window.checkLogin = doLogin;
-  window.logout = doLogout;
+  // CLICK - catch YOUR LOGIN + LOGOUT buttons, any shape
   document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, a, [onclick], div') : e.target;
+    var btn = e.target.closest ? e.target.closest('button, a, div[onclick], [onclick]') : e.target;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
+    // LOGOUT - short only
     if(t.includes('LOGOUT') && t.length < 30){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
-    if(t.includes('LOGIN') && t.length < 30 && !t.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); doLogin(); return; }
+    // LOGIN - if button says LOGIN and PW box has 1234/200175, we handle it
+    if(t.includes('LOGIN') && t.length < 30 && !t.includes('LOGOUT')){
+      // Let your old code also run? No - we take over, stop old
+      e.preventDefault(); e.stopPropagation(); tryLogin(); return;
+    }
   }, true);
-  setInterval(fixStaff, 400);
+
+  // Also update badge every 500ms - if your old login sets role in other key, we catch it
+  setInterval(function(){
+    // Check other possible keys your old code uses
+    var alt = localStorage.getItem('role') || localStorage.getItem('userRole') || sessionStorage.getItem('role') || '';
+    if(alt && alt !== getRole()){
+      if(alt.toLowerCase().includes('staff')) setRole('staff');
+      if(alt.toLowerCase().includes('owner')) setRole('owner');
+    }
+    fixStaff();
+  }, 500);
 })();
 </script>
 </body>
