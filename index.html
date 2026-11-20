@@ -1346,7 +1346,15 @@ function filterProfit(year){
   <script>
 (function(){
   setTimeout(function(){
-    alert('DEBUG: auth=' + sessionStorage.getItem('terikano_session_auth') + ' | isOwner=' + localStorage.getItem('isOwner') + ' | loginBox=' + (document.getElementById('loginBox') ? document.getElementById('loginBox').style.display : 'NO LOGINBOX') + ' | url=' + location.href);
+    var all = document.querySelectorAll('[id]');
+    var names = [];
+    all.forEach(function(e){
+      var id = e.id.toLowerCase();
+      if(id.indexOf('login')!==-1 || id.indexOf('pass')!==-1 || id.indexOf('auth')!==-1 || id.indexOf('lock')!==-1 || id.indexOf('gate')!==-1){
+        names.push(e.id + ' [' + e.tagName + '] display=' + e.style.display);
+      }
+    });
+    alert('FOUND LOGIN ELEMENTS:\n' + (names.length ? names.join('\n') : 'NONE - NO LOGIN AT ALL'));
   }, 500);
 })();
 </script>
