@@ -1360,5 +1360,38 @@ function filterProfit(year){
   }
 })();
 </script>
+  <script>
+// === CREATE LOGIN IF MISSING + FORCE SHOW ===
+(function(){
+  // 1. Force body visible - beat TOP
+  var s = document.createElement('style');
+  s.innerHTML = 'body{visibility:visible !important; opacity:1 !important;}';
+  document.head.appendChild(s);
+  document.body.style.visibility = 'visible';
+
+  // 2. If no loginBox, create it - like old FIREBASE GATE did
+  if(!document.getElementById('loginBox')){
+    var box = document.createElement('div');
+    box.id = 'loginBox';
+    box.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:#111;display:flex;align-items:center;justify-content:center;';
+    box.innerHTML = '<div style="background:#222;padding:24px;border-radius:16px;width:300px;text-align:center;color:#fff;font-family:sans-serif;">'
+      + '<h2 style="margin:0 0 12px;">🔒 TERIKANO</h2>'
+      + '<p style="font-size:13px;color:#aaa;margin:0 0 12px;">Enter password to continue</p>'
+      + '<input id="pwInput" type="password" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-size:16px;">'
+      + '<button id="loginBtn" onclick="checkLogin()" style="width:100%;padding:12px;background:#FFD700;border:none;border-radius:10px;font-weight:bold;font-size:16px;">LOGIN</button>'
+      + '<p id="loginErr" style="color:#ff6666;font-size:13px;min-height:18px;margin:8px 0 0;"></p>'
+      + '</div>';
+    document.body.appendChild(box);
+    // Connect new inputs to ONE code
+    var inp = document.getElementById('pwInput');
+    if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
+    var btn = document.getElementById('loginBtn');
+    if(btn) btn.onclick = window.checkLogin;
+  } else {
+    var lb = document.getElementById('loginBox');
+    lb.style.display = 'flex'; lb.style.visibility = 'visible';
+  }
+})();
+</script>
 </body>
 </html>
