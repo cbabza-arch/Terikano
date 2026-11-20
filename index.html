@@ -1382,48 +1382,44 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === PRO STAFF + PRO LAYOUT - KEEPS RUNNING ===
+// === STAFF ONLY SALE - HIDE ALL OWNER BOXES ===
 (function(){
   var css = document.createElement('style');
   css.innerHTML = `
     *{ box-sizing:border-box !important; }
-    body{ font-family:system-ui, -apple-system, sans-serif !important; }
-    /* PRO buttons - bigger, touch friendly */
-    button, [onclick], a{ min-height:52px !important; }
-    /* Top grid - 2 cols, gap, pro */
-    /* SALE / PURCHASE boxes - PRO */
-    input, select, textarea{
-      width:100% !important; min-height:48px !important;
-      font-size:16px !important; padding:10px 12px !important;
-      border-radius:10px !important; border:1.5px solid #ccc !important;
-      background:#fff !important; margin-bottom:8px !important;
+    body.staff-mode input, body.staff-mode select, body.staff-mode textarea{
+      width:100% !important; min-height:52px !important; font-size:17px !important;
+      padding:12px !important; border-radius:12px !important; border:1.5px solid #ccc !important;
     }
-    label{ font-size:14px !important; font-weight:700 !important; color:#222 !important; margin-bottom:4px !important; display:block !important; }
-    /* Cards pro shadow */
-    div{ border-radius:12px; }
+    body.staff-mode label{ font-size:15px !important; font-weight:700 !important; display:block !important; margin:10px 0 5px !important; }
   `;
   document.head.appendChild(css);
 
-  var OWNER_WORDS = ['CLOSING','PW','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT + CSV','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT + IB','WHOLESALER DEBT','PURCHASE + IB'];
-
   function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || ''; }
 
-  function applyStaff(){
-    var role = getRole();
-    if(role === 'staff') document.body.classList.add('staff-mode');
-    if(role === 'owner') document.body.classList.remove('staff-mode');
-    if(role !== 'staff') return;
-    // Check ALL elements, not just button
-    document.querySelectorAll('button, div, a, span').forEach(function(el){
-      if(el.children.length > 0) return; // only leaf text
+  function hideOwnerBoxes(){
+    if(getRole() !== 'staff') return;
+    document.body.classList.add('staff-mode');
+    // 1. Hide any element that says OWNER ONLY - hide its whole card / section
+    document.querySelectorAll('div, section').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')){
+        // Only hide if this is the smallest box containing it - check parent not also owner
+        if(el.children.length < 15){
+          el.style.display = 'none';
+        }
+      }
+    });
+    // 2. Hide owner buttons by text
+    var OWNER_WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT + CSV','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT + IB','WHOLESALER DEBT','PURCHASE + IB','PURCHASE'];
+    document.querySelectorAll('button, div, a').forEach(function(el){
+      if(el.children.length > 0) return;
       var t = (el.textContent||'').toUpperCase().trim();
       if(!t) return;
       for(var i=0;i<OWNER_WORDS.length;i++){
-        if(t.includes(OWNER_WORDS[i])){
-          // Hide the clickable card - go up 2 levels
-          var card = el.closest('button') || el.closest('a') || el.parentElement;
-          if(card) card.style.display = 'none';
-          el.style.display = 'none';
+        if(t === OWNER_WORDS[i] || t.includes(OWNER_WORDS[i])){
+          var card = el.closest('button') || el.parentElement;
+          if(card && !card.textContent.toUpperCase().includes('SALE')) card.style.display = 'none';
           break;
         }
       }
@@ -1450,9 +1446,8 @@ function filterProfit(year){
     else document.body.classList.add('staff-mode');
     alert(role.toUpperCase() + ' LOGIN OK');
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-    setTimeout(applyStaff, 200);
+    setTimeout(hideOwnerBoxes, 300);
   }
-
   function doLogout(){
     ['terikano_session_auth','terikano_auth','auth','loggedIn'].forEach(function(k){
       sessionStorage.removeItem(k); localStorage.removeItem(k);
@@ -1460,7 +1455,6 @@ function filterProfit(year){
     document.body.classList.remove('staff-mode');
     alert('Logged out'); location.reload();
   }
-
   window.checkLogin = doLogin;
   window.logout = doLogout;
   document.addEventListener('click', function(e){
@@ -1469,9 +1463,7 @@ function filterProfit(year){
     if(t === 'LOGIN'){ e.preventDefault(); e.stopPropagation(); doLogin(); }
     if(t === 'LOGOUT' || t === 'LOG OUT'){ e.preventDefault(); e.stopPropagation(); doLogout(); }
   }, true);
-
-  // KEEP RUNNING - so ONE cannot undo staff hide
-  setInterval(applyStaff, 300);
+  setInterval(hideOwnerBoxes, 400);
 })();
 </script>
 </body>
