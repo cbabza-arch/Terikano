@@ -1552,6 +1552,40 @@ function filterProfit(year){
     });
   });
 </script>
+<style>
+  /* PRO FIX 3 - Green Dot + Off Grid */
+  /* Hide green dot for STAFF only */
+  html.staff-mode .online-dot, 
+  html.staff-mode [class*="dot"] { display: none !important; }
 
+  /* FIX TABLES OFF GRID - make tables scroll INSIDE card, not spill out */
+  div { overflow-x: hidden !important; }
+  table { width: 100% !important; max-width: 100% !important; table-layout: auto !important; }
+  
+  /* Let each section scroll sideways INSIDE its box */
+  div:has(> table) { overflow-x: auto !important; display: block !important; }
+  
+  /* Stop columns from being cut */
+  th, td { white-space: nowrap !important; padding: 6px 8px !important; font-size: 12px !important; }
+</style>
+
+<script>
+  // Hide GREEN DOT next to DEV- name
+  document.addEventListener('DOMContentLoaded', function(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(auth !== 'staff') return;
+    // Find DEV- text and hide dot next to it
+    document.querySelectorAll('*').forEach(function(el){
+      if(el.innerText && el.innerText.includes('DEV-')){
+        var dot = el.querySelector('span, i, div');
+        if(dot) dot.style.display = 'none';
+        // Also hide any small green circle in same parent
+        el.parentElement.querySelectorAll('span').forEach(function(s){
+          if(s.offsetWidth < 20 && s.offsetHeight < 20) s.style.display = 'none';
+        });
+      }
+    });
+  });
+</script>
 </body>
 </html>
