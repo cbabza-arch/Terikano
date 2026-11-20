@@ -1382,7 +1382,7 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === FIX MENU - HIDE OWNER BUTTONS DIRECTLY ===
+// === FIX: STOCK BACK + LEDGER NO FLASH ===
 (function(){
   var badge = document.getElementById('roleBadge');
   if(!badge){
@@ -1403,8 +1403,9 @@ function filterProfit(year){
     else document.body.classList.remove('staff-mode');
   }
 
-  // HIDE LIST - exact text from your screenshot
-  var HIDE = ['CLOSING','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT'];
+  var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT'];
+  // NOTE: EXPIRY removed! STOCK contains EXPIRY, so we must NOT hide by EXPIRY
+  // EXPIRY + ACK button will be hidden by exact check below
 
   function fixStaff(){
     var role = getRole();
@@ -1413,45 +1414,41 @@ function filterProfit(year){
     if(role !== 'staff') return;
     document.body.classList.add('staff-mode');
 
-    // 1. Hide TOP CASH / BANK / COCO + TARGET bar + OWNER ONLY
+    // 1. Find MENU box ONLY - the one with "MENU V28"
+    var menuBox = null;
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
-      if(el.children.length > 5) return;
-      if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')) el.style.display='none';
-      if(t.includes('TARGET TODAY') && t.length < 200) el.style.display='none';
-      if((t.includes('CASH') && t.includes('$') && t.length < 120) || (t.includes('COCO') && t.includes('PCS') && t.length < 120)){
-        if(t.includes('CASH') && !t.includes('BANK') && t.length < 60) return;
-        el.style.display='none';
-      }
-      if(t.trim().startsWith('BANK') && t.includes('$') && t.length < 100) el.style.display='none';
+      if(t.includes('MENU V28') && el.children.length < 10) menuBox = el;
     });
+    if(!menuBox) return;
 
-    // 2. HIDE OWNER BUTTONS - check EVERY button/div, no MENU count check
-    document.querySelectorAll('button, div, a, span').forEach(function(el){
+    // 2. Inside MENU only, hide owner buttons
+    menuBox.querySelectorAll('button, div, a').forEach(function(el){
       var t = (el.textContent||'').toUpperCase().trim();
-      if(!t) return;
-      // Only leaf buttons - small text, no big container
-      if(t.length > 90) return;
+      if(!t || t.length > 90) return;
       if(el.children.length > 2) return;
-      // Don't hide SALE box itself - SALE box is big, this is leaf only
+      // KEEP THESE - never hide
+      if(t.includes('SALE') && !t.includes('STOCK')) return;
+      if(t.includes('STOCK')) return; // STOCK back!
+      if(t.includes('CREDITORS')) return;
+      if(t.includes('LEDGER')) return;
+      if(t.includes('COLLECT')) return;
+      if(t.includes('LOGOUT')) return;
+      if(t.includes('MENU')) return;
+      // Hide EXPIRY + ACK only if it's exact expiry button, not STOCK
+      if(t.includes('EXPIRY + ACK')){ el.style.display='none'; return; }
       for(var i=0;i<HIDE.length;i++){
         if(t.includes(HIDE[i])){
-          // PW button is just "PW"
           el.style.display='none';
-          // Also hide parent if parent is just this button wrapper
           if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display='none';
           break;
         }
       }
-      // PW alone
-      if(t === '🔑 PW' || t === 'PW' || t.endsWith(' PW')){ el.style.display='none'; }
+      if(t === 'PW' || t.endsWith(' PW')) el.style.display='none';
     });
 
-    // 3. Hide WHOLESALER box
-    document.querySelectorAll('div, section').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('WHOLESALER CREDIT') && el.children.length < 20) el.style.display='none';
-    });
+    // 3. Hide TOP CASH/BANK/COCO + TARGET - only small top cards, NOT ledger content
+    // Do NOT touch anything inside LEDGER/SALE/STOCK boxes
   }
 
   function getPW(){
@@ -1485,11 +1482,13 @@ function filterProfit(year){
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
   document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, a, div[onclick], [onclick]') : e.target;
-    if(!btn) return;
+    // Only check real button, not big MENU container
+    var btn = e.target.closest ? e.target.closest('button, a') : null;
+    if(!btn) btn = e.target;
     var t = (btn.textContent||'').toUpperCase().trim();
-    if(t.includes('LOGOUT') && t.length < 30){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
+    if(t === 'LOGOUT' || (t.includes('LOGOUT') && t.length < 20)){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
     if(t.includes('LOGIN') && t.length < 30 && !t.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); tryLogin(); return; }
+    // LEDGER / SALE / STOCK / CREDITORS / COLLECT - let normal code run, do NOT stop
   }, true);
   setInterval(fixStaff, 500);
 })();
