@@ -1382,62 +1382,73 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === FINAL CLOUD LOGIN - REMOVE BOX, NO RE-SHOW ===
+// === FINAL LOGIN + LOGOUT - STAFF FIX ===
 (function(){
+  // Clean bad saved PW - if owner PW was saved as 1234 before, delete it
+  if(localStorage.getItem('terikano_owner_pw') === '1234'){
+    localStorage.removeItem('terikano_owner_pw');
+  }
+
   function doLogin(){
     var el = document.getElementById('pwInput');
     var p = el ? (el.value||'').trim() : '';
     if(!p){ alert('Type PW first'); return; }
 
-    var cloudOwner = window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '200175';
-    var cloudStaff = window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '1234';
+    var cloudOwner = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '200175');
+    var cloudStaff = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '1234');
 
     var role = '';
-    if(p === String(cloudOwner) || p === '200175'){
-      role = 'owner';
-    } else if(p === String(cloudStaff) || p === '1234'){
-      role = 'staff';
+    // STAFF FIRST - so 1234 never goes to owner
+    if(cloudOwner !== cloudStaff){
+      if(p === cloudOwner) role = 'owner';
+      else if(p === cloudStaff) role = 'staff';
     } else {
-      alert('Wrong PW - you typed: ' + p + ' | Cloud Owner: ' + cloudOwner);
-      return;
+      // Cloud broken - use hardcoded only
+      if(p === '200175') role = 'owner';
+      else if(p === '1234') role = 'staff';
     }
+    if(!role){ alert('Wrong PW - you typed: ' + p); return; }
 
-    // Save EVERY possible key TOP/ONE might check
     sessionStorage.setItem('terikano_session_auth', role);
     sessionStorage.setItem('terikano_auth', role);
-    sessionStorage.setItem('auth', role);
-    sessionStorage.setItem('loggedIn', '1');
     localStorage.setItem('terikano_session_auth', role);
     localStorage.setItem('terikano_auth', role);
-
     if(role === 'owner') document.body.classList.remove('staff-mode');
     else document.body.classList.add('staff-mode');
 
     alert(role.toUpperCase() + ' LOGIN OK');
-
-    // REMOVE box completely, not just hide - so it CANNOT come back
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-    var sl = document.getElementById('staffLock');
-    if(sl) sl.remove();
-    document.body.style.visibility = 'visible';
-    document.body.style.opacity = '1';
-    document.body.style.display = '';
+    var sl = document.getElementById('staffLock'); if(sl) sl.remove();
+    document.body.style.visibility = 'visible'; document.body.style.opacity = '1';
+  }
+
+  function doLogout(){
+    // Clear ALL keys - so logout really logs out
+    ['terikano_session_auth','terikano_auth','auth','loggedIn'].forEach(function(k){
+      sessionStorage.removeItem(k); localStorage.removeItem(k);
+    });
+    document.body.classList.remove('staff-mode');
+    alert('Logged out');
+    location.reload();
   }
 
   window.checkLogin = doLogin;
+  window.logout = doLogout;
+  window.doLogout = doLogout;
 
-  // STOP form reload + rewire button
+  // Catch ALL login + logout buttons
   document.addEventListener('click', function(e){
-    if(e.target && e.target.textContent && e.target.textContent.trim().toUpperCase() === 'LOGIN'){
-      e.preventDefault(); e.stopPropagation();
-      doLogin();
+    if(!e.target) return;
+    var t = (e.target.textContent || '').trim().toUpperCase();
+    if(t === 'LOGIN'){ e.preventDefault(); e.stopPropagation(); doLogin(); }
+    if(t === 'LOGOUT' || t === 'LOG OUT' || t === 'SIGN OUT'){
+      e.preventDefault(); e.stopPropagation(); doLogout();
     }
   }, true);
 
   var _inp = document.getElementById('pwInput');
   if(_inp) _inp.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); doLogin(); } };
 
-  // If TOP tries to re-create loginBox after login, kill it
   var obs = new MutationObserver(function(){
     if(sessionStorage.getItem('terikano_session_auth')){
       document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
