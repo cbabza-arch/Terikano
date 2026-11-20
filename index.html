@@ -1343,19 +1343,73 @@ function filterProfit(year){
   }
 })();
 </script>
-  <script>
+ <script>
+// === TERIKANO LOGIN GATE - FIREBASE VERSION ===
 (function(){
-  setTimeout(function(){
-    var all = document.querySelectorAll('[id]');
-    var names = [];
-    all.forEach(function(e){
-      var id = e.id.toLowerCase();
-      if(id.indexOf('login')!==-1 || id.indexOf('pass')!==-1 || id.indexOf('auth')!==-1 || id.indexOf('lock')!==-1 || id.indexOf('gate')!==-1){
-        names.push(e.id + ' [' + e.tagName + '] display=' + e.style.display);
-      }
+  if(document.getElementById('loginBox')) return;
+
+  var box = document.createElement('div');
+  box.id = 'loginBox';
+  box.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:#111;display:flex;align-items:center;justify-content:center;';
+  box.innerHTML = '<div style="background:#222;padding:24px;border-radius:16px;width:300px;text-align:center;color:#fff;font-family:sans-serif;">'
+    + '<h2 style="margin:0 0 12px;">🔒 TERIKANO</h2>'
+    + '<p style="font-size:13px;color:#aaa;margin:0 0 12px;">Enter password to continue</p>'
+    + '<input id="pwInput" type="password" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-size:16px;">'
+    + '<button id="loginBtn" style="width:100%;padding:12px;background:#FFD700;border:none;border-radius:10px;font-weight:bold;font-size:16px;">LOGIN</button>'
+    + '<p id="loginErr" style="color:#ff6666;font-size:13px;min-height:18px;margin:8px 0 0;">Loading passwords from cloud...</p>'
+    + '</div>';
+  document.body.appendChild(box);
+
+  var OWNER_PW = '200175';
+  var STAFF_PW = '1234';
+  var PW_READY = false;
+
+  // Load live passwords from YOUR Firebase - same place Settings saves to
+  try{
+    db.ref('terikano_config/passwords').on('value', function(snap){
+      var v = snap.val() || {};
+      if(v.ownerPw) OWNER_PW = v.ownerPw;
+      if(v.staffPw) STAFF_PW = v.staffPw;
+      PW_READY = true;
+      var err = document.getElementById('loginErr');
+      if(err && err.textContent.indexOf('Loading') !== -1) err.textContent = '';
     });
-    alert('FOUND LOGIN ELEMENTS:\n' + (names.length ? names.join('\n') : 'NONE - NO LOGIN AT ALL'));
-  }, 500);
+  }catch(e){ PW_READY = true; }
+
+  function doLogin(){
+    if(!PW_READY){
+      document.getElementById('loginErr').textContent = 'Still loading from cloud, wait 1 sec...';
+      return;
+    }
+    var pw = document.getElementById('pwInput').value;
+    if(pw === OWNER_PW){
+      sessionStorage.setItem('terikano_session_auth','owner');
+      box.style.display='none';
+    } else if(pw === STAFF_PW){
+      sessionStorage.setItem('terikano_session_auth','staff');
+      box.style.display='none';
+    } else {
+      document.getElementById('loginErr').textContent = 'Wrong password';
+    }
+  }
+  document.getElementById('loginBtn').onclick = doLogin;
+  document.getElementById('pwInput').onkeydown = function(e){ if(e.key==='Enter') doLogin(); };
+
+  if(sessionStorage.getItem('terikano_session_auth') !== 'owner' && sessionStorage.getItem('terikano_session_auth') !== 'staff'){
+    box.style.display = 'flex';
+  } else {
+    box.style.display = 'none';
+  }
+
+  window.safeLogout = function(){
+    sessionStorage.clear();
+    location.href = location.pathname + '?logout=1';
+  };
+  window.doLogout = window.safeLogout;
+  if(location.href.indexOf('logout') !== -1){
+    box.style.display = 'flex';
+    history.replaceState(null,'',location.pathname);
+  }
 })();
 </script>
 </body>
