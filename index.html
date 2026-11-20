@@ -1668,6 +1668,57 @@ function filterProfit(year){
   }, 1000);
 })();
 </script>
+  <script>
+// === TERIKANO - STAFF WHOLE CODE - PASTE AT BOTTOM ===
+(function(){
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  if(auth !== 'staff') return;
+
+  // STAFF MENU ONLY THESE 7 - YOUR FORMAT
+  var menuAllowed = ['sale','stock','creditors','collect','ledger','logout','daily notes','daily note'];
+
+  setInterval(function(){
+
+    // 1. MENU - Hide big buttons NOT in your 7
+    document.querySelectorAll('button, a').forEach(function(b){
+      var txt = (b.innerText||'').toLowerCase().trim();
+      if(!txt) return;
+      // Only check BIG menu buttons, keep small buttons inside SALE like ADD TO CART, QTY, CASH, HIDE
+      if(b.offsetHeight > 40){
+        var ok = false;
+        for(var i=0;i<menuAllowed.length;i++){
+          if(txt.indexOf(menuAllowed[i])!==-1){ ok=true; break; }
+        }
+        if(!ok) b.style.display = 'none';
+      }
+    });
+
+    // 2. HIDE WHOLESALE / WHOLESALER DEBT FOR STAFF - CREDITORS STAYS
+    document.querySelectorAll('button, a, label, div').forEach(function(el){
+      var txt = (el.innerText||'').toLowerCase().trim();
+      if(el.children.length < 3 && txt.indexOf('wholesaler')!==-1){
+        if(el.tagName==='BUTTON' || el.tagName==='A'){
+          el.style.display = 'none';
+        }
+      }
+      if(el.children.length < 3 && txt === 'wholesale debt'){
+        if(el.tagName==='BUTTON' || el.tagName==='A'){
+          el.style.display = 'none';
+        }
+      }
+    });
+
+    // 3. HIDE BANK SETTING INSIDE STOCK FOR STAFF
+    document.querySelectorAll('button, a, label').forEach(function(el){
+      var txt = (el.innerText||'').toLowerCase().trim();
+      if(txt.indexOf('bank')!==-1){
+        el.style.display = 'none';
+      }
+    });
+
+  }, 1000);
+})();
+</script>
 <style>
 /* Staff should NOT see owner-only stuff */
 body.staff-mode .owner-only { display: none !important; }
