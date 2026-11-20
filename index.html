@@ -1267,7 +1267,11 @@ function filterProfit(year){
     localStorage.removeItem('isOwner');
     localStorage.removeItem('isStaff');
     localStorage.removeItem('terikano_session_auth');
-    location.href = location.pathname + '?logout=1';
+    var lb = document.getElementById('loginBox');
+    if(lb){ lb.style.display = 'flex'; lb.style.visibility = 'visible'; }
+    var pw = document.getElementById('pwInput');
+    if(pw){ pw.value = ''; }
+    setTimeout(function(){ location.reload(); }, 300);
   };
   window.logout = window.safeLogout;
   window.checkLogin = function(){
@@ -1348,7 +1352,11 @@ function filterProfit(year){
     localStorage.removeItem('isOwner');
     localStorage.removeItem('isStaff');
     localStorage.removeItem('terikano_session_auth');
-    location.href = location.pathname + '?logout=1';
+    var lb2 = document.getElementById('loginBox');
+    if(lb2){ lb2.style.display = 'flex'; lb2.style.visibility = 'visible'; }
+    var pw2 = document.getElementById('pwInput');
+    if(pw2){ pw2.value = ''; }
+    setTimeout(function(){ location.reload(); }, 300);
   };
   window.logout = window.safeLogout;
   window.doLogout = window.safeLogout;
@@ -1430,10 +1438,15 @@ function filterProfit(year){
 
   window.safeLogout = function(){
     sessionStorage.clear();
+    localStorage.removeItem('ownerLock');
     localStorage.removeItem('isOwner');
     localStorage.removeItem('isStaff');
     localStorage.removeItem('terikano_session_auth');
-    location.href = location.pathname + '?logout=1';
+    var lb3 = document.getElementById('loginBox');
+    if(lb3){ lb3.style.display = 'flex'; lb3.style.visibility = 'visible'; }
+    var pw3 = document.getElementById('pwInput');
+    if(pw3){ pw3.value = ''; }
+    setTimeout(function(){ location.reload(); }, 300);
   };
   window.doLogout = window.safeLogout;
   if(location.href.indexOf('logout') !== -1){
