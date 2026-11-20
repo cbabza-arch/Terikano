@@ -1587,5 +1587,32 @@ function filterProfit(year){
     });
   });
 </script>
+  <script>
+  // PRO - REMOVE DEVICE BUTTON - Owner Only
+  document.addEventListener('DOMContentLoaded', function(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    
+    // Only show for OWNER
+    if(auth !== 'owner') return;
+
+    // Create button
+    var btn = document.createElement('button');
+    btn.innerText = '🔒 REMOVE STAFF DEVICE - Require Password Again';
+    btn.style.cssText = 'position:fixed; bottom:70px; right:10px; z-index:9999; background:#ff0000; color:white; padding:12px; border:none; border-radius:10px; font-weight:bold; font-size:13px;';
+    
+    btn.onclick = function(){
+      if(confirm('Remove Staff Device? Staff will need password again to login.')){
+        // Kick staff out - clear staff session
+        localStorage.removeItem('terikano_session_auth');
+        sessionStorage.removeItem('terikano_session_auth');
+        localStorage.removeItem('terikano_staff_device');
+        sessionStorage.removeItem('terikano_staff_device');
+        alert('Staff device removed! Staff must enter password again.');
+        location.reload();
+      }
+    };
+    document.body.appendChild(btn);
+  });
+</script>
 </body>
 </html>
