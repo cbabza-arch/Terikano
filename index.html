@@ -1383,5 +1383,34 @@ function filterProfit(year){
   }
 })();
 </script>
+  <script>
+// === FIX PW READ VISIBLE INPUT ONLY ===
+window.checkLogin = function(){
+  var pwEl = document.getElementById('pwInput');
+  // If pwInput hidden, use staffPass
+  if(!pwEl || pwEl.offsetParent === null){
+    pwEl = document.getElementById('staffPass') || pwEl;
+  }
+  var p = pwEl ? (pwEl.value||'').trim() : '';
+  if(!p) return;
+
+  var OWNER_PW = localStorage.getItem('terikano_owner_pw') || '200175';
+  var STAFF_PW = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+
+  if(p === OWNER_PW){
+    sessionStorage.setItem('terikano_session_auth','owner');
+    document.body.classList.remove('staff-mode');
+    document.getElementById('loginBox').style.display = 'none';
+  } else if(p === STAFF_PW){
+    sessionStorage.setItem('terikano_session_auth','staff');
+    document.body.classList.add('staff-mode');
+    document.getElementById('loginBox').style.display = 'none';
+  } else {
+    var e = document.getElementById('loginErr');
+    if(e){ e.style.display = 'block'; e.textContent = 'Wrong password - tried: ' + p; }
+  }
+  if(pwEl) pwEl.value = '';
+};
+</script>
 </body>
 </html>
