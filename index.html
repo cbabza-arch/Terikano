@@ -1647,6 +1647,27 @@ function filterProfit(year){
   }
 })();
 </script>
+  <script>
+// === STAFF ONLY - MATCH PHOTO ===
+(function(){
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  if(auth !== 'staff') return;
+  var allowed = ['sale','stock','creditors','collect ib','ledger','logout','daily notes','add','search','save','cancel','close'];
+  setInterval(function(){
+    document.querySelectorAll('button, a').forEach(function(b){
+      var txt = (b.innerText||'').toLowerCase().trim();
+      if(!txt) return;
+      var ok = false;
+      for(var i=0;i<allowed.length;i++){
+        if(txt.indexOf(allowed[i])!==-1){ ok = true; break; }
+      }
+      if(!ok){
+        b.style.display = 'none';
+      }
+    });
+  }, 1000);
+})();
+</script>
 <style>
 /* Staff should NOT see owner-only stuff */
 body.staff-mode .owner-only { display: none !important; }
