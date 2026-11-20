@@ -1381,8 +1381,8 @@ function filterProfit(year){
   }
 })();
 </script>
-  <script>
-// === STAFF FIX - INCLUDES EMOJI ===
+ <script>
+// === FIX LOGOUT FALSE POPUP ===
 (function(){
   var css = document.createElement('style');
   css.innerHTML = `
@@ -1400,35 +1400,29 @@ function filterProfit(year){
   function hideOwnerBoxes(){
     if(getRole() !== 'staff') return;
     document.body.classList.add('staff-mode');
-    // Hide OWNER ONLY boxes
     document.querySelectorAll('div, section').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
       if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')){
         if(el.children.length < 15) el.style.display = 'none';
       }
     });
-    // Hide owner buttons - use INCLUDES, check short text
-    var WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT','WHOLESALER DEBT','PURCHASE'];
-    document.querySelectorAll('button, div, a').forEach(function(el){
+    var WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT','WHOLESALER DEBT','PURCHASE','STOCK -'];
+    document.querySelectorAll('button, a').forEach(function(el){
       var t = (el.textContent||'').toUpperCase().trim();
-      if(!t || t.length > 40) return; // only small buttons, not whole page
-      if(t.includes('SALE') || t.includes('LOGOUT')) return; // keep SALE + LOGOUT
+      if(!t || t.includes('SALE') && !t.includes('STOCK')) {
+        // Keep SALE button, but STOCK button also has SALE? No - keep only pure SALE
+        if(t.includes('SALE') && !t.includes('STOCK')) return;
+      }
+      if(t.includes('LOGOUT')) return;
       for(var i=0;i<WORDS.length;i++){
         if(t.includes(WORDS[i])){
-          // PW is special - only hide if text is short like "PW"
           if(WORDS[i] === 'PW' && t.length > 10) continue;
           el.style.display = 'none';
-          // Also hide parent card if parent is button-like
-          var p = el.parentElement;
-          if(p && p.tagName === 'DIV' && p.children.length <= 2) p.style.display = 'none';
           break;
         }
       }
-    });
-    // PW button - force hide by exact short text
-    document.querySelectorAll('button, div, a').forEach(function(el){
-      var t = (el.textContent||'').replace(/[^A-Z]/g,'').trim();
-      if(t === 'PW') el.style.display = 'none';
+      var clean = (el.textContent||'').replace(/[^A-Z]/g,'').trim();
+      if(clean === 'PW') el.style.display = 'none';
     });
   }
 
@@ -1462,14 +1456,20 @@ function filterProfit(year){
   }
   window.checkLogin = doLogin;
   window.logout = doLogout;
-  // LOGOUT FIX - includes, not ===
+
+  // FIXED CLICK - only the real button, not big parent
   document.addEventListener('click', function(e){
-    if(!e.target) return;
-    var t = (e.target.textContent||'').toUpperCase();
-    // Check clicked element AND parent for LOGOUT
-    var full = t + ' ' + (e.target.parentElement ? e.target.parentElement.textContent.toUpperCase() : '');
-    if(full.includes('LOGIN') && !full.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); doLogin(); return; }
-    if(full.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
+    var btn = e.target.closest ? e.target.closest('button, a, [onclick]') : e.target;
+    if(!btn) return;
+    var t = (btn.textContent||'').toUpperCase().trim();
+    // LOGOUT button is short - "LOGOUT" only, not MENU
+    if(t.includes('LOGOUT') && t.length < 30){
+      e.preventDefault(); e.stopPropagation(); doLogout(); return;
+    }
+    if(t === 'LOGIN' || t.includes('LOGIN') && t.length < 30){
+      e.preventDefault(); e.stopPropagation(); doLogin(); return;
+    }
+    // Other buttons - do nothing, let normal code run
   }, true);
   setInterval(hideOwnerBoxes, 400);
 })();
