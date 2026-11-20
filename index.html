@@ -1461,11 +1461,14 @@ function filterProfit(year){
       if(auth === 'staff'){
         document.querySelectorAll('div').forEach(function(el){
           var t = (el.innerText || '').trim();
-          if(t.startsWith('BANK SETTINGS')){
+          if(t.startsWith('BANK SETTINGS') || t.startsWith('DEVICE') || t.includes('DASHBOARD OWNER') || t.includes('REMOVE STAFF')){
             var card = el.closest('div');
-            if(card) card.style.display = 'none';
+            if(card && !card.innerText.includes('DEV-')) card.style.display = 'none';
           }
         });
+        // Hide REMOVE button for staff too
+        var rb = document.getElementById('removeStaffBtnPro');
+        if(rb) rb.style.display = 'none';
       }
       if(auth === 'owner' && !document.getElementById('removeStaffBtnPro')){
         var target = null;
@@ -1564,6 +1567,66 @@ function filterProfit(year){
     showBadge(); setInterval(showBadge, 2000);
   })();
 </script>
+  <style>
+  /* ===== PRO ACCORDION - FIXED - Uses Your HIDE Buttons ===== */
+  .pro-section { border: 2px solid #333 !important; border-radius: 12px !important; margin-bottom: 10px !important; }
+  .pro-section.open { border-color: #ff9800 !important; }
+</style>
+
+<script>
+  (function(){
+    function fixAccordion(){
+      // Find all HIDE buttons
+      var hideBtns = [];
+      document.querySelectorAll('button').forEach(function(b){
+        if((b.innerText || '').trim() === 'HIDE' || (b.innerText || '').includes('HIDE')){
+          hideBtns.push(b);
+        }
+      });
+
+      // When you click a section header, close all others by clicking their HIDE
+      hideBtns.forEach(function(btn){
+        if(btn.dataset.proFixed) return;
+        btn.dataset.proFixed = '1';
+        var card = btn.closest('div');
+        // Clicking the card header toggles
+        if(card){
+          card.addEventListener('click', function(e){
+            if(e.target.closest('table') || e.target.closest('input') || e.target.closest('select') || e.target.closest('button')) return;
+            // Close all OTHER sections by clicking their HIDE if they are open
+            hideBtns.forEach(function(otherBtn){
+              if(otherBtn !== btn){
+                // If other section looks open (has table visible), click HIDE
+                var otherCard = otherBtn.closest('div');
+                if(otherCard && otherCard.offsetHeight > 100){
+                  otherBtn.click();
+                }
+              }
+            });
+          });
+        }
+      });
+
+      // On first load: Close all except SALE
+      if(!window.proAccordionDone){
+        window.proAccordionDone = true;
+        setTimeout(function(){
+          hideBtns.forEach(function(btn){
+            var cardText = (btn.closest('div').innerText || '');
+            // Keep SALE open, close others
+            if(!cardText.includes('ADD PURCHASE') && !cardText.includes('SALE')){
+              // Only click HIDE if section is tall (open)
+              if(btn.closest('div').offsetHeight > 150) btn.click();
+            }
+          });
+        }, 1000);
+      }
+    }
+    fixAccordion(); setInterval(fixAccordion, 2000);
+  })();
+</script>
+</body>
+</html>
 </body>
 </html>
        
