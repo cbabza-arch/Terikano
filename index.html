@@ -1519,5 +1519,54 @@ function filterProfit(year){
   setInterval(fixStaff, 500);
 })();
 </script>
+  <script>
+// === STEP 1 - SALE ONLY - FORM + TABLE ===
+(function(){
+  var css = document.createElement('style');
+  css.innerHTML = `
+    .sale-scroll{ overflow-x:auto !important; width:100% !important; border:1px solid #ddd !important; border-radius:10px !important; background:#fff !important; }
+    .sale-scroll table{ min-width:650px !important; border-collapse:collapse !important; font-size:14px !important; width:100% !important; }
+    .sale-scroll th{ background:#1a5c2a !important; color:#fff !important; padding:10px 8px !important; white-space:nowrap !important; font-size:13px !important; text-align:center !important; }
+    .sale-scroll td{ padding:10px 8px !important; text-align:center !important; border-bottom:1px solid #eee !important; white-space:nowrap !important; }
+    .sale-scroll td:first-child{ text-align:left !important; font-weight:700 !important; }
+    .sale-scroll tr:nth-child(even) td{ background:#f6fff6 !important; }
+  `;
+  document.head.appendChild(css);
+
+  function fixSaleOnly(){
+    // Find SALE box
+    document.querySelectorAll('div').forEach(function(box){
+      var t = (box.textContent||'').toUpperCase();
+      if(!(t.includes('SALE -') && t.includes('CUSTOMER'))) return;
+      if(box.children.length > 12) return; // must be SALE box, not whole page
+
+      // 1. FORM - stack
+      box.style.display = 'flex';
+      box.style.flexDirection = 'column';
+      box.style.gap = '8px';
+      Array.from(box.children).forEach(function(c){
+        c.style.width = '100%';
+        c.style.maxWidth = '100%';
+      });
+      box.querySelectorAll('input, select').forEach(function(inp){
+        inp.style.width = '100% !important';
+        inp.style.minHeight = '48px';
+        inp.style.fontSize = '16px';
+        inp.style.marginBottom = '8px';
+      });
+
+      // 2. TABLE inside SALE only - wrap in scroll
+      box.querySelectorAll('table').forEach(function(tbl){
+        if(tbl.parentElement.classList.contains('sale-scroll')) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'sale-scroll';
+        tbl.parentNode.insertBefore(wrap, tbl);
+        wrap.appendChild(tbl);
+      });
+    });
+  }
+  setInterval(fixSaleOnly, 500);
+})();
+</script>
 </body>
 </html>
