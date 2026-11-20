@@ -1463,7 +1463,7 @@ function filterProfit(year){
           var t = (el.innerText || '').trim();
           if(t.startsWith('BANK SETTINGS') || t.startsWith('DEVICE') || t.includes('DASHBOARD OWNER') || t.includes('REMOVE STAFF')){
             var card = el.closest('div');
-            if(card && !card.innerText.includes('DEV-')) card.style.display = 'none';
+            if(card) card.style.display = 'none';
           }
         });
         // Hide REMOVE button for staff too
