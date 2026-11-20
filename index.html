@@ -1444,24 +1444,35 @@ function filterProfit(year){
   }
 })();
 </script>
-  <style>
-  /* FIX OFF GRID - tables scroll INSIDE card */
-  .card, section { overflow-x: auto !important; max-width: 100% !important; }
-  table { width: 100% !important; }
-  th, td { white-space: nowrap !important; padding: 6px 8px !important; font-size: 12px !important; }
-  html, body { overflow-x: hidden !important; }
+  <<style>
+  /* ===== PRO VERSION - NEAT TABLES ===== */
+  /* Each section = clean card */
+  div { box-sizing: border-box !important; }
+
+  /* Table wrapper - scroll INSIDE, not spill */
+  table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; }
+  table thead th { position: sticky !important; top: 0 !important; background: #222 !important; color: #fff !important; z-index: 2 !important; }
+  th, td { white-space: nowrap !important; padding: 8px 10px !important; font-size: 12px !important; text-align: left !important; border-bottom: 1px solid #ddd !important; }
+  tr:nth-child(even) td { background: #f9f9f9 !important; }
+
+  /* Make the container of each table scroll nicely */
+  div:has(> table) { overflow-x: auto !important; overflow-y: auto !important; max-height: 400px !important; display: block !important; border-radius: 10px !important; background: #fff !important; }
+
+  /* Stop page sideways scroll */
+  html, body { overflow-x: hidden !important; max-width: 100% !important; }
+
+  /* PRO Remove Button inside Manage */
+  #removeStaffBtnPro { width: 100% !important; margin-top: 10px !important; background: #d32f2f !important; color: #fff !important; padding: 12px !important; border: none !important; border-radius: 10px !important; font-weight: bold !important; font-size: 13px !important; }
 </style>
 
 <script>
-  // ONE CLEAN STAFF + OWNER CODE
   (function(){
     function run(){
       var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
       var isStaff = (auth === 'staff');
 
-      // --- STAFF ONLY: Hide Owner stuff ---
+      // --- STAFF: Hide Bank + Device + Green Dot ---
       if(isStaff){
-        // Hide by exact card title - BANK SETTINGS, DEVICE MANAGE
         document.querySelectorAll('div').forEach(function(el){
           var t = (el.innerText || '').trim();
           if(t.startsWith('BANK SETTINGS') || t.startsWith('DEVICE')){
@@ -1469,27 +1480,24 @@ function filterProfit(year){
             if(card) card.style.display = 'none';
           }
         });
-        // Hide green dot next to DEV-
         document.querySelectorAll('span, i').forEach(function(s){
-          if(s.offsetWidth < 18 && s.offsetHeight < 18 && s.offsetWidth > 0){
-            s.style.display = 'none';
-          }
-        });
-        // Hide Owner buttons by exact text - NOT broad words
-        document.querySelectorAll('button, a').forEach(function(el){
-          var t = (el.innerText || '').toLowerCase().trim();
-          if(t === 'change pw' || t === 'owner settings' || t === 'admin' || t === 'markup'){
-            el.style.display = 'none';
-          }
+          if(s.offsetWidth > 0 && s.offsetWidth < 18 && s.offsetHeight < 18) s.style.display = 'none';
         });
       }
 
-      // --- OWNER ONLY: Show Remove Device button ---
-      if(auth === 'owner' && !document.getElementById('removeStaffBtn')){
+      // --- OWNER: Put REMOVE button INSIDE Device Manage / Manage ---
+      if(auth === 'owner' && !document.getElementById('removeStaffBtnPro')){
+        // Find Device Manage card
+        var target = null;
+        document.querySelectorAll('div').forEach(function(el){
+          var t = (el.innerText || '').trim();
+          if(t.startsWith('DEVICE') || t.startsWith('MANAGE') || t.includes('DEVICE MANAGE')){
+            target = el;
+          }
+        });
         var btn = document.createElement('button');
-        btn.id = 'removeStaffBtn';
-        btn.innerText = '🔒 REMOVE STAFF DEVICE';
-        btn.style.cssText = 'position:fixed; bottom:70px; right:10px; z-index:9999; background:#ff0000; color:white; padding:12px; border:none; border-radius:10px; font-weight:bold;';
+        btn.id = 'removeStaffBtnPro';
+        btn.innerText = '🔒 REMOVE STAFF DEVICE - Staff Must Enter Password Again';
         btn.onclick = function(){
           if(confirm('Remove Staff Device? Staff will need password again.')){
             localStorage.removeItem('terikano_session_auth');
@@ -1498,7 +1506,12 @@ function filterProfit(year){
             location.reload();
           }
         };
-        document.body.appendChild(btn);
+        if(target){
+          target.appendChild(btn); // INSIDE Manage button
+        } else {
+          // Fallback: put it at top if Manage not found
+          document.body.prepend(btn);
+        }
       }
     }
     run();
