@@ -1382,40 +1382,69 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === CLOUD LOGIN - READS PW FROM CLOUD FIRST ===
-window.checkLogin = function(){
-  var el = document.getElementById('pwInput');
-  var p = el ? (el.value||'').trim() : '';
-  if(!p){ alert('Type PW first'); return; }
+// === FINAL CLOUD LOGIN - REMOVE BOX, NO RE-SHOW ===
+(function(){
+  function doLogin(){
+    var el = document.getElementById('pwInput');
+    var p = el ? (el.value||'').trim() : '';
+    if(!p){ alert('Type PW first'); return; }
 
-  // 1. Try CLOUD PW first (ONE saves cloud PW to localStorage + window)
-  var cloudOwner = window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '200175';
-  var cloudStaff = window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '1234';
+    var cloudOwner = window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '200175';
+    var cloudStaff = window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '1234';
 
-  // 2. Also allow old hardcoded as backup if cloud not loaded yet
-  if(p === String(cloudOwner) || p === '200175'){
-    sessionStorage.setItem('terikano_session_auth','owner');
-    localStorage.setItem('terikano_owner_pw', p);
-    document.body.classList.remove('staff-mode');
-    alert('OWNER LOGIN OK - Cloud PW: ' + cloudOwner);
-  } else if(p === String(cloudStaff) || p === '1234'){
-    sessionStorage.setItem('terikano_session_auth','staff');
-    document.body.classList.add('staff-mode');
-    alert('STAFF LOGIN OK - Cloud PW: ' + cloudStaff);
-  } else {
-    alert('Wrong PW - you typed: ' + p + ' | Cloud Owner PW is: ' + cloudOwner);
-    return;
+    var role = '';
+    if(p === String(cloudOwner) || p === '200175'){
+      role = 'owner';
+    } else if(p === String(cloudStaff) || p === '1234'){
+      role = 'staff';
+    } else {
+      alert('Wrong PW - you typed: ' + p + ' | Cloud Owner: ' + cloudOwner);
+      return;
+    }
+
+    // Save EVERY possible key TOP/ONE might check
+    sessionStorage.setItem('terikano_session_auth', role);
+    sessionStorage.setItem('terikano_auth', role);
+    sessionStorage.setItem('auth', role);
+    sessionStorage.setItem('loggedIn', '1');
+    localStorage.setItem('terikano_session_auth', role);
+    localStorage.setItem('terikano_auth', role);
+
+    if(role === 'owner') document.body.classList.remove('staff-mode');
+    else document.body.classList.add('staff-mode');
+
+    alert(role.toUpperCase() + ' LOGIN OK');
+
+    // REMOVE box completely, not just hide - so it CANNOT come back
+    document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
+    var sl = document.getElementById('staffLock');
+    if(sl) sl.remove();
+    document.body.style.visibility = 'visible';
+    document.body.style.opacity = '1';
+    document.body.style.display = '';
   }
-  document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.style.display='none'; });
-  var sl = document.getElementById('staffLock');
-  if(sl) sl.style.display='none';
-  if(el) el.value='';
-};
-// === REWIRE BUTTON TO CLOUD LOGIN ===
-var _btn = document.getElementById('loginBtn');
-if(_btn) _btn.onclick = window.checkLogin;
-var _inp = document.getElementById('pwInput');
-if(_inp) _inp.onkeydown = function(e){ if(e.key === 'Enter') window.checkLogin(); };
+
+  window.checkLogin = doLogin;
+
+  // STOP form reload + rewire button
+  document.addEventListener('click', function(e){
+    if(e.target && e.target.textContent && e.target.textContent.trim().toUpperCase() === 'LOGIN'){
+      e.preventDefault(); e.stopPropagation();
+      doLogin();
+    }
+  }, true);
+
+  var _inp = document.getElementById('pwInput');
+  if(_inp) _inp.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); doLogin(); } };
+
+  // If TOP tries to re-create loginBox after login, kill it
+  var obs = new MutationObserver(function(){
+    if(sessionStorage.getItem('terikano_session_auth')){
+      document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
+    }
+  });
+  obs.observe(document.body, {childList:true, subtree:true});
+})();
 </script>
 </body>
 </html>
