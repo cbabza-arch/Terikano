@@ -1455,91 +1455,139 @@ function filterProfit(year){
   }
 })();
 <script>
-// === TERIKANO STAFF FIX - USES YOUR lockAll + showWin - NO NEW SYSTEM ===
+// === TERIKANO ONE JOINED CODE - STAFF + LOGOUT + NO LOCALE + OFFLINE - PASTE ONCE ===
 (function(){
-  // Use YOUR global isOwner() - do NOT redefine it!
-  function isStaffNow(){
-    try{ return !isOwner(); }catch(e){
-      return (sessionStorage.getItem('terikano_session_auth')||localStorage.getItem('terikano_session_auth'))==='staff';
-    }
-  }
-  // 1. Block staff from opening forbidden windows - even if button is clicked
+  // ---- 1. ROLE = MEMORY ONLY, NO AUTO-LOGIN ----
+  // Take old login ONE time (for reload after login), then clear locale forever
+  var _origLSGet = localStorage.getItem.bind(localStorage);
+  var _origLSSet = localStorage.setItem.bind(localStorage);
+  var _origLSRem = localStorage.removeItem.bind(localStorage);
+  var _origSSGet = null, _origSSSet = null;
+  try{ _origSSGet = sessionStorage.getItem.bind(sessionStorage); _origSSSet = sessionStorage.setItem.bind(sessionStorage); }catch(e){}
+
+  var oldAuth = null;
+  try{ oldAuth = _origLSGet('terikano_session_auth') || (_origSSGet ? _origSSGet('terikano_session_auth') : null); }catch(e){}
+  // If URL has ?logout, forget it - stay logged out
+  if(location.href.toLowerCase().indexOf('logout')!==-1) oldAuth = null;
+  window.TERIKANO_ROLE = (oldAuth==='owner' || oldAuth==='staff') ? oldAuth : null;
+
+  // Clear stuck owner in locale ONE time
+  try{ _origLSRem('terikano_session_auth'); _origLSRem('isOwner'); _origLSRem('isStaff'); _origLSRem('ownerLock'); _origLSRem('isOwnerLock'); }catch(e){}
+  try{ sessionStorage.removeItem('terikano_session_auth'); }catch(e){}
+
+  // Block ALL old codes from saving login role to locale again - data keys still work!
+  var AUTH_KEYS = ['terikano_session_auth','isOwner','isStaff','ownerLock','isOwnerLock'];
+  function isAuthKey(k){ return AUTH_KEYS.indexOf(k)!==-1; }
+  try{
+    localStorage.getItem = function(k){ if(isAuthKey(k)) return null; return _origLSGet(k); };
+    localStorage.setItem = function(k,v){ if(isAuthKey(k)) return; return _origLSSet(k,v); };
+    localStorage.removeItem = function(k){ if(isAuthKey(k)) return; return _origLSRem(k); };
+  }catch(e){}
+  // YOUR isOwner() - now reads MEMORY only
+  window.isOwner = function(){ return window.TERIKANO_ROLE==='owner'; };
+  window.isStaff = function(){ return window.TERIKANO_ROLE==='staff'; };
+  function isStaffNow(){ return window.TERIKANO_ROLE==='staff'; }
+
+  // ---- 2. STAFF BLOCK - USES YOUR showWin + lockAll ----
+  var BLOCKED = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv','wholesalerDiv','wholesalerDebtDiv','wholesalerDebt','deviceDiv'];
   var _origShowWin = window.showWin;
   window.showWin = function(id){
-    if(isStaffNow()){
-      var blocked = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv','wholesalerDiv','wholesalerDebtDiv','wholesalerDebt','deviceDiv'];
-      if(blocked.indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
-    }
-    if(_origShowWin) _origShowWin(id);
+    if(isStaffNow() && BLOCKED.indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
+    if(_origShowWin) return _origShowWin(id);
+    var el=document.getElementById(id); if(el) el.style.display='flex';
   };
-  // 2. After YOUR lockAll runs, hide the 2 missing ones + bank settings in stock
   var _origLockAll = window.lockAll;
   window.lockAll = function(){
-    if(_origLockAll) _origLockAll();
+    if(_origLockAll) try{ _origLockAll(); }catch(e){}
     if(!isStaffNow()) return;
     ['wholesalerDiv','wholesalerDebtDiv','bankDiv'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.style.display='none';
     });
-    // Menu buttons for those - hide by onclick text
     document.querySelectorAll('button').forEach(function(b){
-      var t=(b.getAttribute('onclick')||'') + ' ' + (b.innerText||'');
+      var t=(b.getAttribute('onclick')||'')+' '+(b.innerText||'');
       if(t.indexOf('wholesaler')!==-1 || t.indexOf('wholesalerDebt')!==-1 || t.indexOf('bankDiv')!==-1) b.style.display='none';
     });
-    // BANK SETTINGS inside STOCK - keep STOCK for staff, hide only bank part
     document.querySelectorAll('div').forEach(function(d){
       if((d.innerText||'').indexOf('BANK SETTINGS')!==-1 && d.innerText.length<500) d.style.display='none';
     });
   };
-  // Run once + after every click, so it stays in sync with YOUR system
-  setInterval(function(){ try{ if(window.lockAll) window.lockAll(); }catch(e){} }, 1000);
-})();
-</script>
-  <script>
-// === LOGOUT FIX - MUST BE LAST - BEATS BAD safeLogout ===
-(function(){
+
+  // ---- 3. LOGOUT - MEMORY ONLY, SHOW LOGIN, NO RELOAD LOOP ----
   function realLogout(){
-    try{ sessionStorage.clear(); }catch(e){}
-    try{
-      localStorage.removeItem('terikano_session_auth');
-      localStorage.removeItem('isOwner');
-      localStorage.removeItem('isStaff');
-      localStorage.removeItem('ownerLock');
-      localStorage.removeItem('isOwnerLock');
-    }catch(e){}
-    // Show login, don't let any old code hide it
+    window.TERIKANO_ROLE = null;
     var lb = document.getElementById('loginBox');
     if(lb){ lb.style.display='flex'; lb.style.visibility='visible'; lb.style.opacity='1'; }
     var pw = document.getElementById('pwInput') || document.getElementById('staffPass');
     if(pw) pw.value='';
-    // ?logout=1 stops auto-login on reload
-    setTimeout(function(){
-      if(location.href.indexOf('logout')===-1){
-        location.href = location.pathname + '?logout=1';
-      } else {
-        location.reload();
-      }
-    }, 200);
+    try{ if(window.lockAll) window.lockAll(); }catch(e){}
+    // Clean URL, no reload - reload would lose memory anyway
+    try{ if(window.history && window.history.replaceState) window.history.replaceState(null,'',location.pathname); }catch(e){}
   }
-  // Override ALL versions - this is LAST so it wins
   window.safeLogout = realLogout;
   window.doLogout = realLogout;
   window.logout = realLogout;
   window.checkLogout = realLogout;
 
-  // If URL has ?logout, stay logged out and show login
-  if(location.href.toLowerCase().indexOf('logout')!==-1){
-    try{ sessionStorage.clear(); }catch(e){}
-    try{
-      localStorage.removeItem('terikano_session_auth');
-      localStorage.removeItem('isOwner');
-      localStorage.removeItem('isStaff');
-      localStorage.removeItem('ownerLock');
-    }catch(e){}
-    var lb2 = document.getElementById('loginBox');
-    if(lb2){ lb2.style.display='flex'; lb2.style.visibility='visible'; }
-    if(window.history && window.history.replaceState){
-      window.history.replaceState(null,'',location.pathname);
+  // ---- 4. OFFLINE LOGIN - USES CACHED PASSWORD WHEN INTERNET DOWN ----
+  function getOfflineOwnerPw(){ try{ return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '200175'; }catch(e){ return '200175'; } }
+  // NOTE: getItem above is blocked only for auth keys, password keys still work
+  function getOfflineStaffPw(){ try{ return _origLSGet('terikano_staff_custom_pw') || _origLSGet('terikano_staff_pw') || '1234'; }catch(e){ return '1234'; } }
+  function getOfflineOwnerPw2(){ try{ return _origLSGet('terikano_owner_pw') || _origLSGet('TERI_PW') || '200175'; }catch(e){ return '200175'; } }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.innerText||'').toUpperCase();
+    // Offline login only - online login uses YOUR Firebase login
+    if(t.indexOf('LOGIN')!==-1 && !navigator.onLine){
+      var pwEl = document.getElementById('pwInput') || document.getElementById('staffPass');
+      var pw = pwEl ? (pwEl.value||'').trim() : '';
+      if(!pw) return;
+      if(pw === getOfflineOwnerPw2()){ window.TERIKANO_ROLE='owner'; var lb=document.getElementById('loginBox'); if(lb) lb.style.display='none'; try{ if(window.lockAll) window.lockAll(); }catch(e){} alert('OFFLINE - OWNER - Will sync when internet back!'); }
+      else if(pw === getOfflineStaffPw()){ window.TERIKANO_ROLE='staff'; var lb2=document.getElementById('loginBox'); if(lb2) lb2.style.display='none'; try{ if(window.lockAll) window.lockAll(); }catch(e){} alert('OFFLINE - STAFF - Will sync when internet back!'); }
+      else { alert('OFFLINE - Wrong password! Use last saved password!'); }
     }
+    // If online login succeeded, old code hides loginBox + reloads - we already took auth above
+    // If online login succeeded WITHOUT reload, capture role from lockStatus
+    if(t.indexOf('LOGIN')!==-1 && navigator.onLine){
+      setTimeout(function(){
+        var lb3=document.getElementById('loginBox');
+        if(lb3 && lb3.style.display==='none' && !window.TERIKANO_ROLE){
+          var ls=document.getElementById('lockStatus');
+          if(ls && (ls.innerText||'').indexOf('OWNER')!==-1) window.TERIKANO_ROLE='owner';
+          else window.TERIKANO_ROLE='staff';
+        }
+      }, 800);
+    }
+  }, true);
+
+  // ---- 5. ONE INTERVAL ONLY - NO DOUBLE ----
+  // Keeps staff hidden + keeps login visible when logged out. NO div:has display:block, so SHORT!
+  setInterval(function(){
+    try{
+      if(!window.TERIKANO_ROLE){
+        var lb = document.getElementById('loginBox');
+        // Only force login if old code hid it while logged out
+        if(lb && lb.style.display==='none' && location.href.toLowerCase().indexOf('logout')!==-1){
+          lb.style.display='flex'; lb.style.visibility='visible';
+        }
+        // If we came from ?logout, show login once then clean URL
+        if(location.href.toLowerCase().indexOf('logout')!==-1 && lb){
+          lb.style.display='flex'; lb.style.visibility='visible';
+        }
+      } else {
+        if(window.lockAll) window.lockAll();
+      }
+    }catch(e){}
+  }, 1000);
+
+  // On first load: if logged out via ?logout, show login. If logged in via old reload, apply lockAll.
+  if(location.href.toLowerCase().indexOf('logout')!==-1){
+    var lb0=document.getElementById('loginBox');
+    if(lb0){ lb0.style.display='flex'; lb0.style.visibility='visible'; }
+    try{ if(window.history && window.history.replaceState) window.history.replaceState(null,'',location.pathname); }catch(e){}
+  } else if(window.TERIKANO_ROLE){
+    setTimeout(function(){ try{ if(window.lockAll) window.lockAll(); }catch(e){} }, 300);
   }
 })();
 </script>
