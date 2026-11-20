@@ -1454,118 +1454,44 @@ function filterProfit(year){
     history.replaceState(null,'',location.pathname);
   }
 })();
-</script>
-<style>
-  div { box-sizing: border-box !important; }
-  table { width: 100% !important; border-collapse: collapse !important; }
-  table thead th { position: sticky !important; top: 0 !important; background: #222 !important; color: #fff !important; }
-  th, td { white-space: nowrap !important; padding: 8px 10px !important; font-size: 12px !important; text-align: left !important; border-bottom: 1px solid #ddd !important; }
-  tr:nth-child(even) td { background: #f9f9f9 !important; }
-  div:has(> table) { overflow-x: auto !important; overflow-y: auto !important; max-height: 400px !important; display: block !important; border-radius: 10px !important; background: #fff !important; }
-  html, body { overflow-x: hidden !important; max-width: 100% !important; }
-  #removeStaffBtnPro { width: 100% !important; margin-top: 10px !important; background: #d32f2f !important; color: #fff !important; padding: 12px !important; border: none !important; border-radius: 10px !important; font-weight: bold !important; }
-  .pro-section { border: 2px solid #333 !important; border-radius: 12px !important; margin-bottom: 10px !important; overflow: hidden !important; background: #fff !important; }
-  #staffBadgeTest { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 99999 !important; background: #d32f2f !important; color: #fff !important; text-align: center !important; padding: 8px !important; font-weight: bold !important; }
-  #proOnlineBadge { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 6px 12px !important; border-radius: 20px !important; font-size: 12px !important; font-weight: bold !important; color: #fff !important; }
-  #proOnlineBadge.online { background: #00c853 !important; }
-  #proOnlineBadge.offline { background: #ff1744 !important; }
-  /* STAFF COLLAPSED - hide body, keep header clickable */
-  .staff-collapsed > *:not(:first-child) { display: none !important; }
-  .staff-collapsed table, .staff-collapsed input, .staff-collapsed select, .staff-collapsed label { display: none !important; }
-</style>
 <script>
+// === TERIKANO STAFF FIX - USES YOUR lockAll + showWin - NO NEW SYSTEM ===
 (function(){
-  function getAuth(){ return (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toLowerCase(); }
-  function isStaff(){ return getAuth()==='staff'; }
-  function isOwner(){ return getAuth()==='owner'; }
-
-  function firstLine(txt){ return (txt||'').split('\n')[0].trim().toLowerCase(); }
-
-  function run(){
-    if(isStaff() && !document.getElementById('staffBadgeTest')){
-      var s=document.createElement('div'); s.id='staffBadgeTest'; s.innerText='🔴 STAFF MODE ON - TAP HEADER TO OPEN';
-      document.body.prepend(s);
+  // Use YOUR global isOwner() - do NOT redefine it!
+  function isStaffNow(){
+    try{ return !isOwner(); }catch(e){
+      return (sessionStorage.getItem('terikano_session_auth')||localStorage.getItem('terikano_session_auth'))==='staff';
     }
-    if(isOwner() && !document.getElementById('removeStaffBtnPro')){
-      var target=null;
-      document.querySelectorAll('div').forEach(function(el){ if((el.innerText||'').trim().startsWith('DEVICE')) target=el; });
-      var btn=document.createElement('button'); btn.id='removeStaffBtnPro'; btn.innerText='🔒 REMOVE STAFF DEVICE - Staff Must Enter Password Again';
-      btn.onclick=function(){ if(confirm('Remove Staff Device?')){ localStorage.removeItem('terikano_session_auth'); sessionStorage.removeItem('terikano_session_auth'); alert('Staff device removed!'); location.reload(); } };
-      if(target) target.appendChild(btn); else document.body.prepend(btn);
+  }
+  // 1. Block staff from opening forbidden windows - even if button is clicked
+  var _origShowWin = window.showWin;
+  window.showWin = function(id){
+    if(isStaffNow()){
+      var blocked = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv','wholesalerDiv','wholesalerDebtDiv','wholesalerDebt','deviceDiv'];
+      if(blocked.indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
     }
-    if(!isStaff()) return;
-
-    // FIND SECTIONS BY HIDE BUTTON - every box in your photo has a HIDE button!
-    document.querySelectorAll('button').forEach(function(hideBtn){
-      if((hideBtn.innerText||'').trim() !== 'HIDE') return;
-      if(hideBtn.dataset.staffDone) return;
-      hideBtn.dataset.staffDone='1';
-
-      // Section = go up until div that has a table or is big
-      var section = hideBtn.parentElement;
-      for(var i=0;i<4;i++){
-        if(!section || !section.parentElement) break;
-        if(section.querySelector('table') || section.offsetHeight>200) break;
-        section = section.parentElement;
-      }
-      if(!section) return;
-      if(section.dataset.staffSec) return;
-      section.dataset.staffSec='1';
-      section.classList.add('pro-section');
-
-      var headerText = firstLine(section.innerText);
-
-      // 1. FORBIDDEN FOR STAFF - HIDE WHOLE BOX
-      if(headerText.indexOf('wholesaler')!==-1 || headerText.indexOf('wholesale debt')!==-1 || headerText.indexOf('bank')!==-1 || headerText.indexOf('dashboard owner')!==-1 || headerText.indexOf('device')!==-1 || headerText.indexOf('expenses')!==-1 || headerText.indexOf('capital')!==-1){
-        section.style.display='none';
-        return;
-      }
-
-      // 2. ALLOWED - SALE, STOCK, CREDITORS, COLLECT, LEDGER, DAILY NOTES
-      // Start COLLAPSED except SALE, click header to open / close
-      // Keep HIDE button working - clicking HIDE also collapses
-      var isSale = headerText.indexOf('sale')!==-1;
-      if(!isSale){
-        section.classList.add('staff-collapsed');
-      }
-
-      // Make header clickable - click section header toggles
-      section.addEventListener('click', function(e){
-        // Don't toggle when clicking inside inputs, tables, buttons (except HIDE)
-        if(e.target.closest('table') || e.target.closest('input') || e.target.closest('select') || e.target.closest('textarea')) return;
-        if(e.target.closest('button') && e.target.innerText.trim()!=='HIDE') return;
-        // Toggle
-        section.classList.toggle('staff-collapsed');
-        // Close other sections - so page stays SHORT
-        document.querySelectorAll('[data-staff-sec="1"]').forEach(function(other){
-          if(other!==section && other.style.display!=='none'){
-            other.classList.add('staff-collapsed');
-          }
-        });
-      });
+    if(_origShowWin) _origShowWin(id);
+  };
+  // 2. After YOUR lockAll runs, hide the 2 missing ones + bank settings in stock
+  var _origLockAll = window.lockAll;
+  window.lockAll = function(){
+    if(_origLockAll) _origLockAll();
+    if(!isStaffNow()) return;
+    ['wholesalerDiv','wholesalerDebtDiv','bankDiv'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.display='none';
     });
-
-    // Hide stray BANK / WHOLESALER buttons
-    document.querySelectorAll('button, a').forEach(function(b){
-      var txt=(b.innerText||'').toLowerCase().trim();
-      if(txt.indexOf('wholesaler')!==-1 || txt.indexOf('wholesale debt')!==-1 || txt.indexOf('bank')!==-1) b.style.display='none';
+    // Menu buttons for those - hide by onclick text
+    document.querySelectorAll('button').forEach(function(b){
+      var t=(b.getAttribute('onclick')||'') + ' ' + (b.innerText||'');
+      if(t.indexOf('wholesaler')!==-1 || t.indexOf('wholesalerDebt')!==-1 || t.indexOf('bankDiv')!==-1) b.style.display='none';
     });
-    // NOTES SAFE - Daily Notes + Change / Owed NOT touched
-  }
-
-  function showBadge(){
-    if(document.getElementById('proOnlineBadge')) return;
-    var devEl=null;
-    document.querySelectorAll('*').forEach(function(el){ if((el.innerText||'').includes('DEV-') && el.innerText.length<50 && !devEl) devEl=el; });
-    var badge=document.createElement('span'); badge.id='proOnlineBadge';
-    badge.innerHTML='<span id="proOnlineText">ONLINE</span>';
-    function update(){ var on=navigator.onLine; var t=document.getElementById('proOnlineText'); if(t) t.innerText=on?'● ONLINE':'● OFFLINE'; badge.className=on?'online':'offline'; badge.style.background=on?'#00c853':'#ff1744'; }
-    update(); window.addEventListener('online',update); window.addEventListener('offline',update);
-    if(devEl){ devEl.appendChild(badge); } else { badge.style.cssText='position:fixed; top:10px; right:10px; z-index:9999;'; document.body.appendChild(badge); }
-  }
-
-  showBadge(); run();
-  setInterval(function(){ showBadge(); run(); }, 1000);
+    // BANK SETTINGS inside STOCK - keep STOCK for staff, hide only bank part
+    document.querySelectorAll('div').forEach(function(d){
+      if((d.innerText||'').indexOf('BANK SETTINGS')!==-1 && d.innerText.length<500) d.style.display='none';
+    });
+  };
+  // Run once + after every click, so it stays in sync with YOUR system
+  setInterval(function(){ try{ if(window.lockAll) window.lockAll(); }catch(e){} }, 1000);
 })();
 </script>
 </body>
