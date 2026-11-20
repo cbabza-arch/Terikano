@@ -1650,5 +1650,38 @@ function filterProfit(year){
   setTimeout(lockAll, 1000);
 })();
 </script>
+  <script>
+// === BOTTOM JOIN ===
+(function(){
+  var role = window.TERIKANO_JUST_ROLE || null;
+  window.TERIKANO_ROLE = role;
+  function lockAll(){
+    document.body.style.visibility = 'visible';
+    var isStaff = (window.TERIKANO_ROLE === 'staff');
+    var isOwner = (window.TERIKANO_ROLE === 'owner');
+    document.querySelectorAll('.owner-only-div, .owner-only').forEach(function(el){
+      if(isStaff) el.style.display = 'none';
+      if(isOwner) el.style.display = 'block';
+    });
+    if(!isOwner && !isStaff){
+      var lb = document.getElementById('loginBox');
+      if(lb){ lb.style.display = 'block'; lb.style.visibility = 'visible'; }
+      document.querySelectorAll('.dashboard').forEach(function(el){ el.style.display = 'none'; });
+    }
+  }
+  window.TERIKANO_LOGOUT = function(){
+    try{
+      localStorage.removeItem('terikano_session_auth');
+      localStorage.removeItem('isOwner');
+      localStorage.removeItem('isStaff');
+      sessionStorage.clear();
+    }catch(e){}
+    window.TERIKANO_ROLE = null;
+    location.href = location.pathname + '?logout=1&v=999';
+  };
+  setTimeout(lockAll, 300);
+  setTimeout(lockAll, 1000);
+})();
+</script>
 </body>
 </html>
