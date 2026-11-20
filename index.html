@@ -1381,64 +1381,56 @@ function filterProfit(year){
   }
 })();
 </script>
- <script>
-// === HIDE CASH/BANK + FIX SALE LAYOUT ===
+<script>
+// === STAFF KEEP LIST - USE THIS ONE ONLY ===
 (function(){
   var css = document.createElement('style');
   css.innerHTML = `
     *{ box-sizing:border-box !important; }
-    /* SALE BOX - FORCE vertical stack, not sideways */
-    body.staff-mode [id*="sale" i], body.staff-mode [class*="sale" i]{ display:block !important; width:100% !important; }
     body.staff-mode input, body.staff-mode select, body.staff-mode textarea{
-      display:block !important; width:100% !important; min-height:52px !important;
-      font-size:17px !important; padding:12px !important; border-radius:12px !important;
-      margin:0 0 10px 0 !important; float:none !important; flex:none !important;
+      width:100% !important; min-height:48px !important; font-size:16px !important;
+      padding:10px !important; border-radius:10px !important; margin:0 0 10px 0 !important;
     }
-    body.staff-mode label{ display:block !important; font-size:15px !important; font-weight:700 !important; margin:10px 0 5px !important; }
-    /* Fix any flex row inside SALE - make it column */
-    body.staff-mode div{ flex-direction:column !important; }
-    body.staff-mode div[style*="display:flex"], body.staff-mode div[style*="display: flex"]{ flex-direction:column !important; gap:0 !important; }
+    body.staff-mode label{ display:block !important; font-size:14px !important; font-weight:700 !important; margin:8px 0 4px !important; }
   `;
   document.head.appendChild(css);
 
   function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || ''; }
+  var KEEP = ['SALE','CREDITORS','COLLECT','STOCK','LEDGER','LOGOUT'];
 
   function fixStaff(){
     if(getRole() !== 'staff') return;
     document.body.classList.add('staff-mode');
-    // 1. HIDE TOP CASH / BANK / COCO boxes - top dashboard
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
-      // Only small cards, not whole page
       if(el.children.length > 5) return;
-      if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')){ el.style.display='none'; return; }
-      // Top cash box has CASH + $ + BANK together, or COCO $/KG
+      if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')) el.style.display='none';
       if((t.includes('CASH') && t.includes('$') && t.length < 120) || (t.includes('COCO') && t.includes('PCS') && t.length < 120)){
-        // Don't hide SALE cash dropdown - SALE box is big, this is small card
         if(t.includes('CASH') && !t.includes('BANK') && t.length < 60) return;
         el.style.display='none';
       }
+      if(t.trim().startsWith('BANK') && t.includes('$') && t.length < 100) el.style.display='none';
     });
-    // 2. Hide BANK box specifically - div with "BANK" + "$2010" style
-    document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(t.startsWith('BANK') && t.includes('$') && t.length < 100){ el.style.display='none'; }
+    document.querySelectorAll('div').forEach(function(menu){
+      var mt = (menu.textContent||'').toUpperCase();
+      if(!mt.includes('MENU')) return;
+      if(menu.children.length > 15) return;
+      menu.querySelectorAll('div, button, a').forEach(function(b){
+        var t = (b.textContent||'').toUpperCase().trim();
+        if(!t || t.length > 80 || b.children.length > 3) return;
+        var keep = false;
+        for(var i=0;i<KEEP.length;i++){ if(t.includes(KEEP[i])){ keep = true; break; } }
+        if(!keep){
+          if(t.includes('MENU')) return;
+          b.style.display='none';
+          if(b.parentElement && b.parentElement.children.length <= 2) b.parentElement.style.display='none';
+        }
+      });
     });
-    // 3. Hide owner buttons
-    var WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT','WHOLESALER','PURCHASE','STOCK -'];
-    document.querySelectorAll('button, a').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(!t || t.includes('LOGOUT')) return;
-      if(t.includes('SALE') && !t.includes('STOCK')) return;
-      for(var i=0;i<WORDS.length;i++){
-        if(t.includes(WORDS[i])){ el.style.display='none'; break; }
-      }
-      if((el.textContent||'').replace(/[^A-Z]/g,'').trim() === 'PW') el.style.display='none';
-    });
-    // 4. Hide WHOLESALER whole box - by title
     document.querySelectorAll('div, section').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
-      if(t.includes('WHOLESALER CREDIT') && el.children.length < 12){ el.style.display='none'; }
+      if(t.includes('WHOLESALER CREDIT') && el.children.length < 20) el.style.display='none';
+      if(t.includes('WHOLESALER') && t.length < 50 && !t.includes('SALE')) el.style.display='none';
     });
   }
 
@@ -1473,7 +1465,7 @@ function filterProfit(year){
   window.checkLogin = doLogin;
   window.logout = doLogout;
   document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, a, [onclick]') : e.target;
+    var btn = e.target.closest ? e.target.closest('button, a, [onclick], div') : e.target;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
     if(t.includes('LOGOUT') && t.length < 30){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
@@ -1481,6 +1473,6 @@ function filterProfit(year){
   }, true);
   setInterval(fixStaff, 400);
 })();
- </script>
+</script>
 </body>
 </html>
