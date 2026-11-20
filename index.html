@@ -1469,6 +1469,9 @@ function filterProfit(year){
   #proOnlineBadge { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 6px 12px !important; border-radius: 20px !important; font-size: 12px !important; font-weight: bold !important; color: #fff !important; }
   #proOnlineBadge.online { background: #00c853 !important; }
   #proOnlineBadge.offline { background: #ff1744 !important; }
+  /* STAFF COLLAPSED - hide body, keep header clickable */
+  .staff-collapsed > *:not(:first-child) { display: none !important; }
+  .staff-collapsed table, .staff-collapsed input, .staff-collapsed select, .staff-collapsed label { display: none !important; }
 </style>
 <script>
 (function(){
@@ -1476,30 +1479,13 @@ function filterProfit(year){
   function isStaff(){ return getAuth()==='staff'; }
   function isOwner(){ return getAuth()==='owner'; }
 
-  // HIDE A WHOLE BOX - go up until big box with table
-  function hideWholeBox(startEl){
-    var p = startEl;
-    for(var i=0;i<8;i++){
-      if(!p || !p.parentElement) break;
-      p = p.parentElement;
-      if(p.tagName==='DIV' && p.querySelector('table')){
-        p.style.display='none';
-        return;
-      }
-      if(p.tagName==='DIV' && p.offsetHeight>200){
-        p.style.display='none';
-        return;
-      }
-    }
-    startEl.style.display='none';
-  }
+  function firstLine(txt){ return (txt||'').split('\n')[0].trim().toLowerCase(); }
 
   function run(){
     if(isStaff() && !document.getElementById('staffBadgeTest')){
-      var s=document.createElement('div'); s.id='staffBadgeTest'; s.innerText='🔴 STAFF MODE ON - 7 MENU ONLY';
+      var s=document.createElement('div'); s.id='staffBadgeTest'; s.innerText='🔴 STAFF MODE ON - TAP HEADER TO OPEN';
       document.body.prepend(s);
     }
-    // OWNER BUTTON
     if(isOwner() && !document.getElementById('removeStaffBtnPro')){
       var target=null;
       document.querySelectorAll('div').forEach(function(el){ if((el.innerText||'').trim().startsWith('DEVICE')) target=el; });
@@ -1509,45 +1495,62 @@ function filterProfit(year){
     }
     if(!isStaff()) return;
 
-    // 1. HIDE WHOLE BOXES FOR STAFF - BANK, WHOLESALER, WHOLESALE DEBT, DEVICE, DASHBOARD OWNER
-    // Search EVERY element, no children filter - this was the bug before!
-    document.querySelectorAll('*').forEach(function(el){
-      if(el.tagName==='SCRIPT' || el.tagName==='STYLE' || el.tagName==='HTML' || el.tagName==='BODY') return;
-      var txt=(el.innerText||'').trim().toLowerCase();
-      if(!txt) return;
-      // Only small headers, not whole body
-      if(txt.length>80) return;
-      if(txt.startsWith('bank settings') || txt.startsWith('bank') || txt.startsWith('wholesaler') || txt.startsWith('wholesale debt') || txt.startsWith('device') || txt.includes('dashboard owner') || txt.includes('remove staff')){
-        hideWholeBox(el);
+    // FIND SECTIONS BY HIDE BUTTON - every box in your photo has a HIDE button!
+    document.querySelectorAll('button').forEach(function(hideBtn){
+      if((hideBtn.innerText||'').trim() !== 'HIDE') return;
+      if(hideBtn.dataset.staffDone) return;
+      hideBtn.dataset.staffDone='1';
+
+      // Section = go up until div that has a table or is big
+      var section = hideBtn.parentElement;
+      for(var i=0;i<4;i++){
+        if(!section || !section.parentElement) break;
+        if(section.querySelector('table') || section.offsetHeight>200) break;
+        section = section.parentElement;
       }
-    });
+      if(!section) return;
+      if(section.dataset.staffSec) return;
+      section.dataset.staffSec='1';
+      section.classList.add('pro-section');
 
-    // 2. HIDE MENU BUTTONS NOT IN 7
-    var allowed=['sale','stock','creditors','collect','ledger','logout','daily notes','daily note'];
-    var keep=['add to cart','qty','cash','hide','customer','price','change','owed','search','save','cancel','close','add','add purchase'];
-    document.querySelectorAll('button, a').forEach(function(b){
-      var txt=(b.innerText||'').toLowerCase().trim(); if(!txt) return;
-      for(var k=0;k<keep.length;k++){ if(txt.indexOf(keep[k])!==-1) return; }
-      if(txt.indexOf('wholesaler')!==-1 || txt.indexOf('wholesale debt')!==-1 || txt.indexOf('bank')!==-1){ b.style.display='none'; return; }
-      if(txt.length<30){ var ok=false; for(var i=0;i<allowed.length;i++){ if(txt.indexOf(allowed[i])!==-1){ ok=true; break; } } if(!ok) b.style.display='none'; }
-    });
+      var headerText = firstLine(section.innerText);
 
-    // 3. COLLAPSE ALL SECTIONS EXCEPT SALE - THIS MAKES PAGE SHORT!
-    // Click HIDE for all sections that are NOT SALE, once
-    if(!window.staffCollapsed){
-      window.staffCollapsed=true;
-      setTimeout(function(){
-        document.querySelectorAll('button').forEach(function(b){
-          if((b.innerText||'').trim().includes('HIDE')){
-            var card=b.closest('div');
-            var t=card ? (card.innerText||'') : '';
-            if(t && !t.includes('SALE') && !t.includes('ADD PURCHASE')){
-              if(card && card.offsetHeight>150) b.click();
-            }
+      // 1. FORBIDDEN FOR STAFF - HIDE WHOLE BOX
+      if(headerText.indexOf('wholesaler')!==-1 || headerText.indexOf('wholesale debt')!==-1 || headerText.indexOf('bank')!==-1 || headerText.indexOf('dashboard owner')!==-1 || headerText.indexOf('device')!==-1 || headerText.indexOf('expenses')!==-1 || headerText.indexOf('capital')!==-1){
+        section.style.display='none';
+        return;
+      }
+
+      // 2. ALLOWED - SALE, STOCK, CREDITORS, COLLECT, LEDGER, DAILY NOTES
+      // Start COLLAPSED except SALE, click header to open / close
+      // Keep HIDE button working - clicking HIDE also collapses
+      var isSale = headerText.indexOf('sale')!==-1;
+      if(!isSale){
+        section.classList.add('staff-collapsed');
+      }
+
+      // Make header clickable - click section header toggles
+      section.addEventListener('click', function(e){
+        // Don't toggle when clicking inside inputs, tables, buttons (except HIDE)
+        if(e.target.closest('table') || e.target.closest('input') || e.target.closest('select') || e.target.closest('textarea')) return;
+        if(e.target.closest('button') && e.target.innerText.trim()!=='HIDE') return;
+        // Toggle
+        section.classList.toggle('staff-collapsed');
+        // Close other sections - so page stays SHORT
+        document.querySelectorAll('[data-staff-sec="1"]').forEach(function(other){
+          if(other!==section && other.style.display!=='none'){
+            other.classList.add('staff-collapsed');
           }
         });
-      }, 800);
-    }
+      });
+    });
+
+    // Hide stray BANK / WHOLESALER buttons
+    document.querySelectorAll('button, a').forEach(function(b){
+      var txt=(b.innerText||'').toLowerCase().trim();
+      if(txt.indexOf('wholesaler')!==-1 || txt.indexOf('wholesale debt')!==-1 || txt.indexOf('bank')!==-1) b.style.display='none';
+    });
+    // NOTES SAFE - Daily Notes + Change / Owed NOT touched
   }
 
   function showBadge(){
