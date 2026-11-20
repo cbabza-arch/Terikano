@@ -1382,14 +1382,14 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === STAFF ONLY SALE - HIDE ALL OWNER BOXES ===
+// === STAFF FIX - INCLUDES EMOJI ===
 (function(){
   var css = document.createElement('style');
   css.innerHTML = `
     *{ box-sizing:border-box !important; }
     body.staff-mode input, body.staff-mode select, body.staff-mode textarea{
       width:100% !important; min-height:52px !important; font-size:17px !important;
-      padding:12px !important; border-radius:12px !important; border:1.5px solid #ccc !important;
+      padding:12px !important; border-radius:12px !important;
     }
     body.staff-mode label{ font-size:15px !important; font-weight:700 !important; display:block !important; margin:10px 0 5px !important; }
   `;
@@ -1400,29 +1400,35 @@ function filterProfit(year){
   function hideOwnerBoxes(){
     if(getRole() !== 'staff') return;
     document.body.classList.add('staff-mode');
-    // 1. Hide any element that says OWNER ONLY - hide its whole card / section
+    // Hide OWNER ONLY boxes
     document.querySelectorAll('div, section').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
       if(t.includes('OWNER ONLY') || t.includes('DASHBOARD OWNER')){
-        // Only hide if this is the smallest box containing it - check parent not also owner
-        if(el.children.length < 15){
-          el.style.display = 'none';
-        }
+        if(el.children.length < 15) el.style.display = 'none';
       }
     });
-    // 2. Hide owner buttons by text
-    var OWNER_WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT + CSV','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT + IB','WHOLESALER DEBT','PURCHASE + IB','PURCHASE'];
+    // Hide owner buttons - use INCLUDES, check short text
+    var WORDS = ['CLOSING','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT','LEDGER','TARGET SET','NORMAL MONTHLY','CREDITORS','COCO MILL','EXPIRY','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','COLLECT','WHOLESALER DEBT','PURCHASE'];
     document.querySelectorAll('button, div, a').forEach(function(el){
-      if(el.children.length > 0) return;
       var t = (el.textContent||'').toUpperCase().trim();
-      if(!t) return;
-      for(var i=0;i<OWNER_WORDS.length;i++){
-        if(t === OWNER_WORDS[i] || t.includes(OWNER_WORDS[i])){
-          var card = el.closest('button') || el.parentElement;
-          if(card && !card.textContent.toUpperCase().includes('SALE')) card.style.display = 'none';
+      if(!t || t.length > 40) return; // only small buttons, not whole page
+      if(t.includes('SALE') || t.includes('LOGOUT')) return; // keep SALE + LOGOUT
+      for(var i=0;i<WORDS.length;i++){
+        if(t.includes(WORDS[i])){
+          // PW is special - only hide if text is short like "PW"
+          if(WORDS[i] === 'PW' && t.length > 10) continue;
+          el.style.display = 'none';
+          // Also hide parent card if parent is button-like
+          var p = el.parentElement;
+          if(p && p.tagName === 'DIV' && p.children.length <= 2) p.style.display = 'none';
           break;
         }
       }
+    });
+    // PW button - force hide by exact short text
+    document.querySelectorAll('button, div, a').forEach(function(el){
+      var t = (el.textContent||'').replace(/[^A-Z]/g,'').trim();
+      if(t === 'PW') el.style.display = 'none';
     });
   }
 
@@ -1446,7 +1452,6 @@ function filterProfit(year){
     else document.body.classList.add('staff-mode');
     alert(role.toUpperCase() + ' LOGIN OK');
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-    setTimeout(hideOwnerBoxes, 300);
   }
   function doLogout(){
     ['terikano_session_auth','terikano_auth','auth','loggedIn'].forEach(function(k){
@@ -1457,11 +1462,14 @@ function filterProfit(year){
   }
   window.checkLogin = doLogin;
   window.logout = doLogout;
+  // LOGOUT FIX - includes, not ===
   document.addEventListener('click', function(e){
     if(!e.target) return;
-    var t = (e.target.textContent||'').trim().toUpperCase();
-    if(t === 'LOGIN'){ e.preventDefault(); e.stopPropagation(); doLogin(); }
-    if(t === 'LOGOUT' || t === 'LOG OUT'){ e.preventDefault(); e.stopPropagation(); doLogout(); }
+    var t = (e.target.textContent||'').toUpperCase();
+    // Check clicked element AND parent for LOGOUT
+    var full = t + ' ' + (e.target.parentElement ? e.target.parentElement.textContent.toUpperCase() : '');
+    if(full.includes('LOGIN') && !full.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); doLogin(); return; }
+    if(full.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
   }, true);
   setInterval(hideOwnerBoxes, 400);
 })();
