@@ -1,22 +1,15 @@
 <html><head>
 <script>
-// === TOP BLOCKER ===
+// === TOP BLOCKER - FIXED - NO HIDE, NO WIPE ===
 (function(){
-  var justLogged = null;
-  try{ justLogged = sessionStorage.getItem('terikano_just_logged'); }catch(e){}
-  if(justLogged === 'owner' || justLogged === 'staff'){
-    window.TERIKANO_JUST_ROLE = justLogged;
-    try{ sessionStorage.removeItem('terikano_just_logged'); }catch(e){}
+  // Use real session, not just_logged
+  var auth = null;
+  try{ auth = sessionStorage.getItem('terikano_session_auth'); }catch(e){}
+  if(auth === 'owner' || auth === 'staff'){
+    window.TERIKANO_JUST_ROLE = auth;
   }
-  if(!window.TERIKANO_JUST_ROLE){
-    try{
-      localStorage.removeItem('terikano_session_auth');
-      localStorage.removeItem('isOwner');
-      localStorage.removeItem('isStaff');
-      sessionStorage.removeItem('terikano_session_auth');
-    }catch(e){}
-    document.write('<style>body{visibility:hidden !important;}</style>');
-  }
+  // NEVER hide body, NEVER clear session here
+  // Bottom will show loginBox if no session
 })();
 </script>
   <style>
@@ -31,10 +24,7 @@
       document.documentElement.classList.add('staff-mode');
     }
     // If logged out, don't show dashboard at all
-    if(auth !== 'owner' && auth !== 'staff'){
-      document.documentElement.classList.add('staff-mode');
-    }
-  })();
+    })();
 </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
