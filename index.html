@@ -1376,15 +1376,13 @@ function filterProfit(year){
     });
   }catch(e){ PW_READY = true; }
 
-      function doLogin(){
+        function doLogin(){
     if(!PW_READY){
       document.getElementById('loginErr').textContent = 'Still loading from cloud, wait 1 sec...';
       return;
     }
     var pw = document.getElementById('pwInput').value;
-    alert('DEBUG: You typed: ' + pw + ' | OwnerPW in Cloud: ' + OWNER_PW + ' | StaffPW in Cloud: ' + STAFF_PW);
     if(pw === OWNER_PW){
-      alert('LOGGED AS OWNER');
       sessionStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('terikano_session_auth','owner');
       localStorage.setItem('isOwner','1');
@@ -1392,7 +1390,6 @@ function filterProfit(year){
       box.style.display='none';
       location.reload();
     } else if(pw === STAFF_PW){
-      alert('LOGGED AS STAFF');
       sessionStorage.setItem('terikano_session_auth','staff');
       localStorage.setItem('terikano_session_auth','staff');
       localStorage.setItem('isOwner','0');
@@ -1470,6 +1467,44 @@ function filterProfit(year){
   setTimeout(hideOwnerStuff, 2000);
   setTimeout(hideOwnerStuff, 5000);
   setInterval(hideOwnerStuff, 2000);
+})();
+</script>
+  <script>
+// === FORCE STAFF MODE ===
+(function(){
+  function staffMode(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(auth !== 'staff') return;
+
+    // Add STAFF banner so you know it worked
+    if(!document.getElementById('staffBanner')){
+      var b = document.createElement('div');
+      b.id = 'staffBanner';
+      b.textContent = 'STAFF MODE - Owner features hidden';
+      b.style.cssText = 'background:#ff9800;color:#fff;text-align:center;padding:8px;font-weight:bold;position:fixed;top:0;left:0;right:0;z-index:9999;';
+      document.body.prepend(b);
+      document.body.style.paddingTop = '35px';
+    }
+
+    // Hide owner buttons by text
+    var hideWords = ['settings','change pw','change password','owner','admin','markup','delete','remove staff','edit price','clear data','reset'];
+    document.querySelectorAll('button, a').forEach(function(el){
+      var t = (el.innerText || '').toLowerCase();
+      if(hideWords.some(function(w){ return t.includes(w); })){
+        el.style.display = 'none';
+      }
+    });
+
+    // Hide owner sections by id/class
+    ['settings','owner','admin','changePw','change-pw'].forEach(function(part){
+      document.querySelectorAll('[id*="'+part+'"], [class*="'+part+'"]').forEach(function(el){
+        // Don't hide the whole page if it's big
+        if(el.tagName !== 'BODY' && el.tagName !== 'HTML') el.style.display = 'none';
+      });
+    });
+  }
+  staffMode();
+  setInterval(staffMode, 1000);
 })();
 </script>
 </body>
