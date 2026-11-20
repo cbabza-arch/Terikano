@@ -1541,5 +1541,17 @@ function filterProfit(year){
     }
   })();
 </script>
+  <script>
+  // PRO FIX - Hide Bank Settings card only, keep layout
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.innerText && el.innerText.trim().startsWith('BANK SETTINGS')){
+        var card = el.closest('div');
+        if(card) card.style.display = 'none';
+      }
+    });
+  });
+</script>
+
 </body>
 </html>
