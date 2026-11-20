@@ -1382,79 +1382,82 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === FINAL LOGIN + LOGOUT - STAFF FIX ===
+// === FIX STAFF + LAYOUT ===
 (function(){
-  // Clean bad saved PW - if owner PW was saved as 1234 before, delete it
-  if(localStorage.getItem('terikano_owner_pw') === '1234'){
-    localStorage.removeItem('terikano_owner_pw');
-  }
+  // --- 1. STAFF CSS - hide owner buttons when staff ---
+  var css = document.createElement('style');
+  css.innerHTML = `
+    body.staff-mode button{ }
+    /* Hide owner-only buttons in staff mode - by text */
+    body.staff-mode .owner-only{ display:none !important; }
+    /* Layout fix for ALL boxes */
+    *{ box-sizing:border-box !important; }
+    input, select, textarea{ max-width:100% !important; min-width:0 !important; }
+    /* Purchase box - make it stack nicely */
+    [id*="purchase" i], [class*="purchase" i]{ overflow:hidden !important; }
+  `;
+  document.head.appendChild(css);
 
   function doLogin(){
     var el = document.getElementById('pwInput');
     var p = el ? (el.value||'').trim() : '';
     if(!p){ alert('Type PW first'); return; }
-
-    var cloudOwner = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '200175');
-    var cloudStaff = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '1234');
-
     var role = '';
-    // STAFF FIRST - so 1234 never goes to owner
-    if(cloudOwner !== cloudStaff){
-      if(p === cloudOwner) role = 'owner';
-      else if(p === cloudStaff) role = 'staff';
-    } else {
-      // Cloud broken - use hardcoded only
-      if(p === '200175') role = 'owner';
-      else if(p === '1234') role = 'staff';
+    // HARDCODED FIRST - beats bad cloud
+    if(p === '1234') role = 'staff';
+    else if(p === '200175') role = 'owner';
+    else {
+      var co = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '');
+      var cs = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '');
+      if(p === co && co) role = 'owner';
+      else if(p === cs && cs) role = 'staff';
     }
-    if(!role){ alert('Wrong PW - you typed: ' + p); return; }
-
+    if(!role){ alert('Wrong PW: ' + p); return; }
     sessionStorage.setItem('terikano_session_auth', role);
-    sessionStorage.setItem('terikano_auth', role);
     localStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_auth', role);
     if(role === 'owner') document.body.classList.remove('staff-mode');
     else document.body.classList.add('staff-mode');
-
+    applyStaffHide();
     alert(role.toUpperCase() + ' LOGIN OK');
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-    var sl = document.getElementById('staffLock'); if(sl) sl.remove();
-    document.body.style.visibility = 'visible'; document.body.style.opacity = '1';
   }
 
   function doLogout(){
-    // Clear ALL keys - so logout really logs out
     ['terikano_session_auth','terikano_auth','auth','loggedIn'].forEach(function(k){
       sessionStorage.removeItem(k); localStorage.removeItem(k);
     });
     document.body.classList.remove('staff-mode');
-    alert('Logged out');
-    location.reload();
+    alert('Logged out'); location.reload();
+  }
+
+  // Hide owner buttons by their text
+  function applyStaffHide(){
+    if(!document.body.classList.contains('staff-mode')) return;
+    var ownerWords = ['PW','CAPITAL','BACKUP','RENAME','COCO RATE','REPORT + CSV'];
+    document.querySelectorAll('button').forEach(function(b){
+      var t = (b.textContent||'').toUpperCase();
+      ownerWords.forEach(function(w){
+        if(t.includes(w)) b.style.display = 'none';
+      });
+    });
+    // Fix purchase inputs - make them wrap
+    document.querySelectorAll('input, select').forEach(function(inp){
+      inp.style.width = '100%';
+      inp.style.minWidth = '0';
+    });
   }
 
   window.checkLogin = doLogin;
   window.logout = doLogout;
-  window.doLogout = doLogout;
-
-  // Catch ALL login + logout buttons
   document.addEventListener('click', function(e){
     if(!e.target) return;
-    var t = (e.target.textContent || '').trim().toUpperCase();
+    var t = (e.target.textContent||'').trim().toUpperCase();
     if(t === 'LOGIN'){ e.preventDefault(); e.stopPropagation(); doLogin(); }
-    if(t === 'LOGOUT' || t === 'LOG OUT' || t === 'SIGN OUT'){
-      e.preventDefault(); e.stopPropagation(); doLogout();
-    }
+    if(t === 'LOGOUT' || t === 'LOG OUT'){ e.preventDefault(); e.stopPropagation(); doLogout(); }
+    if(document.body.classList.contains('staff-mode')) setTimeout(applyStaffHide, 100);
   }, true);
-
-  var _inp = document.getElementById('pwInput');
-  if(_inp) _inp.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); doLogin(); } };
-
-  var obs = new MutationObserver(function(){
-    if(sessionStorage.getItem('terikano_session_auth')){
-      document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
-    }
-  });
-  obs.observe(document.body, {childList:true, subtree:true});
+  setTimeout(applyStaffHide, 500);
+  setTimeout(applyStaffHide, 1500);
 })();
 </script>
 </body>
