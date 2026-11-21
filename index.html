@@ -1161,11 +1161,9 @@ function filterProfit(year){
     document.querySelectorAll('.owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
       el.style.display = 'none';
     });
-    // C. Hide CASH/BANK box + Dashboard cards - by ID, NOT by looping all divs
-    ['cashBoxIsolated','dashContent'].forEach(function(id){
-      var e = document.getElementById(id);
-      if(e) e.style.display = 'none';
-    });
+       // C. Hide CASH/BANK box ONLY
+    var cashBox = document.getElementById('cashBoxIsolated');
+    if(cashBox) cashBox.style.display = 'none';
   }
   window.hideForStaff = hideForStaff;
   // Run on load + on any click (menu open) + after login
