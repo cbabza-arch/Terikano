@@ -1238,5 +1238,75 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 500);
 })();
 </script>
+  <style>
+/* TABLE FIX FINAL - Pro V - No sideways page scroll */
+html, body{ overflow-x:hidden !important; max-width:100vw !important; box-sizing:border-box; }
+*{ box-sizing:border-box; }
+#mainContent, .container, .page, main, #app{ max-width:100vw !important; overflow-x:hidden !important; }
+
+/* Every table gets its own scroll box - page itself never scrolls sideways */
+table{
+  width:100% !important;
+  max-width:100% !important;
+  border-collapse:collapse !important;
+  table-layout:auto !important;
+  font-size:11px !important;
+  display:table !important;
+}
+th, td{
+  padding:5px 4px !important;
+  font-size:11px !important;
+  white-space:normal !important;
+  word-break:break-word !important;
+  overflow-wrap:break-word !important;
+  vertical-align:top !important;
+  text-align:left !important;
+}
+/* First column wider, numbers tighter */
+th:first-child, td:first-child{ min-width:70px !important; }
+th:last-child, td:last-child{ white-space:nowrap !important; }
+
+/* Main tables - full width, Pro look */
+#stockTbl, #mainTbl, #saleTbl, #cocoBuyTbl, #closingTbl, #ledgerTbl{
+  width:100% !important;
+  min-width:0 !important;
+  background:#fff !important;
+}
+#stockTbl th, #mainTbl th{
+  background:#0f172a !important;
+  color:#fff !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:2 !important;
+}
+/* Popups / windows - fit screen, scroll inside */
+#closingDiv, #purDiv, #stockDiv, #creditDiv, #ledgerDiv, #cocoMillDiv, #expiryDiv, #expenseDiv, #bankDiv, #analyticDiv{
+  max-width:96vw !important;
+  max-height:92vh !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  margin:8px auto !important;
+}
+</style>
+<script>
+// Wrap every table so it scrolls inside, not the whole page
+(function(){
+  var tables = document.querySelectorAll('table');
+  for(var i=0;i<tables.length;i++){
+    var t = tables[i];
+    if(t.parentNode && t.parentNode.className !== 'table-wrap'){
+      var w = document.createElement('div');
+      w.className = 'table-wrap';
+      w.style.cssText = 'width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;';
+      t.parentNode.insertBefore(w, t);
+      w.appendChild(t);
+    }
+  }
+})();
+</script>
+</body>
+</html>
 </body>
 </html>
