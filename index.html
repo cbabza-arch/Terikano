@@ -1160,51 +1160,35 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
-  <script>
-// STAFF FIX - Staff can use all buttons like Owner
+ <script>
+// STAFF FINAL - Buttons work BUT Setting/Profit hidden
 (function(){
-  // Staff counts as Owner for button permissions
+  // Staff is NOT Owner - so Owner menus stay hidden
   window.isOwner = function(){
-    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    return a === 'owner' || a === 'staff';
+    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'owner';
   };
   window.isStaff = function(){
-    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    return a === 'staff';
+    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
   };
+  // But Staff CAN use allowed buttons
   window.canEdit = function(){ return true; };
   window.hasAccess = function(){ return true; };
 
-  // Re-enable all buttons that were disabled for Staff
-  function fixButtons(){
+  function fixStaff(){
+    var isStaff = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
+    if(!isStaff) return;
+
+    // 1. Enable allowed buttons
     document.querySelectorAll('button, a, [onclick]').forEach(function(b){
       b.disabled = false;
       b.style.pointerEvents = 'auto';
       b.style.opacity = '1';
-      b.classList.remove('disabled','no-access','staff-hide');
     });
-    // Unhide any Staff-hidden sections
-    document.querySelectorAll('.staff-hide, .owner-only').forEach(function(el){
-      el.style.display = '';
-    });
-  }
-  fixButtons();
-  setInterval(fixButtons, 500);
-  window.addEventListener('load', fixButtons);
-})();
-</script>
-  <script>
-// STAFF WHITELIST V2 - NO SETTING AT ALL
-(function(){
-  function isStaffNow(){
-    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
-  }
-  function restrictStaff(){
-    if(!isStaffNow()) return; // Owner sees all
+
+    // 2. Hide forbidden buttons
     document.querySelectorAll('button, a, .nav-item, .menu-item, .tab, [onclick]').forEach(function(el){
       var t = (el.textContent||'').toLowerCase().trim();
       if(t === '' || t.length > 25) return;
-      // Hide ANY setting - including Other Setting
       if(t.includes('setting') || t.includes('other') || t.includes('profit') || t.includes('report') || t.includes('user') || t.includes('admin') || t.includes('dashboard') || t.includes('delete') || t.includes('expense') || t.includes('purchase')){
         el.style.display = 'none';
       }
@@ -1213,9 +1197,37 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
       el.style.display = 'none';
     });
   }
-  restrictStaff();
-  setInterval(restrictStaff, 500);
-  window.addEventListener('load', restrictStaff);
+  fixStaff();
+  setInterval(fixStaff, 500);
+  window.addEventListener('load', fixStaff);
+})();
+</script>
+  <script>
+// HIDE PASSWORDS ON LOGIN
+(function(){
+  function hidePw(){
+    // 1. Force all password fields to dots, not text
+    document.querySelectorAll('input').forEach(function(inp){
+      var n = (inp.name||''+inp.id||''+inp.placeholder||'').toLowerCase();
+      if(n.includes('pass') || n.includes('pw')){
+        inp.type = 'password';
+        inp.removeAttribute('value');
+        if(inp.value === '9999' || inp.value === '1234') inp.value = '';
+        inp.placeholder = 'Enter password';
+        inp.autocomplete = 'off';
+      }
+    });
+    // 2. Hide any text that leaks passwords
+    document.querySelectorAll('p, span, div, small, label').forEach(function(el){
+      var t = el.textContent||'';
+      if(t.includes('9999') || t.includes('1234') || t.toLowerCase().includes('owner:') && t.toLowerCase().includes('password')){
+        // Don't hide whole login box, only the hint line
+        if(el.textContent.length < 80) el.style.display = 'none';
+      }
+    });
+  }
+  hidePw();
+  setInterval(hidePw, 500);
 })();
 </script>
 </body>
