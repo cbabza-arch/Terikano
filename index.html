@@ -1457,5 +1457,38 @@ function filterProfit(year){
   setTimeout(hideForStaff, 500);
 })();
 </script>
+  <script>
+// === FIX 2 SMALL - WHOLESALER DEBT + SALE BOX ===
+(function(){
+  function fix2(){
+    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
+    // Hide WHOLESALER DEBT button - exact match
+    document.querySelectorAll('button, div').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase().trim();
+      if(t.includes('WHOLESALER DEBT') && t.length < 30) el.style.display = 'none';
+    });
+    // Hide SALE box on load only - if you have NOT tapped SALE yet
+    if(!sessionStorage.getItem('terikano_sale_opened')){
+      document.querySelectorAll('div').forEach(function(el){
+        var t = (el.textContent||'').toUpperCase();
+        if(t.includes('SALE - AVERAGE COST') && t.includes('CUSTOMER') && !t.includes('MENU V28')) el.style.display = 'none';
+      });
+    }
+  }
+  setInterval(fix2, 800);
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(b && (b.textContent||'').toUpperCase().trim() === 'SALE'){
+      sessionStorage.setItem('terikano_sale_opened', '1');
+      setTimeout(function(){
+        document.querySelectorAll('div').forEach(function(el){
+          var t = (el.textContent||'').toUpperCase();
+          if(t.includes('SALE - AVERAGE COST') && t.includes('CUSTOMER')) el.style.display = '';
+        });
+      }, 400);
+    }
+  });
+})();
+</script>
 </body>
 </html>
