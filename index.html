@@ -1193,7 +1193,30 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   window.addEventListener('load', fixButtons);
 })();
 </script>
-</body>
-</html>
+  <script>
+// STAFF WHITELIST V2 - NO SETTING AT ALL
+(function(){
+  function isStaffNow(){
+    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
+  }
+  function restrictStaff(){
+    if(!isStaffNow()) return; // Owner sees all
+    document.querySelectorAll('button, a, .nav-item, .menu-item, .tab, [onclick]').forEach(function(el){
+      var t = (el.textContent||'').toLowerCase().trim();
+      if(t === '' || t.length > 25) return;
+      // Hide ANY setting - including Other Setting
+      if(t.includes('setting') || t.includes('other') || t.includes('profit') || t.includes('report') || t.includes('user') || t.includes('admin') || t.includes('dashboard') || t.includes('delete') || t.includes('expense') || t.includes('purchase')){
+        el.style.display = 'none';
+      }
+    });
+    document.querySelectorAll('[id*=profit], [class*=profit], [id*=setting], [class*=setting]').forEach(function(el){
+      el.style.display = 'none';
+    });
+  }
+  restrictStaff();
+  setInterval(restrictStaff, 500);
+  window.addEventListener('load', restrictStaff);
+})();
+</script>
 </body>
 </html>
