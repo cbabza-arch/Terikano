@@ -1289,20 +1289,87 @@ th:last-child, td:last-child{ white-space:nowrap !important; }
   transform:translateX(-50%) !important;
   margin:8px auto !important;
 }
+<style>
+/* TABLE FIX V2 - Works even after rebuild() */
+html, body{ overflow-x:hidden !important; width:100% !important; max-width:100vw !important; }
+*{ box-sizing:border-box !important; max-width:100vw; }
+div[id$="Div"], .owner-only-div{
+  width:100% !important; max-width:100vw !important;
+  overflow-x:hidden !important; padding:8px !important;
+}
+/* Popups MUST be fixed, otherwise left/transform does nothing */
+#closingDiv, #purDiv, #stockDiv, #creditDiv, #ledgerDiv, #cocoMillDiv, #expiryDiv, #expenseDiv, #bankDiv, #analyticDiv, #saleDiv, #cocoBuyDiv{
+  position:fixed !important; inset:8px !important;
+  width:auto !important; max-width:calc(100vw - 16px) !important;
+  max-height:calc(100vh - 16px) !important;
+  overflow-y:auto !important; overflow-x:hidden !important;
+  margin:0 !important; left:8px !important; right:8px !important;
+  transform:none !important; z-index:9999 !important;
+  display:none; flex-direction:column !important;
+}
+#closingDiv[style*="flex"], #purDiv[style*="flex"], #stockDiv[style*="flex"], #creditDiv[style*="flex"], #ledgerDiv[style*="flex"]{ display:flex !important; }
+/* THE TABLE ITSELF scrolls - no wrapper needed, works for rebuilt tables */
+table{
+  width:100% !important; max-width:100% !important;
+  display:block !important; overflow-x:auto !important;
+  border-collapse:collapse !important; font-size:10px !important;
+  -webkit-overflow-scrolling:touch;
+}
+thead, tbody{ display:table !important; width:100% !important; }
+tr{ display:table-row !important; }
+th, td{
+  padding:4px 3px !important; font-size:10px !important;
+  white-space:nowrap !important; word-break:normal !important;
+  min-width:52px !important; max-width:110px !important;
+  overflow:hidden !important; text-overflow:ellipsis !important;
+}
+th:first-child, td:first-child{ min-width:60px !important; max-width:90px !important; }
+/* Hide least important columns on phone so it fits - Pro V still shows them on desktop */
+@media (max-width:600px){
+  #stockTbl th:nth-child(5), #stockTbl td:nth-child(5),
+  #stockTbl th:nth-child(8), #stockTbl td:nth-child(8),
+  #mainTbl th:nth-child(6), #mainTbl td:nth-child(6){ display:none !important; }
+  th, td{ font-size:10px !important; padding:4px 2px !important; min-width:48px !important; }
+  button, .pro-btn{ font-size:11px !important; padding:7px 6px !important; }
+}
+.table-wrap{ width:100% !important; max-width:100% !important; overflow-x:auto !important; }
 </style>
 <script>
-// Wrap every table so it scrolls inside, not the whole page
+// Re-wrap + re-fix EVERY time rebuild() creates a new table
 (function(){
-  var tables = document.querySelectorAll('table');
-  for(var i=0;i<tables.length;i++){
-    var t = tables[i];
-    if(t.parentNode && t.parentNode.className !== 'table-wrap'){
-      var w = document.createElement('div');
-      w.className = 'table-wrap';
-      w.style.cssText = 'width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;';
-      t.parentNode.insertBefore(w, t);
-      w.appendChild(t);
+  function fixTables(){
+    var tables = document.querySelectorAll('table');
+    for(var i=0;i<tables.length;i++){
+      var t = tables[i];
+      t.style.width = '100%';
+      t.style.display = 'block';
+      t.style.overflowX = 'auto';
+      if(t.parentNode && t.parentNode.className !== 'table-wrap'){
+        var w = document.createElement('div');
+        w.className = 'table-wrap';
+        w.style.cssText = 'width:100%;max-width:100%;overflow-x:auto;';
+        t.parentNode.insertBefore(w, t);
+        w.appendChild(t);
+      }
     }
+    // Force popups to stay inside screen
+    var ids = ['closingDiv','purDiv','stockDiv','creditDiv','ledgerDiv','cocoMillDiv','expiryDiv','expenseDiv','bankDiv','analyticDiv'];
+    for(var j=0;j<ids.length;j++){
+      var el = document.getElementById(ids[j]);
+      if(el && el.style.display !== 'none'){
+        el.style.position = 'fixed';
+        el.style.inset = '8px';
+        el.style.maxWidth = 'calc(100vw - 16px)';
+        el.style.overflowX = 'hidden';
+      }
+    }
+  }
+  fixTables();
+  setInterval(fixTables, 800);
+  // Watch for rebuild() making new tables
+  if(window.MutationObserver){
+    var obs = new MutationObserver(function(){ fixTables(); });
+    obs.observe(document.body, {childList:true, subtree:true});
   }
 })();
 </script>
