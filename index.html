@@ -1681,5 +1681,49 @@ function filterProfit(year){
   setInterval(hideOwnerSettings, 700);
 })();
 </script>
+  <script>
+// === FIX STOCK FLASH - STOCK MUST STAY OPEN ===
+(function(){
+  // When STOCK tapped, mark it open
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.textContent||'').toUpperCase().trim();
+    if(t === 'STOCK'){
+      sessionStorage.setItem('terikano_stock_opened','1');
+      sessionStorage.removeItem('terikano_sale_opened');
+      // Force show STOCK after 800ms + 1500ms - after the bad hide runs
+      setTimeout(showStock, 800);
+      setTimeout(showStock, 1500);
+      setTimeout(showStock, 2200);
+    }
+    if(t === 'HIDE'){
+      sessionStorage.removeItem('terikano_stock_opened');
+    }
+  });
+
+  function showStock(){
+    if(sessionStorage.getItem('terikano_stock_opened') !== '1') return;
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('MENU V28')) return;
+      // STOCK panel = has STOCK + HIDE + Qty / Current Stock Table
+      if(t.includes('STOCK') && (t.includes('CURRENT STOCK TABLE') || t.includes('ADD ITEM') || t.includes('UPDATE STOCK'))){
+        el.style.display = 'block';
+        el.style.visibility = 'visible';
+        el.style.width = '100%';
+        el.style.maxWidth = '100%';
+      }
+    });
+    // Show STOCK table
+    document.querySelectorAll('table').forEach(function(tb){
+      tb.style.display = '';
+      tb.style.visibility = 'visible';
+    });
+  }
+  setInterval(showStock, 600);
+})();
+</script>
 </body>
 </html>
