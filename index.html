@@ -1659,5 +1659,27 @@ function filterProfit(year){
   });
 })();
 </script>
+  <script>
+// === HIDE OWNER SETTINGS INSIDE STOCK FOR STAFF ===
+(function(){
+  function hideOwnerSettings(){
+    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
+    document.querySelectorAll('div, td, th').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('MENU V28')) return;
+      if(el.children.length > 6) return; // Only hide small setting boxes, not whole STOCK
+      if(t.includes('BANK SETTINGS') && t.includes('OWNER ONLY')) el.style.display = 'none';
+      if(t.includes('MANUAL ADJUST') && t.includes('OWNER ONLY')) el.style.display = 'none';
+      if(t.includes('ADJUST DIFF') && el.children.length < 4) el.style.display = 'none';
+      if(t.includes('UPDATE SELL') && el.children.length < 4) el.style.display = 'none';
+      if(t.includes('BANK INT') && t.includes('FEE') && el.children.length < 4) el.style.display = 'none';
+      if(t.includes('SAVE BANK%') && el.children.length < 3) el.style.display = 'none';
+      if(t.includes('UPDATE SELL PRICE FOR') && el.children.length < 4) el.style.display = 'none';
+    });
+  }
+  setInterval(hideOwnerSettings, 700);
+})();
+</script>
 </body>
 </html>
