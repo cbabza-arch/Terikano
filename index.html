@@ -1556,5 +1556,59 @@ function filterProfit(year){
   });
 })();
 </script>
+    <script>
+// === FIX LOGOUT + TABLES ===
+(function(){
+  // --- LOGOUT FIX - Works for Owner + Staff ---
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.textContent||'').toUpperCase().trim();
+    if(t === 'LOGOUT' || t.includes('LOG OUT')){
+      e.preventDefault();
+      e.stopPropagation();
+      sessionStorage.removeItem('terikano_session_auth');
+      sessionStorage.removeItem('terikano_sale_opened');
+      // Show login again
+      var lb = document.getElementById('loginBox');
+      if(lb){ lb.style.display = 'flex'; lb.style.visibility = 'visible'; }
+      // Hide everything else
+      document.body.style.visibility = 'visible';
+      alert('LOGGED OUT');
+      setTimeout(function(){ location.reload(); }, 300);
+    }
+  }, true);
+
+  // --- TABLES FIX - When you tap MENU, show its table ---
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.textContent||'').toUpperCase().trim();
+    var SHOW = ['SALE','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','PURCHASE','EXPENSE'];
+    var isMenuBtn = false;
+    for(var i=0;i<SHOW.length;i++){ if(t === SHOW[i] || t.includes(SHOW[i] + ' ') || t === SHOW[i]) isMenuBtn = true; }
+    if(!isMenuBtn) return;
+    // Give app 600ms to open panel, then FORCE show its table/panel
+    setTimeout(function(){
+      document.querySelectorAll('div, table').forEach(function(el){
+        var tt = (el.textContent||'').toUpperCase();
+        // If this div/table belongs to the tapped section, show it
+        if(tt.includes(t) && tt.includes('CUSTOMER') || tt.includes(t) && tt.includes('ITEM')){
+          // Don't show if it's MENU itself
+          if(!tt.includes('MENU V28')){
+            el.style.display = '';
+            el.style.visibility = 'visible';
+          }
+        }
+      });
+      // Specifically show any <table> that was hidden
+      document.querySelectorAll('table').forEach(function(tb){
+        tb.style.display = '';
+        tb.style.visibility = 'visible';
+      });
+    }, 600);
+  });
+})();
+</script>
 </body>
 </html>
