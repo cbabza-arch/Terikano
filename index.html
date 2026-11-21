@@ -1490,5 +1490,51 @@ function filterProfit(year){
   });
 })();
 </script>
+  <script>
+// === FIX TOP BOXES + SALE BOX FOR STAFF ===
+(function(){
+  // Clear old flag on fresh load so SALE starts closed
+  sessionStorage.removeItem('terikano_sale_opened');
+
+  function fixTop(){
+    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
+    // Hide TOP Owner boxes for Staff - CASH / BANK / COCO / TARGET
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase();
+      // Only hide small leaf boxes, not big containers with MENU
+      if(t.includes('MENU V28')) return;
+      if(el.children.length > 8) return;
+      if(t.includes('TARGET TODAY') && t.includes('REAL PROFIT')) el.style.display = 'none';
+      if(t.includes('CASH') && t.includes('$6901') || (t.includes('CASH') && t.includes('AVG PROFIT') && el.children.length < 3)) el.style.display = 'none';
+      if(t.includes('BANK') && t.includes('$2010') && el.children.length < 3) el.style.display = 'none';
+      if(t.includes('COCO $4/KG') && el.children.length < 3) el.style.display = 'none';
+    });
+    // Hide SALE box until tapped - find HIDE button in SALE, hide its panel
+    if(!sessionStorage.getItem('terikano_sale_opened')){
+      document.querySelectorAll('button').forEach(function(btn){
+        if((btn.textContent||'').toUpperCase().trim() === 'HIDE'){
+          var panel = btn.parentElement;
+          if(panel && (panel.textContent||'').toUpperCase().includes('SALE - AVERAGE')){
+            // Climb to full SALE box
+            for(var i=0;i<3;i++){ if(panel.parentElement && panel.parentElement !== document.body) panel = panel.parentElement; }
+            if(!(panel.textContent||'').toUpperCase().includes('MENU V28')) panel.style.display = 'none';
+          }
+        }
+      });
+    }
+  }
+  setInterval(fixTop, 800);
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(b && (b.textContent||'').toUpperCase().trim() === 'SALE'){
+      sessionStorage.setItem('terikano_sale_opened', '1');
+    }
+    if(b && (b.textContent||'').toUpperCase().trim() === 'HIDE'){
+      sessionStorage.removeItem('terikano_sale_opened');
+    }
+  });
+})();
+</script>
 </body>
 </html>
