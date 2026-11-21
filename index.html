@@ -1068,7 +1068,7 @@ function filterProfit(year){
 }
 </script>
 
-<!-- LOGIN BOX - CLEAN B -->
+<!-- LOGIN BOX - CLEAN B - FIXED -->
 <style>
 #loginBox{ display:flex !important; }
 #loginBox.hideBox{ display:none !important; }
@@ -1077,11 +1077,10 @@ function filterProfit(year){
   <div style="background:#fff;padding:24px;border-radius:12px;width:300px;text-align:center;">
     <h2 style="margin:0 0 4px 0;">TERIKANO</h2>
     <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Please Login</p>
-    <input id="loginUser" type="text" placeholder="Username" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;">
-    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:14px;box-sizing:border-box;">
+    <input id="loginUser" type="text" placeholder="Username" autocomplete="off" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;">
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="new-password" style="width:100%;padding:10px;margin-bottom:14px;box-sizing:border-box;">
     <button id="loginBtn" style="width:100%;padding:11px;background:#0f172a;color:#fff;border:0;border-radius:6px;font-weight:bold;">LOGIN</button>
     <p id="loginMsg" style="color:red;font-size:12px;min-height:16px;margin:10px 0 0 0;"></p>
-    <p style="font-size:11px;color:#999;margin:12px 0 0 0;">Owner: owner / 9999<br>Staff: staff / 1234</p>
   </div>
 </div>
 
@@ -1119,6 +1118,7 @@ function doLogin(){
   if(u === 'staff' && p === '1234') role = 'Staff';
   if(!role){
     if(msg) msg.textContent = 'Wrong username or password';
+    document.getElementById('loginPass').value = '';
     return;
   }
   AUTH = role;
@@ -1127,6 +1127,7 @@ function doLogin(){
   if(box) box.classList.add('hideBox');
   if(msg) msg.textContent = '';
   document.getElementById('loginPass').value = '';
+  document.getElementById('loginUser').value = '';
   if(typeof showPage === 'function') showPage('home');
 }
 
@@ -1134,6 +1135,10 @@ function doLogout(){
   AUTH = null;
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
+  var lp = document.getElementById('loginPass');
+  if(lp) lp.value = '';
+  var lu = document.getElementById('loginUser');
+  if(lu) lu.value = '';
   forceLoginBox();
 }
 
@@ -1160,32 +1165,24 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
- <script>
-// STAFF FINAL - Buttons work BUT Setting/Profit hidden
+
+<script>
+// FINAL FIX - Staff Restrict + Auto Wipe PW in 5 sec - ONLY ONE BLOCK
 (function(){
-  // Staff is NOT Owner - so Owner menus stay hidden
-  window.isOwner = function(){
-    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'owner';
-  };
-  window.isStaff = function(){
-    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
-  };
-  // But Staff CAN use allowed buttons
   window.canEdit = function(){ return true; };
   window.hasAccess = function(){ return true; };
 
-  function fixStaff(){
-    var isStaff = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
-    if(!isStaff) return;
+  function isStaffNow(){
+    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
+  }
 
-    // 1. Enable allowed buttons
+  function fixStaff(){
+    if(!isStaffNow()) return;
     document.querySelectorAll('button, a, [onclick]').forEach(function(b){
       b.disabled = false;
       b.style.pointerEvents = 'auto';
       b.style.opacity = '1';
     });
-
-    // 2. Hide forbidden buttons
     document.querySelectorAll('button, a, .nav-item, .menu-item, .tab, [onclick]').forEach(function(el){
       var t = (el.textContent||'').toLowerCase().trim();
       if(t === '' || t.length > 25) return;
@@ -1197,42 +1194,24 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
       el.style.display = 'none';
     });
   }
-  fixStaff();
-  setInterval(fixStaff, 500);
-  window.addEventListener('load', fixStaff);
-})();
-</script>
-  <script>
-// AUTO WIPE PW IN 5 SECONDS
-(function(){
-  var timer = null;
+
+  // Auto wipe PW 5 sec after stop typing
+  var pwTimer = null;
   function wipePw(){
-    document.querySelectorAll('input[type=password], input[name*=pass], input[id*=pass]').forEach(function(inp){
-      inp.value = '';
-      inp.setAttribute('value','');
-    });
+    var inp = document.getElementById('loginPass');
+    if(inp){ inp.value = ''; inp.setAttribute('value',''); inp.type = 'password'; }
   }
-  function startTimer(){
-    clearTimeout(timer);
-    // Wipe 5 seconds after you stop typing
-    timer = setTimeout(wipePw, 5000);
+  function startPwTimer(){
+    clearTimeout(pwTimer);
+    pwTimer = setTimeout(wipePw, 5000);
   }
   document.addEventListener('input', function(e){
-    var inp = e.target;
-    if(inp.tagName === 'INPUT' && (inp.type === 'password' || (inp.name||'').toLowerCase().includes('pass') || (inp.id||'').toLowerCase().includes('pass'))){
-      startTimer();
-    }
+    if(e.target && e.target.id === 'loginPass') startPwTimer();
   });
-  // Also wipe 5 sec after login page loads
-  setTimeout(wipePw, 5000);
-  // Wipe when you click Login
-  document.addEventListener('click', function(e){
-    var t = (e.target.textContent||'').toLowerCase();
-    if(t.includes('login')){
-      setTimeout(wipePw, 1000);
-    }
-  });
+
+  fixStaff();
+  setInterval(fixStaff, 500);
 })();
 </script>
 </body>
-</html>f
+</html>
