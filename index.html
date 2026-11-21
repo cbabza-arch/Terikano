@@ -1167,31 +1167,20 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// FIX ROOT CAUSE - Define isOwner + Staff Hide - NO stacking, NO rewiring
+// FIX FINAL - Case-insensitive isOwner/isStaff - LAST definition wins
 (function(){
-  // 1. DEFINE isOwner - this was missing, this is why buttons died
   window.isOwner = function(){
-    var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('isOwner');
-    return a === 'owner' || a === '1';
+    var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
+    return a === 'owner' || a === '1' || a === 'true';
   };
-
-  // 2. Staff hide - ONLY hide owner buttons + dashboard, NEVER hide panels
-  function hideForStaff(){
-    var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(a !== 'staff') return;
-    // Hide owner-only buttons - they have class owner-only-btn
-    document.querySelectorAll('.owner-only-btn').forEach(function(b){ b.style.display = 'none'; });
-    // Hide dashboard + target + cash box - by ID, not by text
-    ['targetTopBar','ackExpiryWrap','cashBoxIsolated'].forEach(function(id){
-      var el = document.getElementById(id);
-      if(el) el.style.display = 'none';
-    });
-    var dash = document.querySelector('.dashboard');
-    if(dash) dash.style.display = 'none';
-    // Call lockAll so it hides owner panels too
-    if(typeof lockAll === 'function') { try{ lockAll(); }catch(e){} }
-  }
-  setInterval(hideForStaff, 1000);
+  window.isStaff = function(){
+    var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
+    return a === 'staff';
+  };
+  // Force lockAll once after login so owner buttons re-appear
+  setInterval(function(){
+    try{ if(typeof lockAll === 'function') lockAll(); }catch(e){}
+  }, 1500);
 })();
 </script>
 </body>
