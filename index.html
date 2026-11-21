@@ -1066,6 +1066,19 @@ function filterProfit(year){
     if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
+  
+<!-- LOGIN BOX - CLEAN B -->
+<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999">
+  <div style="background:#fff;padding:24px;border-radius:14px;width:300px;text-align:center">
+    <h2 style="margin:0 0 12px">TERIKANO</h2>
+    <input id="loginUser" placeholder="User" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
+    <input id="loginPass" type="password" placeholder="PIN" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
+    <div id="loginError" style="color:red;font-size:13px;min-height:18px"></div>
+    <button id="loginBtn" style="width:100%;padding:12px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-weight:bold">LOGIN</button>
+    <div style="font-size:12px;color:#666;margin-top:10px">Owner: owner / 9999<br>Staff: staff / 1234</div>
+  </div>
+</div>
+
 <!-- LOGIN BOX - CLEAN B -->
 <div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999">
   <div style="background:#fff;padding:24px;border-radius:14px;width:300px;text-align:center">
@@ -1131,6 +1144,14 @@ function doLogout(){
 document.getElementById('loginBtn').onclick = doLogin;
 document.getElementById('loginPass').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doLogin();
+});
+
+// LOGOUT BUTTON FIX - bind ALL LOGOUT buttons to doLogout
+document.querySelectorAll('button').forEach(function(b){
+  var t = (b.innerText || '').toUpperCase();
+  if(t.indexOf('LOGOUT') !== -1){
+    b.onclick = function(){ doLogout(); };
+  }
 });
 
 // START - on page load
