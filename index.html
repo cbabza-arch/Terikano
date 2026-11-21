@@ -1167,8 +1167,9 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// FIX FINAL - Case-insensitive isOwner/isStaff - LAST definition wins
+// FIX FINAL - SINGLE BLOCK - PASTE THIS ONLY
 (function(){
+  // 1. Owner / Staff - case-insensitive, always works
   window.isOwner = function(){
     var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
     return a === 'owner' || a === '1' || a === 'true';
@@ -1177,10 +1178,64 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
     var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
     return a === 'staff';
   };
-  // Force lockAll once after login so owner buttons re-appear
-  setInterval(function(){
-    try{ if(typeof lockAll === 'function') lockAll(); }catch(e){}
-  }, 1500);
+
+  // 2. Owner-only windows list
+  var OWNER_IDS = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
+
+  // 3. NEW showWin - Staff blocked BEFORE open, Owner stays open, NO lockAll() after open
+  window.showWin = function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(!window.isOwner() && OWNER_IDS.indexOf(id) !== -1){
+      alert('OWNER ONLY!');
+      return;
+    }
+    el.style.display = 'flex';
+  };
+  window.hideWin = function(id){
+    var e = document.getElementById(id);
+    if(e) e.style.display = 'none';
+  };
+
+  // 4. NEW lockAll wrapper - hide Staff stuff, but NEVER hide a window that is already open
+  var _origLockAll = window.lockAll;
+  window.lockAll = function(){
+    var owner = window.isOwner();
+    if(typeof _origLockAll === 'function'){
+      try{ _origLockAll(); }catch(e){}
+    }
+    // If owner, make sure owner buttons are visible
+    if(owner){
+      var btns = document.querySelectorAll('.owner-only-btn');
+      for(var i=0;i<btns.length;i++){ btns[i].style.display = 'inline-block'; }
+    } else {
+      // If staff, hide owner buttons + owner windows - but only if they are NOT open by owner check above
+      var btns2 = document.querySelectorAll('.owner-only-btn');
+      for(var j=0;j<btns2.length;j++){ btns2[j].style.display = 'none'; }
+      for(var k=0;k<OWNER_IDS.length;k++){
+        var el2 = document.getElementById(OWNER_IDS[k]);
+        if(el2) el2.style.display = 'none';
+      }
+      var dash = document.querySelector('.dashboard');
+      if(dash) dash.style.display = 'none';
+      var cashBox = document.getElementById('cashBoxIsolated');
+      if(cashBox) cashBox.style.display = 'none';
+    }
+  };
+
+  // 5. Patch doLogin - after login, lock immediately
+  var _origDoLogin = window.doLogin;
+  if(typeof _origDoLogin === 'function'){
+    window.doLogin = function(){
+      _origDoLogin();
+      setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300);
+    };
+    var lb = document.getElementById('loginBtn');
+    if(lb) lb.onclick = window.doLogin;
+  }
+
+  // 6. Run lock once on load - NO setInterval, no fighting
+  setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 500);
 })();
 </script>
 </body>
