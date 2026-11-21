@@ -1,82 +1,15 @@
 <html><head>
-<style id="noFlash">html{visibility:hidden !important;}</style>
-<script>
-// === NO FLASH TOP - MUST BE FIRST ===
-(function(){
-  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-  // Sync both storages so all checks agree
-  if(auth){
-    try{ sessionStorage.setItem('terikano_session_auth', auth); }catch(e){}
-    try{ localStorage.setItem('terikano_session_auth', auth); }catch(e){}
-  }
-  if(auth === 'staff'){
-    document.documentElement.classList.add('staff-mode');
-  }
-})();
-</script>
-<script>
-// === TOP BLOCKER - FIXED - NO HIDE, NO WIPE ===
-(function(){
-  var auth = null;
-  try{ auth = sessionStorage.getItem('terikano_session_auth'); }catch(e){}
-  if(auth === 'owner' || auth === 'staff'){
-    window.TERIKANO_JUST_ROLE = auth;
-  }
-})();
-</script>
-  <style>
-  /* Prevent Owner flash for Staff - by TEXT fallback in bottom patch, class here for any owner-only boxes */
-  html.staff-mode .owner-only { display: none !important; }
-  html.staff-mode body { visibility: hidden; }
-  </style>
-<script>
-  // EARLY CHECK - runs before page shows
-  (function(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth === 'staff'){
-      document.documentElement.classList.add('staff-mode');
-    }
-    })();
-</script>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script>
-// KILL AUTO STAFF - FIXED - NO V38 RELOAD
-(function(){
-  var isLogoutPage = location.href.toLowerCase().includes('logout') || location.href.toLowerCase().includes('clearall');
-  if(isLogoutPage){
-    localStorage.removeItem('isOwner');
-    localStorage.removeItem('isStaff');
-    localStorage.removeItem('terikano_session_auth');
-    localStorage.removeItem('ownerLock');
-    try{sessionStorage.clear();}catch(e){}
-    if(window.history && window.history.replaceState){
-      window.history.replaceState(null,'',location.pathname);
-    }
-  }
-})();
-</script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TERIKANO V28.2 - Staff Hide Dashboard Cash Bank Coco + Stock Alert Limited + Target Top + Expiry Ack + Dark Fixed</title>
 
 <!-- FIREBASE CLOUD START -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script>// AUTO HEAL OLD BUG - NO MANUAL CLEAR NEEDED
-(function(){
-  var url = location.href.toLowerCase();
-  if(url.includes('logout') || url.includes('clearall')){
-    localStorage.removeItem('isOwner');
-    localStorage.removeItem('isStaff');
-    localStorage.removeItem('terikano_session_auth');
-    try{sessionStorage.clear();}catch(e){}
-     }
-  var flag = localStorage.getItem('isOwner');
-  var sess = localStorage.getItem('terikano_session_auth');
-  if(flag==='0' && !sess && !url.includes('staff=')){
-    localStorage.removeItem('isOwner');
-    localStorage.removeItem('isStaff');
-  }
-})();
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyCUQDoaPSYD-ZVFtyc_uBNi9gaLYEe9qs",
     authDomain: "terikano-3d137.firebaseapp.com",
@@ -88,51 +21,56 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-firebase.database().ref('terikano_config/passwords/staffPw').on('value', (snap)=>{
-  let cloudPw = snap.val();
-  if(cloudPw){
-    localStorage.setItem('terikano_staff_custom_pw', cloudPw);
-    let label = document.getElementById('curStaffPwLabel');
-    if(label) label.innerText = cloudPw;
+
+  // === STAFF PW ONLINE SYNC ===
+  firebase.database().ref('terikano_config/passwords/staffPw').on('value', (snap)=>{
+    let cloudPw = snap.val();
+    if(cloudPw){
+      localStorage.setItem('terikano_staff_custom_pw', cloudPw);
+      let label = document.getElementById('curStaffPwLabel');
+      if(label) label.innerText = cloudPw;
+    }
+  });
+
+  function setStaffPw(){
+    let np = document.getElementById('new_staff_pw').value.trim();
+    if(!np){ alert('Enter new Staff PW'); return; }
+    localStorage.setItem('terikano_staff_custom_pw', np);
+    firebase.database().ref('terikano_config/passwords/staffPw').set(np).then(()=>{
+      alert('Staff PW Changed & Synced Online: ' + np);
+      document.getElementById('curStaffPwLabel').innerText = np;
+      document.getElementById('new_staff_pw').value = '';
+    });
   }
-});
 
-function setStaffPw(){
-  let np = document.getElementById('new_staff_pw').value.trim();
-  if(!np){ alert('Enter new Staff PW'); return; }
-  localStorage.setItem('terikano_staff_custom_pw', np);
-  firebase.database().ref('terikano_config/passwords/staffPw').set(np).then(()=>{
-    alert('Staff PW Changed & Synced Online: ' + np);
-    document.getElementById('curStaffPwLabel').innerText = np;
-    document.getElementById('new_staff_pw').value = '';
-  });
-}
+  function removeStaffPw(){
+    if(!confirm('Remove Staff PW?')) return;
+    localStorage.removeItem('terikano_staff_custom_pw');
+    firebase.database().ref('terikano_config/passwords/staffPw').remove().then(()=>{
+      alert('Staff PW Removed');
+      document.getElementById('curStaffPwLabel').innerText = 'Terikano_2005';
+    });
+  }
 
-function removeStaffPw(){
-  if(!confirm('Remove Staff PW?')) return;
-  localStorage.removeItem('terikano_staff_custom_pw');
-  firebase.database().ref('terikano_config/passwords/staffPw').remove().then(()=>{
-    alert('Staff PW Removed');
-    document.getElementById('curStaffPwLabel').innerText = 'Terikano_2005';
-  });
-}
-function changePw(){
-  let newP = document.getElementById('new_pw').value.trim();
-  if(!newP){ alert('Enter New PW'); return; }
-  localStorage.setItem('terikano_owner_pw', newP);
-  document.getElementById('curPwLabel').innerText = newP;
-  firebase.database().ref('terikano_config/passwords/ownerPw').set(newP).then(()=>{
-    alert('✅ OWNER PW CHANGED & SYNCED ONLINE TO: ' + newP);
-    document.getElementById('old_pw').value = '';
-    document.getElementById('new_pw').value = '';
-  });
-}
+  function changePw(){
+    let newP = document.getElementById('new_pw').value.trim();
+    if(!newP){ alert('Enter New PW'); return; }
+    localStorage.setItem('terikano_owner_pw', newP);
+    document.getElementById('curPwLabel').innerText = newP;
+    firebase.database().ref('terikano_config/passwords/ownerPw').set(newP).then(()=>{
+      alert('✅ OWNER PW CHANGED & SYNCED ONLINE TO: ' + newP);
+      document.getElementById('old_pw').value = '';
+      document.getElementById('new_pw').value = '';
+    });
+  }
 </script>
 <!-- FIREBASE CLOUD END -->
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FFD700">
-<meta name="viewport" content="width=device-width, initial-scale=1"><script>
+
+<script>
+// CLOUD SAVE/LOAD
 var purchases = [];
 var sales = [];
 var CLOUD_READY = false;
@@ -184,7 +122,7 @@ async function loadFromCloud(){
   }catch(e){ console.log('Cloud error', e); }
 }
 
-  var MARKUP_KEY='terikano_markup_percent';
+var MARKUP_KEY='terikano_markup_percent';
 var globalMarkup=parseFloat(localStorage.getItem(MARKUP_KEY)||15);
 function getMarkup(){ return (globalMarkup||15)/100; }
 function setMarkup(v){
@@ -208,8 +146,8 @@ function openMarkupSetting(){
   };
   document.getElementById('cancelMarkupBtn').onclick=function(){ pop.remove(); };
 }
-</script><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TERIKANO V28.2 - Staff Hide Dashboard Cash Bank Coco + Stock Alert Limited + Target Top + Expiry Ack + Dark Fixed</title>
+</script>
+
 <style>
 body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0.9;font-size:14px}
 .menu-section{background:#fff;border:2px solid #000;border-radius:12px;padding:10px;margin:8px}
@@ -234,7 +172,7 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
 .dark-mode table{background:#333!important;color:#eee!important}
 #targetTopBar{display:none;background:#000;color:gold;padding:8px;border-radius:10px;margin:8px;border:2px solid gold;font-size:12px;font-weight:bold;text-align:center}
 </style>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVEVSSUtBTk8gVjI4LjIgQVZHIFByaWNlIEhpc3RvcnkiLCJzaG9ydF9uYW1lIjoiVEVSSUtBTk8iLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzJlN2QzMiIsImljb25zIjpbXX0=">
+<link rel="manifest" href="data:application/json;base64,[STRIPPED]">
 <meta name="theme-color" content="#2e7d32">
 </head><body>
   <style id="instantHide">body{visibility:hidden !important;}</style>
@@ -581,6 +519,13 @@ function populateDatalist(){
  p.innerHTML=html;
  console.log('DROPDOWN SELECT LOADED:',Object.values(uniq));
 }
+// === FIXED BY ME - isOwner was missing, lockAll crashed without it ===
+function isOwner(){
+  return sessionStorage.getItem('terikano_session_auth') === 'owner';
+}
+function isStaff(){
+  return sessionStorage.getItem('terikano_session_auth') === 'staff';
+}
 function lockAll(){
   var owner=isOwner();
   var adjustWrap=document.getElementById('stockAdjustOwnerWrap');
@@ -610,19 +555,17 @@ function lockAll(){
   }
   var profitEls=document.querySelectorAll('.owner-profit');for(var pe=0;pe<profitEls.length;pe++){profitEls[pe].style.display=owner?'block':'none';}
   var darkSaved=localStorage.getItem('DARK_MODE')==='1';if(darkSaved){document.body.classList.add('dark-mode');var btn=document.getElementById('themeBtn');if(btn)btn.innerText='☀️ LIGHT';}
-
-  // === STAFF: HIDE STOCK COST/PROFIT + LEDGER DELETE ===
   if(!owner){
     var stockTbl=document.getElementById('stockTbl');
     if(stockTbl){
-      var hideIdx=[4,5,7,8,9]; // Avg Cost, Last Cost, Profit, Expiry, Status
+      var hideIdx=[4,5,7,8,9];
       stockTbl.querySelectorAll('tr').forEach(function(row){
         hideIdx.forEach(function(idx){ if(row.children[idx]) row.children[idx].style.display='none'; });
       });
     }
     var mainTbl=document.getElementById('mainTbl');
     if(mainTbl){
-      var hideIdx2=[5,7,8]; // Avg Cost, Profit, X
+      var hideIdx2=[5,7,8];
       mainTbl.querySelectorAll('tr').forEach(function(row){
         hideIdx2.forEach(function(idx){ if(row.children[idx]) row.children[idx].style.display='none'; });
       });
@@ -638,22 +581,16 @@ function deleteSale(idx){
   if(!isOwner()){alert('OWNER ONLY!');return;}
   var s = sales[idx];
   if(!s){return;}
-
-  // confirm
   if(!confirm('DELETE/RETURN '+s.item+' Qty '+s.qty+' $'+s.price+'? Bank will reverse if BANK payment!')) return;
-
-  // --- FIX: If sale was BANK, reverse bank ---
   if(s.pay === 'BANK'){
     banks.push({
       date: todayKIR(),
-      amt: -Number(s.price||0), // <-- MINUS = deduct bank
+      amt: -Number(s.price||0),
       type: 'sale RETURN/DELETE '+s.item+' IB '+(s.ib||''),
       pay: 'BANK',
       ib: s.ib||''
     });
   }
-
-  // --- your existing COCO logic ---
   if(s.coco && s.coco.pcs){
     var pcsToRemove=Number(s.coco.pcs);
     for(var i=cocoBuys.length-1;i>=0;i--){
@@ -669,144 +606,11 @@ function deleteSale(idx){
       }
     }
   }
-
-  // delete sale
   sales.splice(idx,1);
   save();
   rebuild();
   alert('Deleted! ' + (s.pay==='BANK'? 'Bank -'+s.price+' deducted!' : 'Bank not affected (CASH/CREDIT)'));
 }
-
-</script>
-<script>
-// === FINAL SYNC - MILL COPIES DASHBOARD ===
-(function(){
-  function findDashboardCocoEl(){
-    // try known IDs first
-    var ids=['cocoStockInfo','cocoStock','cocoStockDisplay','dashCocoStock','dashboardCocoStock','cocoInfo','cocoStockInfoDash'];
-    for(var i=0;i<ids.length;i++){
-      var el=document.getElementById(ids[i]);
-      if(el && el.id!=='cocoStockInfoMill') return el;
-    }
-    // fallback: find any element with PCS near COCO title in dashboard
-    var all=document.querySelectorAll('[id*="coco" i][id*="stock" i]');
-    for(var j=0;j<all.length;j++){
-      if(all[j].id!=='cocoStockInfoMill') return all[j];
-    }
-    return null;
-  }
-  function updateMillStock(){
-    var dashEl=findDashboardCocoEl();
-    var millEl=document.getElementById('cocoStockInfoMill');
-    if(dashEl && millEl){
-      var val=dashEl.innerText||dashEl.value||'0 PCS';
-      // only copy number part
-      millEl.innerText=val;
-      millEl.style.background='lime';
-      console.log('SYNC DASH ['+val+'] -> MILL');
-    }
-  }
-  // patch rebuild to sync after every action
-  var _reb=window.rebuild;
-  window.rebuild=function(){ if(_reb) _reb(); setTimeout(updateMillStock,100); };
-  // patch sell to mill
-  if(window.sellCocoToMillConfirm){
-    var _sell=window.sellCocoToMillConfirm;
-    window.sellCocoToMillConfirm=function(){
-      var r=_sell.apply(this,arguments);
-      setTimeout(updateMillStock,300);
-      return r;
-    };
-  }
-  setInterval(updateMillStock,1000);
-  setTimeout(updateMillStock,800);
-  console.log('COCO SYNC FIX LOADED');
-})();
-</script>
-<script>
-// === GREEN BOX TOTAL MAKE EDITABLE + OVERRIDE ===
-(function(){
-  var totalEl=document.getElementById('coco_mill_total');
-  var kgEl=document.getElementById('coco_mill_kg');
-  var rateKgEl=document.getElementById('coco_mill_rate_per_kg');
-
-  if(!totalEl){ console.log('totalEl not found'); return; }
-
-  // FORCE EDITABLE
-  totalEl.readOnly=false;
-  totalEl.removeAttribute('readonly');
-  totalEl.removeAttribute('disabled');
-  totalEl.style.pointerEvents='auto';
-  totalEl.style.background='white';
-  totalEl.style.border='2px solid orange';
-  totalEl.title='CLICK TO EDIT - Manual override allowed';
-
-  var isManual=false;
-
-  totalEl.addEventListener('focus',function(){
-    this.select();
-  });
-
-  totalEl.addEventListener('input',function(){
-    isManual=true;
-    this.style.background='yellow';
-    this.style.border='2px solid red';
-    var kg=Number(kgEl?kgEl.value:0)||0;
-    var total=Number(this.value||0)||0;
-    if(kg>0 && rateKgEl){
-      rateKgEl.value=(total/kg).toFixed(2);
-      var rateEl=document.getElementById('coco_mill_rate');
-      if(rateEl) rateEl.value=(total/kg).toFixed(2);
-    }
-  });
-
-  // STOP auto calc overwriting
-  ['calcCocoMill','calcCocoMillTotal','calcCocoMillRate'].forEach(function(fnName){
-    if(window[fnName]){
-      var _orig=window[fnName];
-      window[fnName]=function(){
-        if(isManual && fnName!=='calcCocoMillRate'){
-          var kg=Number(kgEl?kgEl.value:0)||0;
-          var total=Number(totalEl.value||0)||0;
-          if(kg>0 && rateKgEl) rateKgEl.value=(total/kg).toFixed(2);
-          return; // don't overwrite total
-        }
-        return _orig.apply(this,arguments);
-      };
-    }
-  });
-
-  // Double-click to reset auto
-  totalEl.addEventListener('dblclick',function(){
-    isManual=false;
-    this.style.background='white';
-    this.style.border='2px solid orange';
-    if(window.calcCocoMillTotal) window.calcCocoMillTotal();
-  });
-
-  console.log('GREEN BOX TOTAL NOW EDITABLE!');
-})();
-</script>
-<script>
-var NEW_KEY='Terikano_storage_data';
-function openNormalReport(){
-var old=document.getElementById('normalPop'); if(old) old.remove();
-var D=JSON.parse(localStorage.getItem(NEW_KEY)||'{}');
-var div=document.createElement('div'); div.id='normalPop';
-div.style.cssText='position:fixed;inset:0;z-index:999999;background:#f5f5f5;overflow:auto;padding:10px;font-family:Arial';
-var topBar=document.createElement('div');
-topBar.style.cssText='background:#000;color:gold;padding:12px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;border:2px solid gold';
-topBar.innerHTML='<b>TERIKANO - FORMAL CA ACCOUNTS - Single Storage: Terikano_storage_data</b><button id=closeNormal style="background:#c62828;color:#fff;padding:8px 16px;border-radius:8px;font-weight:bold">❌ CLOSE</button>';
-div.appendChild(topBar);
-
-var ctrl=document.createElement('div');
-var logDiv=document.createElement('div');logDiv.style.cssText='background:#fff;padding:8px;margin:8px 0;border-radius:8px;border:1px solid #000';logDiv.innerHTML='<b>Logo:</b> <input type=file id=logoUp accept=image/*> <b style=margin-left:8px>Name:</b> <input id=nameUp placeholder=Your Name style=width:120px> <small>Then GENERATE</small>';div.appendChild(logDiv);setTimeout(function(){var n=document.getElementById('nameUp');if(n){n.value=localStorage.getItem('terikano_name')||'';n.oninput=function(){localStorage.setItem('terikano_name',this.value)}}},200);ctrl.style.cssText='background:#fff;padding:10px;border-radius:10px;margin-top:8px;border:2px solid #000;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
-ctrl.innerHTML='<span>Period:</span> Month <select id=m><option value="">All Months</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select> Year <select id=y><option value="">All Years</option><option>2023</option><option>2024</option><option>2025</option><option selected>2026</option></select> <button id=btnGen style="background:#000;color:gold;padding:8px 18px;border-radius:8px;border:2px solid gold;font-weight:bold">📊 GENERATE FORMAL</button> <<button id="btnPrint" style="background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #000"> PRINT</button> <span id=p style="background:#000;color:gold;padding:6px 12px;border-radius:6px;font-weight:bold"></span>';
-div.appendChild(ctrl);
-
-var box=document.createElement('div'); box.id='formalBox'; box.style.cssText='margin-top:10px;display:grid;gap:12px';
-div.appendChild(box);
-document.body.appendChild(div);
 document.getElementById('closeNormal').onclick=function(){div.remove();};
 document.getElementById('btnGen').onclick=genNormal;document.getElementById('btnPrint').onclick=function(){var c=document.getElementById('formalBox').innerHTML;var w=window.open('','','width=1000,height=800');w.document.write("<html><head><title>Print</title><style>@page{size:A4;margin:10mm 12mm}body{font-family:Arial;font-size:11px;line-height:1.4;color:#000;margin:0}#formalBox>div{page-break-inside:avoid!important;margin-bottom:10px!important;border:1px solid #000!important} #formalBox>div:last-child{page-break-before:avoid!important;page-break-inside:avoid!important} table{width:100%;border-collapse:collapse} h2,h3{page-break-after:avoid}</style></head><body>"+c+"</body></html>");w.document.close();w.focus();setTimeout(function(){w.print();w.close();},600);};
 genNormal();
@@ -1263,44 +1067,27 @@ function filterProfit(year){
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
 
+<body>
 <div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
 <div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
-<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN V32 TEST</b><br><br>
+<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN</b><br><br>
 <input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
 <button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
 <div id="loginErr" style="display:none; margin-top:10px; color:#ff5555; font-weight:bold;">❌ WRONG PASSWORD</div>
-<div style="margin-top:10px; font-size:11px; color:#fff;">Owner: <span id="loginOwnerHint"></span> | Staff: <span id="loginStaffHint"></span></div>
 </div></div>
 
-<div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999; box-shadow:0 0 8px #0f0;">● Online</div>
+<div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999;">● Online</div>
 
 <script>
-// === TERIKANO LOGIN - ONE ONLY - PASTE OVER ALL BOTTOM ===
+// === LOGIN - ONE ONLY - CLEAN ===
 (function(){
   function $id(i){ return document.getElementById(i); }
-  function getPwInput(){ return $id('staffPass') || $id('pwInput'); }
-  function showLogin(){
-    var lb = $id('loginBox');
-    if(lb){ lb.style.display = 'flex'; lb.style.visibility = 'visible'; lb.style.opacity = '1'; }
-    var pw = getPwInput(); if(pw) pw.value = '';
-    // Beat TOP !important hide
-    var s = document.getElementById('terikano-show');
-    if(!s){ s = document.createElement('style'); s.id = 'terikano-show'; s.innerHTML = 'body{visibility:visible !important;}'; document.head.appendChild(s); }
-  }
-  function hideLogin(){
-    var lb = $id('loginBox');
-    if(lb) lb.style.display = 'none';
-    var s = document.getElementById('terikano-show');
-    if(!s){ s = document.createElement('style'); s.id = 'terikano-show'; s.innerHTML = 'body{visibility:visible !important;}'; document.head.appendChild(s); }
-  }
-
-  // Firebase passwords - live, fallback to your saved ones
   var OWNER_PW = '200175';
   var STAFF_PW = '1234';
   try{
-    var o = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW');
+    var o = localStorage.getItem('terikano_owner_pw');
     if(o) OWNER_PW = o;
-    var st = localStorage.getItem('terikano_staff_custom_pw') || localStorage.getItem('terikano_staff_pw');
+    var st = localStorage.getItem('terikano_staff_custom_pw');
     if(st) STAFF_PW = st;
   }catch(e){}
   try{
@@ -1312,555 +1099,78 @@ function filterProfit(year){
   }catch(e){}
 
   window.checkLogin = function(){
-    var pwEl = getPwInput();
+    var pwEl = $id('staffPass');
     var p = pwEl ? (pwEl.value||'').trim() : '';
     if(!p) return;
     if(p === OWNER_PW){
       sessionStorage.setItem('terikano_session_auth','owner');
-      document.body.classList.remove('staff-mode');
-      if($id('loginErr')) $id('loginErr').style.display = 'none';
-      hideLogin();
+      $id('loginErr').style.display = 'none';
+      $id('loginBox').style.display = 'none';
     } else if(p === STAFF_PW){
       sessionStorage.setItem('terikano_session_auth','staff');
-      document.body.classList.add('staff-mode');
-      if($id('loginErr')) $id('loginErr').style.display = 'none';
-      hideLogin();
+      $id('loginErr').style.display = 'none';
+      $id('loginBox').style.display = 'none';
     } else {
-      if($id('loginErr')){ $id('loginErr').style.display = 'block'; $id('loginErr').textContent = 'Wrong password'; }
+      $id('loginErr').style.display = 'block';
     }
     if(pwEl) pwEl.value = '';
   };
 
   window.safeLogout = function(){
-    sessionStorage.clear();
-    // Do NOT clear passwords, only auth
-    try{ localStorage.removeItem('terikano_session_auth'); localStorage.removeItem('isOwner'); localStorage.removeItem('isStaff'); localStorage.removeItem('ownerLock'); }catch(e){}
-    document.body.classList.remove('staff-mode');
-    showLogin();
+    sessionStorage.removeItem('terikano_session_auth');
+    sessionStorage.removeItem('terikano_sale_opened');
+    sessionStorage.removeItem('terikano_stock_opened');
+    $id('loginBox').style.display = 'flex';
   };
   window.logout = window.safeLogout;
   window.doLogout = window.safeLogout;
 
-  var inp = getPwInput();
+  var inp = $id('staffPass');
   if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
-  var btn = $id('loginBtn');
-  if(btn) btn.onclick = window.checkLogin;
 
   document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button,a') : null;
+    var b = e.target.closest ? e.target.closest('button') : null;
     if(!b) return;
     var t = (b.innerText||'').trim().toLowerCase();
-    if(b.id === 'logoutBtn' || b.dataset.logout === '1' || t === 'logout' || t === '🚪 logout' || t === 'log out' || t.indexOf('logout') !== -1){
-      e.preventDefault(); e.stopPropagation(); window.safeLogout();
+    if(t === 'logout' || t.includes('logout') || t === '🚪 logout'){
+      e.preventDefault(); window.safeLogout();
     }
   }, true);
 
-  // START - session only, NO localStorage auto-login
-  if(location.href.toLowerCase().indexOf('logout') !== -1){
-    sessionStorage.clear();
-    try{ if(window.history.replaceState) window.history.replaceState(null,'',location.pathname); }catch(e){}
-    showLogin();
+  // START - session only
+  var auth = sessionStorage.getItem('terikano_session_auth');
+  if(auth === 'owner' || auth === 'staff'){
+    $id('loginBox').style.display = 'none';
   } else {
-    var auth = sessionStorage.getItem('terikano_session_auth');
-    if(auth === 'owner'){ document.body.classList.remove('staff-mode'); hideLogin(); }
-    else if(auth === 'staff'){ document.body.classList.add('staff-mode'); hideLogin(); }
-    else { showLogin(); }
+    $id('loginBox').style.display = 'flex';
   }
 })();
 </script>
+
 <script>
-// === FINAL - V8 WORKING + TOP BOXES HIDDEN - NO MORE VERSIONS ===
+// === STAFF HIDE - ONE ONLY - CLEAN - NO INTERVAL FIGHT ===
 (function(){
-  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || ''; }
-
-  if(!getRole() && !document.getElementById('loginBox')){
-    var box = document.createElement('div');
-    box.id = 'loginBox';
-    box.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:#111;';
-    box.innerHTML = '<div style="background:#222;padding:24px;border-radius:16px;width:300px;text-align:center;color:#fff;">'
-      + '<h2>🔒 TERIKANO</h2>'
-      + '<input id="pwInput" type="password" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-size:16px;">'
-      + '<button id="loginBtn" style="width:100%;padding:12px;background:#FFD700;border:none;border-radius:10px;font-weight:bold;">LOGIN</button>'
-      + '</div>';
-    document.body.appendChild(box);
-  }
-
-  function tryLogin(){
-    var el = document.getElementById('pwInput');
-    var p = el ? (el.value||'').trim() : '';
-    if(!p){ alert('Type PW first'); return; }
-    var role = '';
-    if(p === '1234') role = 'staff';
-    else if(p === '200175') role = 'owner';
-    if(!role){ alert('Wrong PW'); return; }
-    sessionStorage.setItem('terikano_session_auth', role);
-    var lb = document.getElementById('loginBox');
-    if(lb) lb.style.display = 'none';
-    if(typeof window.hideLogin === 'function'){ try{ window.hideLogin(); }catch(e){} }
-    alert(role.toUpperCase() + ' LOGIN OK');
-    setTimeout(hideTopBoxes, 800);
-  }
-  window.checkLogin = tryLogin;
-  var b = document.getElementById('loginBtn');
-  if(b) b.onclick = tryLogin;
-  var inp = document.getElementById('pwInput');
-  if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') tryLogin(); });
-
-  if(!getRole()){
-    var lb2 = document.getElementById('loginBox');
-    if(lb2){ lb2.style.display = 'flex'; lb2.style.visibility = 'visible'; }
-  }
-
-  // --- TOP BOXES HIDDEN, ONLY MENU SHOWS ---
-  function hideTopBoxes(){
-    if(!getRole()) return;
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('MENU V28')) return;
-      if(t.includes('DASHBOARD OWNER ONLY') && t.includes('HIDE')) el.style.display = 'none';
-      if(t.includes('SALE') && t.includes('CUSTOMER') && t.includes('QTY')) el.style.display = 'none';
-    });
-  }
-  document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button') : null;
-    if(!btn) return;
-    var t = (btn.textContent||'').toUpperCase().trim();
-    if(t === 'SALE'){
-      setTimeout(function(){
-        document.querySelectorAll('div').forEach(function(el){
-          var tt = (el.textContent||'').toUpperCase();
-          if(tt.includes('SALE') && tt.includes('CUSTOMER')) el.style.display = '';
-        });
-      }, 400);
-    }
-  });
-  if(getRole()) setTimeout(hideTopBoxes, 1000);
-})();
-</script>
-  <script>
-// === STAFF PATCH V2 - STRONG - KEEPS HIDING ===
-(function(){
-  var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
+  var HIDE_WORDS = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK','BANK SETTINGS','MANUAL ADJUST','ADJUST DIFF','UPDATE SELL'];
   function hideForStaff(){
     if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    // 1. Hide DASHBOARD + top boxes for staff
-    document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('DASHBOARD OWNER ONLY') && !t.includes('MENU V28')) el.style.display = 'none';
-    });
-    // 2. Hide OWNER buttons - check BUTTONS ONLY, exact text
     document.querySelectorAll('button').forEach(function(btn){
       if(btn.closest && btn.closest('#loginBox')) return;
       var t = (btn.textContent||'').toUpperCase().trim();
-      // Keep these for staff
       if(t.includes('SALE') || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT')) return;
-      // Hide these for staff
-      for(var i=0;i<HIDE.length;i++){
-        if(t.includes(HIDE[i])){ btn.style.display = 'none'; btn.style.visibility = 'hidden'; break; }
+      for(var i=0;i<HIDE_WORDS.length;i++){
+        if(t.includes(HIDE_WORDS[i])){ btn.style.display = 'none'; break; }
       }
-      if(t.includes('PW') && t.length < 10) btn.style.display = 'none';
     });
-    // 3. Also hide DIV buttons that look like buttons (your MENU uses divs sometimes)
+    // Hide DASHBOARD OWNER ONLY box
     document.querySelectorAll('div').forEach(function(el){
       if(el.closest && el.closest('#loginBox')) return;
-      if(el.children.length !== 0) return; // only leaf divs, not containers
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(t.length > 40) return;
-      for(var i=0;i<HIDE.length;i++){
-        if(t.includes(HIDE[i]) && t.length < 40){ el.style.display = 'none'; break; }
-      }
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('DASHBOARD OWNER ONLY') && !t.includes('MENU V28') && el.children.length < 10) el.style.display = 'none';
     });
   }
-  // Run every 800ms ONLY for staff - this is safe, it never hides login or MENU
-  setInterval(hideForStaff, 800);
+  // Run once on load + once when you tap MENU - NO setInterval fighting
+  document.addEventListener('click', function(){ setTimeout(hideForStaff, 300); });
   setTimeout(hideForStaff, 500);
-})();
-</script>
-  <script>
-// === FIX 2 SMALL - WHOLESALER DEBT + SALE BOX ===
-(function(){
-  function fix2(){
-    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    // Hide WHOLESALER DEBT button - exact match
-    document.querySelectorAll('button, div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(t.includes('WHOLESALER DEBT') && t.length < 30) el.style.display = 'none';
-    });
-    // Hide SALE box on load only - if you have NOT tapped SALE yet
-    if(!sessionStorage.getItem('terikano_sale_opened')){
-      document.querySelectorAll('div').forEach(function(el){
-        var t = (el.textContent||'').toUpperCase();
-        if(t.includes('SALE - AVERAGE COST') && t.includes('CUSTOMER') && !t.includes('MENU V28')) el.style.display = 'none';
-      });
-    }
-  }
-  setInterval(fix2, 800);
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(b && (b.textContent||'').toUpperCase().trim() === 'SALE'){
-      sessionStorage.setItem('terikano_sale_opened', '1');
-      setTimeout(function(){
-        document.querySelectorAll('div').forEach(function(el){
-          var t = (el.textContent||'').toUpperCase();
-          if(t.includes('SALE - AVERAGE COST') && t.includes('CUSTOMER')) el.style.display = '';
-        });
-      }, 400);
-    }
-  });
-})();
-</script>
-  <script>
-// === FIX TOP BOXES + SALE BOX FOR STAFF ===
-(function(){
-  // Clear old flag on fresh load so SALE starts closed
-  sessionStorage.removeItem('terikano_sale_opened');
-
-  function fixTop(){
-    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    // Hide TOP Owner boxes for Staff - CASH / BANK / COCO / TARGET
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      // Only hide small leaf boxes, not big containers with MENU
-      if(t.includes('MENU V28')) return;
-      if(el.children.length > 8) return;
-      if(t.includes('TARGET TODAY') && t.includes('REAL PROFIT')) el.style.display = 'none';
-      if(t.includes('CASH') && t.includes('$6901') || (t.includes('CASH') && t.includes('AVG PROFIT') && el.children.length < 3)) el.style.display = 'none';
-      if(t.includes('BANK') && t.includes('$2010') && el.children.length < 3) el.style.display = 'none';
-      if(t.includes('COCO $4/KG') && el.children.length < 3) el.style.display = 'none';
-    });
-    // Hide SALE box until tapped - find HIDE button in SALE, hide its panel
-    if(!sessionStorage.getItem('terikano_sale_opened')){
-      document.querySelectorAll('button').forEach(function(btn){
-        if((btn.textContent||'').toUpperCase().trim() === 'HIDE'){
-          var panel = btn.parentElement;
-          if(panel && (panel.textContent||'').toUpperCase().includes('SALE - AVERAGE')){
-            // Climb to full SALE box
-            for(var i=0;i<3;i++){ if(panel.parentElement && panel.parentElement !== document.body) panel = panel.parentElement; }
-            if(!(panel.textContent||'').toUpperCase().includes('MENU V28')) panel.style.display = 'none';
-          }
-        }
-      });
-    }
-  }
-  setInterval(fixTop, 800);
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(b && (b.textContent||'').toUpperCase().trim() === 'SALE'){
-      sessionStorage.setItem('terikano_sale_opened', '1');
-    }
-    if(b && (b.textContent||'').toUpperCase().trim() === 'HIDE'){
-      sessionStorage.removeItem('terikano_sale_opened');
-    }
-  });
-})();
-</script>
-    <script>
-// === FIX LOGOUT + TABLES ===
-(function(){
-  // --- LOGOUT FIX - Works for Owner + Staff ---
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.textContent||'').toUpperCase().trim();
-    if(t === 'LOGOUT' || t.includes('LOG OUT')){
-      e.preventDefault();
-      e.stopPropagation();
-      sessionStorage.removeItem('terikano_session_auth');
-      sessionStorage.removeItem('terikano_sale_opened');
-      // Show login again
-      var lb = document.getElementById('loginBox');
-      if(lb){ lb.style.display = 'flex'; lb.style.visibility = 'visible'; }
-      // Hide everything else
-      document.body.style.visibility = 'visible';
-      alert('LOGGED OUT');
-      setTimeout(function(){ location.reload(); }, 300);
-    }
-  }, true);
-
-  // --- TABLES FIX - When you tap MENU, show its table ---
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.textContent||'').toUpperCase().trim();
-    var SHOW = ['SALE','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','PURCHASE','EXPENSE'];
-    var isMenuBtn = false;
-    for(var i=0;i<SHOW.length;i++){ if(t === SHOW[i] || t.includes(SHOW[i] + ' ') || t === SHOW[i]) isMenuBtn = true; }
-    if(!isMenuBtn) return;
-    // Give app 600ms to open panel, then FORCE show its table/panel
-    setTimeout(function(){
-      document.querySelectorAll('div, table').forEach(function(el){
-        var tt = (el.textContent||'').toUpperCase();
-        // If this div/table belongs to the tapped section, show it
-        if(tt.includes(t) && tt.includes('CUSTOMER') || tt.includes(t) && tt.includes('ITEM')){
-          // Don't show if it's MENU itself
-          if(!tt.includes('MENU V28')){
-            el.style.display = '';
-            el.style.visibility = 'visible';
-          }
-        }
-      });
-      // Specifically show any <table> that was hidden
-      document.querySelectorAll('table').forEach(function(tb){
-        tb.style.display = '';
-        tb.style.visibility = 'visible';
-      });
-    }, 600);
-  });
-})();
-</script>
-    <script>
-// === ONE OPEN AT A TIME - MINIMISE SCROLL ===
-(function(){
-  var SECTIONS = ['SALE','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','PURCHASE','EXPENSE'];
-  
-  function hideAllExcept(keep){
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('MENU V28')) return;
-      if(el.children.length > 10) return; // Don't hide big container
-      // If this div is a section panel, and it's NOT the one we keep
-      for(var i=0;i<SECTIONS.length;i++){
-        var sec = SECTIONS[i];
-        if(sec === keep) continue;
-        // Section panel has its title + a HIDE button + content
-        if(t.includes(sec) && (t.includes('HIDE') || t.includes('CUSTOMER') || t.includes('ITEM') || t.includes('TOTAL'))){
-          // Only hide small panel, not MENU container
-          if(el.children.length < 8){
-            el.style.display = 'none';
-          }
-        }
-      }
-    });
-    // Clear SALE flag if we opened something else
-    if(keep !== 'SALE') sessionStorage.removeItem('terikano_sale_opened');
-    else sessionStorage.setItem('terikano_sale_opened','1');
-  }
-
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.textContent||'').toUpperCase().trim();
-    // Only for MENU buttons
-    for(var i=0;i<SECTIONS.length;i++){
-      if(t === SECTIONS[i]){
-        var keep = SECTIONS[i];
-        // Wait 500ms for app to open it, then hide others
-        setTimeout(function(){ hideAllExcept(keep); }, 500);
-        setTimeout(function(){ hideAllExcept(keep); }, 1200);
-        break;
-      }
-    }
-    if(t === 'HIDE'){
-      sessionStorage.removeItem('terikano_sale_opened');
-    }
-  });
-})();
-</script>
-  <script>
-// === HIDE OWNER SETTINGS INSIDE STOCK FOR STAFF ===
-(function(){
-  function hideOwnerSettings(){
-    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    document.querySelectorAll('div, td, th').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('MENU V28')) return;
-      if(el.children.length > 6) return; // Only hide small setting boxes, not whole STOCK
-      if(t.includes('BANK SETTINGS') && t.includes('OWNER ONLY')) el.style.display = 'none';
-      if(t.includes('MANUAL ADJUST') && t.includes('OWNER ONLY')) el.style.display = 'none';
-      if(t.includes('ADJUST DIFF') && el.children.length < 4) el.style.display = 'none';
-      if(t.includes('UPDATE SELL') && el.children.length < 4) el.style.display = 'none';
-      if(t.includes('BANK INT') && t.includes('FEE') && el.children.length < 4) el.style.display = 'none';
-      if(t.includes('SAVE BANK%') && el.children.length < 3) el.style.display = 'none';
-      if(t.includes('UPDATE SELL PRICE FOR') && el.children.length < 4) el.style.display = 'none';
-    });
-  }
-  setInterval(hideOwnerSettings, 700);
-})();
-</script>
-  <script>
-// === FIX STOCK FLASH - STOCK MUST STAY OPEN ===
-(function(){
-  // When STOCK tapped, mark it open
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.textContent||'').toUpperCase().trim();
-    if(t === 'STOCK'){
-      sessionStorage.setItem('terikano_stock_opened','1');
-      sessionStorage.removeItem('terikano_sale_opened');
-      // Force show STOCK after 800ms + 1500ms - after the bad hide runs
-      setTimeout(showStock, 800);
-      setTimeout(showStock, 1500);
-      setTimeout(showStock, 2200);
-    }
-    if(t === 'HIDE'){
-      sessionStorage.removeItem('terikano_stock_opened');
-    }
-  });
-
-  function showStock(){
-    if(sessionStorage.getItem('terikano_stock_opened') !== '1') return;
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('MENU V28')) return;
-      // STOCK panel = has STOCK + HIDE + Qty / Current Stock Table
-      if(t.includes('STOCK') && (t.includes('CURRENT STOCK TABLE') || t.includes('ADD ITEM') || t.includes('UPDATE STOCK'))){
-        el.style.display = 'block';
-        el.style.visibility = 'visible';
-        el.style.width = '100%';
-        el.style.maxWidth = '100%';
-      }
-    });
-    // Show STOCK table
-    document.querySelectorAll('table').forEach(function(tb){
-      tb.style.display = '';
-      tb.style.visibility = 'visible';
-    });
-  }
-  setInterval(showStock, 600);
-})();
-</script>
-  <script>
-// === MASTER FIX V2 - BEATS ALL OLD PATCHES ===
-(function(){
-  // Find real staff key - check ALL sessionStorage
-  function isStaff(){
-    for(var i=0;i<sessionStorage.length;i++){
-      var k = sessionStorage.key(i);
-      var v = (sessionStorage.getItem(k)||'').toLowerCase();
-      if(v.includes('staff')) return true;
-    }
-    // Fallback: if page says STAFF anywhere
-    if(document.body && document.body.textContent.toUpperCase().includes('STAFF MODE')) return true;
-    if(document.body && document.body.textContent.toUpperCase().includes('STAFF VIEW')) return true;
-    return false;
-  }
-
-  function masterFix(){
-    var stockOpen = sessionStorage.getItem('terikano_stock_opened') === '1';
-    var saleOpen = sessionStorage.getItem('terikano_sale_opened') === '1';
-    var staff = isStaff();
-
-    // 1. HIDE SETTINGS FOR STAFF - NO children limit, direct match
-    if(staff){
-      document.querySelectorAll('div').forEach(function(el){
-        if(el.closest && el.closest('#loginBox')) return;
-        var t = (el.textContent||'').toUpperCase().trim();
-        // Only hide if this div STARTS with settings - not whole STOCK
-        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('ADJUST DIFF') || t.startsWith('UPDATE SELL') || t.startsWith('BANK INT') || t.startsWith('SAVE BANK')){
-          el.style.setProperty('display','none','important');
-        }
-        // Also hide inner boxes that contain BANK SETTINGS but NOT Current Stock Table
-        if(t.includes('BANK SETTINGS') && !t.includes('CURRENT STOCK TABLE') && el.children.length < 10){
-          el.style.setProperty('display','none','important');
-        }
-        if(t.includes('MANUAL ADJUST') && !t.includes('CURRENT STOCK TABLE') && el.children.length < 10){
-          el.style.setProperty('display','none','important');
-        }
-      });
-    }
-
-    // 2. FORCE STOCK TO STAY OPEN - every 300ms beats old hide
-    if(stockOpen){
-      document.querySelectorAll('div').forEach(function(el){
-        if(el.closest && el.closest('#loginBox')) return;
-        var t = (el.textContent||'').toUpperCase();
-        if(t.includes('MENU V28')) return;
-        if(t.includes('STOCK') && (t.includes('CURRENT STOCK TABLE') || t.includes('ADD ITEM'))){
-          // Don't un-hide settings boxes we just hid
-          if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST')) return;
-          el.style.setProperty('display','block','important');
-          el.style.setProperty('visibility','visible','important');
-          el.style.setProperty('width','100%','important');
-        }
-      });
-      document.querySelectorAll('table').forEach(function(tb){
-        tb.style.setProperty('display','table','important');
-        tb.style.setProperty('visibility','visible','important');
-      });
-    }
-  }
-
-  // Run FAST - 300ms beats old 800ms patches
-  setInterval(masterFix, 300);
-
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.textContent||'').toUpperCase().trim();
-    if(t === 'STOCK'){
-      sessionStorage.setItem('terikano_stock_opened','1');
-      sessionStorage.removeItem('terikano_sale_opened');
-    }
-    if(t === 'SALE'){
-      sessionStorage.setItem('terikano_sale_opened','1');
-      sessionStorage.removeItem('terikano_stock_opened');
-    }
-    if(t === 'HIDE'){
-      sessionStorage.removeItem('terikano_stock_opened');
-      sessionStorage.removeItem('terikano_sale_opened');
-    }
-  });
-})();
-</script>
-  <script>
-// === FIX HEAD BUGS - OVERRIDE, NO DELETE ===
-(function(){
-  // 1. Sync auth - copy localStorage to sessionStorage so body check works
-  var lsAuth = localStorage.getItem('terikano_session_auth');
-  var ssAuth = sessionStorage.getItem('terikano_session_auth');
-  if(lsAuth && !ssAuth) sessionStorage.setItem('terikano_session_auth', lsAuth);
-  if(ssAuth && !lsAuth) localStorage.setItem('terikano_session_auth', ssAuth);
-
-  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-  if(auth === 'staff'){
-    document.documentElement.classList.add('staff-mode');
-    // 2. Real hide - by TEXT, not by class, because boxes have no owner-only class
-    var hideTimer = setInterval(function(){
-      document.querySelectorAll('div').forEach(function(el){
-        if(el.closest && el.closest('#loginBox')) return;
-        var t = (el.textContent||'').toUpperCase().trim();
-        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('UPDATE SELL') || t.startsWith('ADJUST DIFF')){
-          el.style.setProperty('display','none','important');
-        }
-      });
-    }, 200);
-    // Stop after 5 secs to save battery
-    setTimeout(function(){ clearInterval(hideTimer); }, 5000);
-  }
-
-  // 3. Remove instantHide FASTER - don't wait 1200ms
-  var s = document.getElementById('instantHide');
-  if(s) s.remove();
-  document.body.style.visibility = 'visible';
-})();
-</script>
-  <script>
-// === SHOW PAGE ONLY AFTER CLEANING ===
-(function(){
-  function showPage(){
-    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
-    if(auth === 'staff'){
-      document.querySelectorAll('div').forEach(function(el){
-        if(el.closest && el.closest('#loginBox')) return;
-        var t = (el.textContent||'').toUpperCase().trim();
-        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('UPDATE SELL') || t.startsWith('ADJUST DIFF')){
-          el.style.setProperty('display','none','important');
-        }
-      });
-    }
-    var nf = document.getElementById('noFlash'); if(nf) nf.remove();
-    var ih = document.getElementById('instantHide'); if(ih) ih.remove();
-    document.documentElement.style.visibility = 'visible';
-    document.body.style.visibility = 'visible';
-  }
-  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', function(){ setTimeout(showPage, 300); }); }
-  else { setTimeout(showPage, 300); }
 })();
 </script>
 </body>
