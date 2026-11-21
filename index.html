@@ -1349,27 +1349,10 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === V9 - LOGIN SAFE + TABLES + STAFF - NO KILLER INTERVAL ===
+// === FINAL - V8 WORKING + TOP BOXES HIDDEN - NO MORE VERSIONS ===
 (function(){
   function getRole(){ return sessionStorage.getItem('terikano_session_auth') || ''; }
 
-  // Badge
-  var badge = document.getElementById('roleBadge');
-  if(!badge){
-    badge = document.createElement('div');
-    badge.id = 'roleBadge';
-    badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:15px;';
-    badge.textContent = 'ROLE: NONE';
-    document.body.appendChild(badge);
-  }
-  function updateBadge(){
-    var r = getRole();
-    badge.textContent = 'ROLE: ' + (r ? r.toUpperCase() : 'NONE');
-    badge.style.background = r === 'staff' ? 'green' : 'red';
-  }
-  updateBadge();
-
-  // LoginBox if missing + not logged in
   if(!getRole() && !document.getElementById('loginBox')){
     var box = document.createElement('div');
     box.id = 'loginBox';
@@ -1385,37 +1368,19 @@ function filterProfit(year){
   function tryLogin(){
     var el = document.getElementById('pwInput');
     var p = el ? (el.value||'').trim() : '';
-    if(!p){
-      var inputs = document.querySelectorAll('input');
-      for(var i=0;i<inputs.length;i++){ var v=(inputs[i].value||'').trim(); if(v==='1234'||v==='200175') p=v; }
-    }
     if(!p){ alert('Type PW first'); return; }
     var role = '';
     if(p === '1234') role = 'staff';
     else if(p === '200175') role = 'owner';
-    else {
-      var co = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '');
-      var cs = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '');
-      if(p===co && co) role='owner'; else if(p===cs && cs) role='staff';
-    }
     if(!role){ alert('Wrong PW'); return; }
     sessionStorage.setItem('terikano_session_auth', role);
-    updateBadge();
     var lb = document.getElementById('loginBox');
     if(lb) lb.style.display = 'none';
     if(typeof window.hideLogin === 'function'){ try{ window.hideLogin(); }catch(e){} }
-    if(role === 'staff') document.body.classList.add('staff-mode');
-    else document.body.classList.remove('staff-mode');
     alert(role.toUpperCase() + ' LOGIN OK');
-    setTimeout(function(){ fixAll(); }, 500);
+    setTimeout(hideTopBoxes, 800);
   }
-  function doLogout(){
-    sessionStorage.removeItem('terikano_session_auth');
-    try{ sessionStorage.clear(); }catch(e){}
-    updateBadge();
-    location.reload();
-  }
-  window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
+  window.checkLogin = tryLogin;
   var b = document.getElementById('loginBtn');
   if(b) b.onclick = tryLogin;
   var inp = document.getElementById('pwInput');
@@ -1426,105 +1391,31 @@ function filterProfit(year){
     if(lb2){ lb2.style.display = 'flex'; lb2.style.visibility = 'visible'; }
   }
 
-  // ---------- SAFE TABLES + SALE - ONLY WHEN LOGGED IN ----------
-  var css = document.createElement('style');
-  css.innerHTML = `
-    .pro-wrap{ overflow-x:auto !important; width:100% !important; background:#fff !important; border:1px solid #e0e0e0 !important; border-radius:12px !important; margin-top:10px !important; }
-    .pro-wrap table{ min-width:650px !important; width:100% !important; border-collapse:collapse !important; font-size:14px !important; }
-    .pro-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:12px 10px !important; white-space:nowrap !important; text-align:center !important; }
-    .pro-wrap td{ padding:11px 10px !important; text-align:center !important; border-bottom:1px solid #f0f0f0 !important; white-space:nowrap !important; }
-    .pro-wrap tr:nth-child(even) td{ background:#f8fdf9 !important; }
-  `;
-  document.head.appendChild(css);
-
-  var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
-  function isInsideMenu(el){ var cur=el; for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur=cur.parentElement; if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true; } return false; }
-
-  function fixAll(){
-    if(!getRole()) return; // NEVER run when not logged in - this was the killer
-    updateBadge();
-    // Tables - skip if inside loginBox
-    document.querySelectorAll('table').forEach(function(tbl){
-      if(tbl.closest && tbl.closest('#loginBox')) return;
-      if(tbl.parentElement.classList.contains('pro-wrap')) return;
-      if(tbl.rows.length < 2) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'pro-wrap';
-      tbl.parentNode.insertBefore(wrap, tbl);
-      wrap.appendChild(tbl);
+  // --- TOP BOXES HIDDEN, ONLY MENU SHOWS ---
+  function hideTopBoxes(){
+    if(!getRole()) return;
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('MENU V28')) return;
+      if(t.includes('DASHBOARD OWNER ONLY') && t.includes('HIDE')) el.style.display = 'none';
+      if(t.includes('SALE') && t.includes('CUSTOMER') && t.includes('QTY')) el.style.display = 'none';
     });
-    // Sale compact
-    var custInput = null, qtyInput = null;
-    document.querySelectorAll('input, select').forEach(function(inp){
-      if(inp.closest && inp.closest('#loginBox')) return;
-      var ph = (inp.placeholder||'').toLowerCase();
-      if(ph.includes('customer')) custInput = inp;
-      if(ph.includes('qty lik') || ph === 'qty') qtyInput = inp;
-    });
-    if(custInput){
-      var row1 = custInput.parentElement;
-      if(row1){
-        row1.style.setProperty('display','flex','important');
-        row1.style.setProperty('flex-direction','row','important');
-        row1.style.setProperty('gap','6px','important');
-        row1.style.setProperty('width','100%','important');
-        row1.style.setProperty('flex-wrap','nowrap','important');
-        row1.querySelectorAll('input, select').forEach(function(inp, idx){
-          inp.style.setProperty('min-height','44px','important');
-          if(idx === 0) inp.style.setProperty('width','38%','important');
-          else inp.style.setProperty('width','62%','important');
-          inp.style.setProperty('flex','none','important');
-        });
-      }
-    }
-    if(qtyInput){
-      var row2 = qtyInput.parentElement;
-      if(row2){
-        row2.style.setProperty('display','flex','important');
-        row2.style.setProperty('flex-direction','row','important');
-        row2.style.setProperty('gap','6px','important');
-        row2.style.setProperty('width','100%','important');
-        row2.style.setProperty('flex-wrap','nowrap','important');
-        row2.querySelectorAll('input, select').forEach(function(inp, idx){
-          inp.style.setProperty('min-height','44px','important');
-          inp.style.setProperty('flex','none','important');
-          if(idx === 0) inp.style.setProperty('width','38%','important');
-          else if(idx === 1) inp.style.setProperty('width','18%','important');
-          else if(idx === 2) inp.style.setProperty('width','22%','important');
-          else inp.style.setProperty('width','22%','important');
-        });
-      }
-    }
-    // Staff hide - only staff, only MENU
-    if(getRole() === 'staff'){
-      document.querySelectorAll('button, div, a').forEach(function(el){
-        if(el.closest && el.closest('#loginBox')) return;
-        var t=(el.textContent||'').toUpperCase().trim();
-        if(!t || t.length > 90 || el.children.length > 2) return;
-        if(t.includes('PASSWORD') || t.includes('LOGIN')) return;
-        if(t.includes('STOCK') || t==='SALE' || t.includes('SALE') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT') || t.includes('MENU')) return;
-        if(!isInsideMenu(el)) return;
-        for(var i=0;i<HIDE_MENU.length;i++){ if(t.includes(HIDE_MENU[i])){ el.style.display='none'; break; } }
-        if(t==='PW' || t.endsWith(' PW')) el.style.display='none';
-      });
-    }
   }
-
-  // Clicks - only run fixAll after you click SALE / STOCK / HIDE, NOT every second
   document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, a') : null;
+    var btn = e.target.closest ? e.target.closest('button') : null;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
-    if(t.includes('LOGOUT')){ doLogout(); return; }
-    if(t.includes('LOGIN') && t.length < 30){ tryLogin(); return; }
-    if(t === 'SALE' || t.includes('SALE') || t === 'STOCK' || t.includes('STOCK') || t === 'HIDE'){
-      setTimeout(fixAll, 400);
-      setTimeout(fixAll, 900);
+    if(t === 'SALE'){
+      setTimeout(function(){
+        document.querySelectorAll('div').forEach(function(el){
+          var tt = (el.textContent||'').toUpperCase();
+          if(tt.includes('SALE') && tt.includes('CUSTOMER')) el.style.display = '';
+        });
+      }, 400);
     }
   });
-
-  // Run once on load IF already logged in, else do nothing
-  if(getRole()) setTimeout(fixAll, 800);
+  if(getRole()) setTimeout(hideTopBoxes, 1000);
 })();
 </script>
 </body>
