@@ -1167,81 +1167,31 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// STAFF V7 - NO DOUBLE MENU - Hide Dashboard Boxes Only
+// FIX ROOT CAUSE - Define isOwner + Staff Hide - NO stacking, NO rewiring
 (function(){
+  // 1. DEFINE isOwner - this was missing, this is why buttons died
   window.isOwner = function(){
-    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    return a === 'owner' || a === 'staff';
+    var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('isOwner');
+    return a === 'owner' || a === '1';
   };
-  window.canEdit = function(){ return true; };
-  window.hasAccess = function(){ return true; };
 
-  function isStaffNow(){
-    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
-  }
-
-  function fixStaff(){
-    if(!isStaffNow()){
-      // Owner: make sure nothing hidden
-      return;
-    }
-
-    // 1. REMOVE the double top black bar from V4/V5/V6 if it exists
-    var old = document.getElementById('staffOnlyMenu');
-    if(old) old.remove();
-    document.body.style.paddingTop = '0px';
-
-    // 2. HIDE ALL DASHBOARD SMALL BOXES - SALES, CASH, BANK, etc.
-    // These are the small inline boxes on top
-    document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toLowerCase().trim();
-      if(t.length > 0 && t.length < 150){
-        if(t.startsWith('sales') || t.startsWith('cash') || t.startsWith('bank') ||
-           t.startsWith('creditors') || t.startsWith('stock') || t.startsWith('expense') ||
-           t.startsWith('real profit') || t.startsWith('drawing') || t.startsWith('coco') ||
-           t.startsWith('target') || t.includes('dashboard owner') || t.includes('total stock')){
-          // Don't hide the MENU box itself - MENU box has SALE + STOCK + LOGOUT together
-          if(t.includes('menu')) return;
-          if(t.includes('logout') && t.includes('sale') && t.includes('collect')) return;
-          el.style.display = 'none';
-          var p1 = el.parentElement;
-          if(p1 && p1.textContent.length < 300 && !p1.textContent.toLowerCase().includes('menu')) p1.style.display = 'none';
-        }
-      }
+  // 2. Staff hide - ONLY hide owner buttons + dashboard, NEVER hide panels
+  function hideForStaff(){
+    var a = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(a !== 'staff') return;
+    // Hide owner-only buttons - they have class owner-only-btn
+    document.querySelectorAll('.owner-only-btn').forEach(function(b){ b.style.display = 'none'; });
+    // Hide dashboard + target + cash box - by ID, not by text
+    ['targetTopBar','ackExpiryWrap','cashBoxIsolated'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
     });
-
-    // 3. Hide forbidden MENU buttons - keep ONLY 6 in original MENU
-    document.querySelectorAll('div[onclick], button').forEach(function(el){
-      var t = (el.textContent||'').toLowerCase().trim();
-      if(t.length > 0 && t.length < 30){
-        var forbidden = ['closing','coco','expiry','clearance','waste','drawing','capital','target','normal','monthly','yearly','pw','backup','rename','wholesaler','setting','other','profit','report','user','admin','dashboard','delete','expense','purchase','bank + ib'];
-        var allowed = ['sale','stock','creditors','ledger','collect','logout'];
-        if(allowed.some(function(a){ return t === a; })) {
-          // Make allowed buttons work + visible
-          el.style.display = '';
-          el.style.pointerEvents = 'auto';
-          el.style.opacity = '1';
-          return;
-        }
-        if(forbidden.some(function(f){ return t.includes(f); })) el.style.display = 'none';
-      }
-    });
+    var dash = document.querySelector('.dashboard');
+    if(dash) dash.style.display = 'none';
+    // Call lockAll so it hides owner panels too
+    if(typeof lockAll === 'function') { try{ lockAll(); }catch(e){} }
   }
-
-  // Auto wipe PW
-  var pwTimer = null;
-  function wipePw(){
-    var inp = document.getElementById('loginPass');
-    if(inp){ inp.value=''; inp.setAttribute('value',''); inp.type='password'; }
-  }
-  document.addEventListener('input', function(e){
-    if(e.target && e.target.id === 'loginPass'){
-      clearTimeout(pwTimer);
-      pwTimer = setTimeout(wipePw, 5000);
-    }
-  });
-
-  setInterval(fixStaff, 500);
+  setInterval(hideForStaff, 1000);
 })();
 </script>
 </body>
