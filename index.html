@@ -1520,9 +1520,9 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === TERIKANO FINAL - CLEAN - ONE SCRIPT ONLY ===
+// === TERIKANO FINAL PRO - ONE SCRIPT ONLY ===
 (function(){
-  // ---------- 1. ROLE ----------
+  // ---------- ROLE ----------
   var badge = document.getElementById('roleBadge');
   if(!badge){
     badge = document.createElement('div');
@@ -1531,172 +1531,144 @@ function filterProfit(year){
     badge.textContent = 'ROLE: NONE';
     document.body.appendChild(badge);
   }
-  function getRole(){
-    return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || '';
-  }
-  function setRole(role){
-    sessionStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_role', role);
-    badge.textContent = 'ROLE: ' + role.toUpperCase();
-    badge.style.background = role === 'staff' ? 'green' : 'red';
-  }
-  function doLogout(){
-    ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){
-      sessionStorage.removeItem(k); localStorage.removeItem(k);
-    });
-    badge.textContent = 'ROLE: NONE';
-    badge.style.background = 'red';
-    location.reload();
-  }
+  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || ''; }
+  function setRole(r){ sessionStorage.setItem('terikano_session_auth', r); localStorage.setItem('terikano_session_auth', r); localStorage.setItem('terikano_role', r); badge.textContent = 'ROLE: ' + r.toUpperCase(); badge.style.background = r === 'staff' ? 'green' : 'red'; }
+  function doLogout(){ ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); }); badge.textContent = 'ROLE: NONE'; badge.style.background = 'red'; location.reload(); }
   function tryLogin(){
-    var pwEl = document.getElementById('pwInput');
-    var p = pwEl && pwEl.value ? pwEl.value.trim() : '';
-    if(!p){
-      var inputs = document.querySelectorAll('input');
-      for(var i=0;i<inputs.length;i++){ var v=(inputs[i].value||'').trim(); if(v==='1234'||v==='200175') p=v; }
-    }
+    var p = ''; var inputs = document.querySelectorAll('input');
+    for(var i=0;i<inputs.length;i++){ var v=(inputs[i].value||'').trim(); if(v==='1234'||v==='200175') p=v; }
     if(!p){ alert('Type PW first'); return; }
-    var role = '';
-    if(p === '1234') role = 'staff';
-    else if(p === '200175') role = 'owner';
+    var role = p === '1234' ? 'staff' : p === '200175' ? 'owner' : '';
     if(!role){ alert('Wrong PW'); return; }
-    setRole(role);
-    alert(role.toUpperCase() + ' LOGIN OK');
+    setRole(role); alert(role.toUpperCase() + ' LOGIN OK');
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
 
-  // ---------- 2. HIDE OWNER SECTIONS FROM STAFF ----------
-  var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
-
-  function isInsideMenu(el){
-    var cur = el;
-    for(var i=0;i<6;i++){
-      if(!cur.parentElement) break;
-      cur = cur.parentElement;
-      if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true;
-    }
-    return false;
-  }
-
-  function fixStaff(){
-    var role = getRole();
-    badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
-    badge.style.background = role === 'staff' ? 'green' : 'red';
-    if(role !== 'staff') return;
-
-    // A. Kill CLOSE 2025 popup + YEAR END CLOSE + STAFF PASSWORD - staff never sees
-    document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('CONFIRM') && t.includes('CLOSE 2025') && el.children.length < 10){
-        el.style.display = 'none';
-      }
-      if(t.length < 300 && (t.includes('CLOSE YEAR') || t.includes('YEAR END CLOSE') || t.includes('STAFF PASSWORD'))){
-        el.style.display = 'none';
-      }
-      if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30) el.style.display = 'none';
-      if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5) el.style.display = 'none';
-    });
-
-    // B. Hide MENU buttons - keep SALE, STOCK, CREDITORS, LEDGER, COLLECT, LOGOUT
-    document.querySelectorAll('button, div, a').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(!t || t.length > 90) return;
-      if(el.children.length > 2) return;
-      if(t.includes('STOCK')) return;
-      if(t === 'SALE' || t.includes('SALE')) return;
-      if(t.includes('CREDITORS')) return;
-      if(t.includes('LEDGER')) return;
-      if(t.includes('COLLECT')) return;
-      if(t.includes('LOGOUT')) return;
-      if(t.includes('MENU')) return;
-      if(!isInsideMenu(el)) return;
-      for(var i=0;i<HIDE_MENU.length;i++){
-        if(t.includes(HIDE_MENU[i])){
-          el.style.display = 'none';
-          if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display = 'none';
-          break;
-        }
-      }
-      if(t === 'PW' || t.endsWith(' PW')) el.style.display = 'none';
-    });
-
-    // C. Hide STOCK settings only - keep STOCK table
-    document.querySelectorAll('div, button').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.length > 400) return;
-      if(t.includes('MANUAL ADJUST') || t.includes('BANK SETTINGS') || t.includes('UPDATE SELL PRICE') || t.includes('ADJUST DIFF') || t.includes('SAVE BANK')){
-        el.style.display = 'none';
-      }
-    });
-  }
-
-  // ---------- 3. SALE LAYOUT - BLOCK ONLY, NO FLEX TRICK ----------
-  var saleCss = document.createElement('style');
-  saleCss.innerHTML = `
-    .sale-pro{ display:block !important; width:100% !important; max-width:100% !important; }
-    .sale-pro input, .sale-pro select{ width:100% !important; min-height:48px !important; font-size:16px !important; display:block !important; margin-bottom:8px !important; }
-    .sale-pro-table-wrap{ overflow-x:auto !important; width:100% !important; border:1px solid #ddd !important; border-radius:10px !important; background:#fff !important; }
-    .sale-pro-table-wrap table{ min-width:650px !important; border-collapse:collapse !important; width:100% !important; font-size:14px !important; }
-    .sale-pro-table-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:10px 8px !important; white-space:nowrap !important; }
-    .sale-pro-table-wrap td{ padding:10px 8px !important; text-align:center !important; border-bottom:1px solid #eee !important; white-space:nowrap !important; }
+  // ---------- PRO CSS ----------
+  var css = document.createElement('style');
+  css.innerHTML = `
+    .pro-wrap{ overflow-x:auto !important; width:100% !important; background:#fff !important; border:1px solid #e0e0e0 !important; border-radius:12px !important; box-shadow:0 2px 10px rgba(0,0,0,0.06) !important; margin-top:10px !important; }
+    .pro-wrap table{ min-width:650px !important; width:100% !important; border-collapse:collapse !important; font-size:14px !important; }
+    .pro-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:12px 10px !important; white-space:nowrap !important; text-align:center !important; position:sticky !important; top:0 !important; }
+    .pro-wrap td{ padding:11px 10px !important; text-align:center !important; border-bottom:1px solid #f0f0f0 !important; white-space:nowrap !important; }
+    .pro-wrap tr:nth-child(even) td{ background:#f8fdf9 !important; }
+    .pro-input input, .pro-input select{ width:100% !important; min-height:48px !important; font-size:16px !important; display:block !important; margin-bottom:8px !important; border:1px solid #ddd !important; border-radius:10px !important; padding:10px 12px !important; background:#fff !important; }
+    .pro-box{ background:#fff !important; border-radius:14px !important; padding:14px !important; margin-top:10px !important; box-shadow:0 2px 12px rgba(0,0,0,0.06) !important; }
   `;
-  document.head.appendChild(saleCss);
+  document.head.appendChild(css);
 
-  function fixSale(){
-    var titleEl = null;
-    document.querySelectorAll('div, b, span').forEach(function(el){
-      if((el.textContent||'').includes('SALE - Average Cost') && (el.textContent||'').length < 100) titleEl = el;
+  // ---------- STAFF HIDE ----------
+  var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
+  function isInsideMenu(el){ var cur=el; for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur=cur.parentElement; if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true; } return false; }
+  function fixStaff(){
+    var role = getRole(); badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE'); badge.style.background = role === 'staff' ? 'green' : 'red';
+    if(role !== 'staff') return;
+    document.querySelectorAll('div').forEach(function(el){
+      var t=(el.textContent||'').toUpperCase();
+      if(t.includes('CONFIRM') && t.includes('CLOSE 2025') && el.children.length < 10) el.style.display='none';
+      if(t.length < 300 && (t.includes('CLOSE YEAR') || t.includes('YEAR END CLOSE') || t.includes('STAFF PASSWORD'))) el.style.display='none';
     });
-    if(!titleEl) return;
-    var root = titleEl;
-    for(var i=0;i<6;i++){
-      if(!root.parentElement) break;
-      root = root.parentElement;
-      var t = (root.textContent||'');
-      if(t.includes('QTY KEYPAD') && t.includes('ADD TO CART') && t.includes('Customer')) break;
-    }
-    if(!root || !root.classList || root.classList.contains('sale-pro')) return;
-    root.classList.add('sale-pro');
-    root.style.setProperty('display','block','important');
-    root.querySelectorAll('div').forEach(function(d){
-      if(d.querySelector('input, select')){
-        d.style.setProperty('display','block','important');
-        d.style.setProperty('width','100%','important');
-      }
+    document.querySelectorAll('button, div, a').forEach(function(el){
+      var t=(el.textContent||'').toUpperCase().trim();
+      if(!t || t.length > 90 || el.children.length > 2) return;
+      if(t.includes('STOCK') || t==='SALE' || t.includes('SALE') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT') || t.includes('MENU')) return;
+      if(!isInsideMenu(el)) return;
+      for(var i=0;i<HIDE_MENU.length;i++){ if(t.includes(HIDE_MENU[i])){ el.style.display='none'; if(el.parentElement && el.parentElement.children.length===1) el.parentElement.style.display='none'; break; } }
+      if(t==='PW' || t.endsWith(' PW')) el.style.display='none';
     });
-    root.querySelectorAll('table').forEach(function(tbl){
-      if(tbl.parentElement.classList.contains('sale-pro-table-wrap')) return;
+  }
+
+  // ---------- PRO TABLES + ACCORDION ----------
+  function fixPro(){
+    // 1. Wrap every table in PRO wrap
+    document.querySelectorAll('table').forEach(function(tbl){
+      if(tbl.parentElement.classList.contains('pro-wrap')) return;
+      // Skip tiny layout tables
+      if(tbl.rows.length < 2) return;
       var wrap = document.createElement('div');
-      wrap.className = 'sale-pro-table-wrap';
+      wrap.className = 'pro-wrap';
       tbl.parentNode.insertBefore(wrap, tbl);
       wrap.appendChild(tbl);
     });
+    // 2. SALE box PRO
+    var titleEl=null;
+    document.querySelectorAll('div, b, span').forEach(function(el){
+      if((el.textContent||'').includes('SALE - Average Cost') && (el.textContent||'').length < 100) titleEl=el;
+    });
+    if(titleEl){
+      var root=titleEl;
+      for(var i=0;i<6;i++){ if(!root.parentElement) break; root=root.parentElement; if((root.textContent||'').includes('QTY KEYPAD') && (root.textContent||'').includes('ADD TO CART')) break; }
+      if(root && root.classList && !root.classList.contains('pro-input')){
+        root.classList.add('pro-input'); root.classList.add('pro-box');
+        root.style.setProperty('display','block','important');
+        root.querySelectorAll('div').forEach(function(d){ if(d.querySelector('input, select')){ d.style.setProperty('display','block','important'); d.style.setProperty('width','100%','important'); } });
+      }
+    }
   }
 
-  // ---------- 4. CLICKS - NO CAPTURE, NO BLOCKING ----------
-  // Normal listener, no stopPropagation, so CANCEL / OK always work
+  // ---------- ACCORDION - ONE OPEN ONLY ----------
+  // Your sections: SALE, STOCK, CREDITORS, LEDGER, COLLECT, etc.
+  // We hide all section boxes, then show only clicked one.
+  var SECTION_WORDS = ['SALE -','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','COCO MILL','EXPENSE','BANK +','DRAWING','CAPITAL','TARGET','REPORT','PURCHASE','WHOLESALER','EXPIRY'];
+  function closeAllSections(exceptText){
+    document.querySelectorAll('div').forEach(function(el){
+      var t=(el.textContent||'').toUpperCase();
+      if(el.children.length > 15) return;
+      for(var i=0;i<SECTION_WORDS.length;i++){
+        if(t.includes(SECTION_WORDS[i]) && t.length > 50 && t.length < 4000){
+          if(exceptText && t.includes(exceptText)) continue;
+          // Only hide if it is a panel, not menu button
+          if(el.style.display !== 'none' && el.querySelector('table, input')){
+            el.dataset.wasOpen = '1';
+            el.style.display = 'none';
+          }
+          break;
+        }
+      }
+    });
+  }
+  function openSection(word){
+    document.querySelectorAll('div').forEach(function(el){
+      var t=(el.textContent||'').toUpperCase();
+      if(t.includes(word) && el.dataset.wasOpen === '1'){
+        el.style.display = 'block';
+        el.dataset.wasOpen = '';
+      }
+    });
+  }
+
+  // On load: close all, show nothing - user clicks one box
+  var didInit = false;
+  function initAccordion(){
+    if(didInit) return;
+    // Wait for login - if login box still there, don't close yet
+    if(document.querySelector('#loginBox')) return;
+    if(!getRole()) return;
+    didInit = true;
+    setTimeout(function(){ closeAllSections(''); }, 500);
+  }
+
+  // ---------- CLICKS - NO BLOCKING ----------
   document.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('button, a') : null;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
-    if(t === 'LOGOUT' || t.includes('LOGOUT')){
-      doLogout();
-      return;
-    }
-    if(t.includes('LOGIN') && t.length < 30){
-      tryLogin();
-      return;
-    }
-    if(t === 'SALE' || t.includes('SALE')){
-      setTimeout(fixSale, 100);
-      setTimeout(fixSale, 500);
-      setTimeout(fixSale, 1000);
+    if(t.includes('LOGOUT')){ doLogout(); return; }
+    if(t.includes('LOGIN') && t.length < 30){ tryLogin(); return; }
+    // Accordion: click menu -> close others, open this one
+    var map = {'SALE':'SALE -','STOCK':'STOCK','CREDITORS':'CREDITORS','LEDGER':'LEDGER','COLLECT':'COLLECT'};
+    for(var k in map){
+      if(t === k || t.includes('💰 '+k) || t.includes(k+' ')){
+        closeAllSections(map[k]);
+        setTimeout(function(){ openSection(map[k]); fixPro(); }, 300);
+        setTimeout(fixPro, 800);
+        break;
+      }
     }
   });
 
-  setInterval(function(){ fixStaff(); fixSale(); }, 600);
+  setInterval(function(){ fixStaff(); fixPro(); initAccordion(); }, 600);
 })();
 </script>
 </body>
