@@ -1203,39 +1203,36 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 })();
 </script>
   <script>
-// AUTO WIPE PASSWORD - Never stays in box
+// AUTO WIPE PW IN 5 SECONDS
 (function(){
+  var timer = null;
   function wipePw(){
-    document.querySelectorAll('input').forEach(function(inp){
-      var n = ((inp.name||'')+' '+(inp.id||'')+' '+(inp.placeholder||'')).toLowerCase();
-      if(n.includes('pass') || inp.type === 'password'){
-        inp.value = '';
-        inp.setAttribute('value','');
-        inp.type = 'password';
-        inp.autocomplete = 'new-password';
-      }
+    document.querySelectorAll('input[type=password], input[name*=pass], input[id*=pass]').forEach(function(inp){
+      inp.value = '';
+      inp.setAttribute('value','');
     });
   }
-  // 1. Wipe on load
-  wipePw();
-  // 2. Wipe 1 sec after page shows
-  setTimeout(wipePw, 1000);
-  // 3. Wipe when user leaves login / clicks Login
-  document.addEventListener('click', function(e){
-    var t = (e.target.textContent||'').toLowerCase();
-    if(t.includes('login') || t.includes('sign')){
-      setTimeout(wipePw, 500);
-      setTimeout(wipePw, 1500);
+  function startTimer(){
+    clearTimeout(timer);
+    // Wipe 5 seconds after you stop typing
+    timer = setTimeout(wipePw, 5000);
+  }
+  document.addEventListener('input', function(e){
+    var inp = e.target;
+    if(inp.tagName === 'INPUT' && (inp.type === 'password' || (inp.name||'').toLowerCase().includes('pass') || (inp.id||'').toLowerCase().includes('pass'))){
+      startTimer();
     }
   });
-  // 4. Wipe when user switches tab / comes back
-  document.addEventListener('visibilitychange', wipePw);
-  // 5. Wipe every 3 sec on login page only
-  setInterval(function(){
-    var isLogin = document.body.innerText.toLowerCase().includes('login');
-    if(isLogin) wipePw();
-  }, 3000);
+  // Also wipe 5 sec after login page loads
+  setTimeout(wipePw, 5000);
+  // Wipe when you click Login
+  document.addEventListener('click', function(e){
+    var t = (e.target.textContent||'').toLowerCase();
+    if(t.includes('login')){
+      setTimeout(wipePw, 1000);
+    }
+  });
 })();
 </script>
 </body>
-</html>
+</html>f
