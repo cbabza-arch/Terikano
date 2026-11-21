@@ -1725,5 +1725,88 @@ function filterProfit(year){
   setInterval(showStock, 600);
 })();
 </script>
+  <script>
+// === MASTER FIX V2 - BEATS ALL OLD PATCHES ===
+(function(){
+  // Find real staff key - check ALL sessionStorage
+  function isStaff(){
+    for(var i=0;i<sessionStorage.length;i++){
+      var k = sessionStorage.key(i);
+      var v = (sessionStorage.getItem(k)||'').toLowerCase();
+      if(v.includes('staff')) return true;
+    }
+    // Fallback: if page says STAFF anywhere
+    if(document.body && document.body.textContent.toUpperCase().includes('STAFF MODE')) return true;
+    if(document.body && document.body.textContent.toUpperCase().includes('STAFF VIEW')) return true;
+    return false;
+  }
+
+  function masterFix(){
+    var stockOpen = sessionStorage.getItem('terikano_stock_opened') === '1';
+    var saleOpen = sessionStorage.getItem('terikano_sale_opened') === '1';
+    var staff = isStaff();
+
+    // 1. HIDE SETTINGS FOR STAFF - NO children limit, direct match
+    if(staff){
+      document.querySelectorAll('div').forEach(function(el){
+        if(el.closest && el.closest('#loginBox')) return;
+        var t = (el.textContent||'').toUpperCase().trim();
+        // Only hide if this div STARTS with settings - not whole STOCK
+        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('ADJUST DIFF') || t.startsWith('UPDATE SELL') || t.startsWith('BANK INT') || t.startsWith('SAVE BANK')){
+          el.style.setProperty('display','none','important');
+        }
+        // Also hide inner boxes that contain BANK SETTINGS but NOT Current Stock Table
+        if(t.includes('BANK SETTINGS') && !t.includes('CURRENT STOCK TABLE') && el.children.length < 10){
+          el.style.setProperty('display','none','important');
+        }
+        if(t.includes('MANUAL ADJUST') && !t.includes('CURRENT STOCK TABLE') && el.children.length < 10){
+          el.style.setProperty('display','none','important');
+        }
+      });
+    }
+
+    // 2. FORCE STOCK TO STAY OPEN - every 300ms beats old hide
+    if(stockOpen){
+      document.querySelectorAll('div').forEach(function(el){
+        if(el.closest && el.closest('#loginBox')) return;
+        var t = (el.textContent||'').toUpperCase();
+        if(t.includes('MENU V28')) return;
+        if(t.includes('STOCK') && (t.includes('CURRENT STOCK TABLE') || t.includes('ADD ITEM'))){
+          // Don't un-hide settings boxes we just hid
+          if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST')) return;
+          el.style.setProperty('display','block','important');
+          el.style.setProperty('visibility','visible','important');
+          el.style.setProperty('width','100%','important');
+        }
+      });
+      document.querySelectorAll('table').forEach(function(tb){
+        tb.style.setProperty('display','table','important');
+        tb.style.setProperty('visibility','visible','important');
+      });
+    }
+  }
+
+  // Run FAST - 300ms beats old 800ms patches
+  setInterval(masterFix, 300);
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.textContent||'').toUpperCase().trim();
+    if(t === 'STOCK'){
+      sessionStorage.setItem('terikano_stock_opened','1');
+      sessionStorage.removeItem('terikano_sale_opened');
+    }
+    if(t === 'SALE'){
+      sessionStorage.setItem('terikano_sale_opened','1');
+      sessionStorage.removeItem('terikano_stock_opened');
+    }
+    if(t === 'HIDE'){
+      sessionStorage.removeItem('terikano_stock_opened');
+      sessionStorage.removeItem('terikano_sale_opened');
+    }
+  });
+})();
+</script>
 </body>
 </html>
