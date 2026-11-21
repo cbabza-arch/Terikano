@@ -1147,53 +1147,31 @@ function filterProfit(year){
 </script>
 
 <script>
-// === STAFF HIDE - ONE ONLY - CLEAN - NO INTERVAL FIGHT ===
+// === STAFF HIDE - YOUR CODE - FIXED ===
 (function(){
-  var HIDE_WORDS = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK','BANK SETTINGS','MANUAL ADJUST','ADJUST DIFF','UPDATE SELL'];
   function hideForStaff(){
     if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    document.querySelectorAll('button').forEach(function(btn){
-      if(btn.closest && btn.closest('#loginBox')) return;
-      var t = (btn.textContent||'').toUpperCase().trim();
-      if(t.includes('SALE') || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT')) return;
-      for(var i=0;i<HIDE_WORDS.length;i++){
-        if(t.includes(HIDE_WORDS[i])){ btn.style.display = 'none'; break; }
-      }
+    // A. MENU - Keep ONLY 6: SALE, STOCK, CREDITORS, COLLECT, LEDGER, LOGOUT
+    document.querySelectorAll('.menu-section button').forEach(function(btn){
+      var t = (btn.textContent||'').toUpperCase();
+      var keep = t.includes('SALE') || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('COLLECT') || t.includes('LEDGER') || t.includes('LOGOUT');
+      if(!keep) btn.style.display = 'none';
     });
-    // Hide DASHBOARD OWNER ONLY box
-    document.querySelectorAll('div').forEach(function(el){
-      if(el.closest && el.closest('#loginBox')) return;
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('DASHBOARD OWNER ONLY') && !t.includes('MENU V28') && el.children.length < 10) el.style.display = 'none';
+    // B. Hide ALL owner-only in YOUR code
+    document.querySelectorAll('.owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
+      el.style.display = 'none';
+    });
+    // C. Hide CASH/BANK box + Dashboard cards - by ID, NOT by looping all divs
+    ['cashBoxIsolated','dashContent'].forEach(function(id){
+      var e = document.getElementById(id);
+      if(e) e.style.display = 'none';
     });
   }
-  // Run once on load + once when you tap MENU - NO setInterval fighting
+  window.hideForStaff = hideForStaff;
+  // Run on load + on any click (menu open) + after login
   document.addEventListener('click', function(){ setTimeout(hideForStaff, 300); });
   setTimeout(hideForStaff, 500);
 })();
-</script>
-  <script>
-function applyStaffMode(){
-  // 1. DON'T run on login screen - if password box visible, do nothing
-  let loginBox = document.getElementById('loginBox');
-  if(loginBox && loginBox.style.display !== 'none' && loginBox.offsetParent !== null){
-    return;
-  }
-  // 2. ONLY use saved role, NOT body text - body text always has word Staff
-  let role = localStorage.getItem('role') || localStorage.getItem('mode') || '';
-  let isStaff = (role === 'staff');
-  if(!isStaff) return; // owner - show everything, do nothing
-
-  // 3. Staff - hide menu buttons EXCEPT allowed + login buttons
-  let allowed = ['SALE','CREDITOR','COLLECT','+IB','STOCK','LEDGER','LOGOUT','LOGIN','OWNER','STAFF','ENTER'];
-  document.querySelectorAll('button').forEach(b=>{
-    let t = b.innerText.trim().toUpperCase();
-    if(t.length==0 || t.length>30) return;
-    let keep = allowed.some(a=> t.includes(a));
-    if(!keep) b.style.display='none';
-  });
-}
-setInterval(applyStaffMode, 1500);
 </script>
 </body>
 </html>
