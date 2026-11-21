@@ -1203,31 +1203,38 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 })();
 </script>
   <script>
-// HIDE PASSWORDS ON LOGIN
+// AUTO WIPE PASSWORD - Never stays in box
 (function(){
-  function hidePw(){
-    // 1. Force all password fields to dots, not text
+  function wipePw(){
     document.querySelectorAll('input').forEach(function(inp){
-      var n = (inp.name||''+inp.id||''+inp.placeholder||'').toLowerCase();
-      if(n.includes('pass') || n.includes('pw')){
+      var n = ((inp.name||'')+' '+(inp.id||'')+' '+(inp.placeholder||'')).toLowerCase();
+      if(n.includes('pass') || inp.type === 'password'){
+        inp.value = '';
+        inp.setAttribute('value','');
         inp.type = 'password';
-        inp.removeAttribute('value');
-        if(inp.value === '9999' || inp.value === '1234') inp.value = '';
-        inp.placeholder = 'Enter password';
-        inp.autocomplete = 'off';
-      }
-    });
-    // 2. Hide any text that leaks passwords
-    document.querySelectorAll('p, span, div, small, label').forEach(function(el){
-      var t = el.textContent||'';
-      if(t.includes('9999') || t.includes('1234') || t.toLowerCase().includes('owner:') && t.toLowerCase().includes('password')){
-        // Don't hide whole login box, only the hint line
-        if(el.textContent.length < 80) el.style.display = 'none';
+        inp.autocomplete = 'new-password';
       }
     });
   }
-  hidePw();
-  setInterval(hidePw, 500);
+  // 1. Wipe on load
+  wipePw();
+  // 2. Wipe 1 sec after page shows
+  setTimeout(wipePw, 1000);
+  // 3. Wipe when user leaves login / clicks Login
+  document.addEventListener('click', function(e){
+    var t = (e.target.textContent||'').toLowerCase();
+    if(t.includes('login') || t.includes('sign')){
+      setTimeout(wipePw, 500);
+      setTimeout(wipePw, 1500);
+    }
+  });
+  // 4. Wipe when user switches tab / comes back
+  document.addEventListener('visibilitychange', wipePw);
+  // 5. Wipe every 3 sec on login page only
+  setInterval(function(){
+    var isLogin = document.body.innerText.toLowerCase().includes('login');
+    if(isLogin) wipePw();
+  }, 3000);
 })();
 </script>
 </body>
