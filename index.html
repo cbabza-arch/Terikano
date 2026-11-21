@@ -1066,21 +1066,8 @@ function filterProfit(year){
     if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
-  
-<!-- LOGIN BOX - CLEAN B -->
-<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;">
-  <div style="background:#fff;padding:24px;border-radius:12px;width:300px;text-align:center;">
-    <h2 style="margin:0 0 4px 0;">TERIKANO</h2>
-    <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Please Login</p>
-    <input id="loginUser" type="text" placeholder="Username" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;">
-    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:14px;box-sizing:border-box;">
-    <button id="loginBtn" style="width:100%;padding:11px;background:#0f172a;color:#fff;border:0;border-radius:6px;font-weight:bold;">LOGIN</button>
-    <p id="loginMsg" style="color:red;font-size:12px;min-height:16px;margin:10px 0 0 0;"></p>
-    <p style="font-size:11px;color:#999;margin:12px 0 0 0;">Owner: owner / 9999<br>Staff: staff / 1234</p>
-  </div>
-</div>
+</script>
 
-<script>
 <!-- LOGIN BOX - CLEAN B -->
 <style>
 #loginBox{ display:flex !important; }
@@ -1099,11 +1086,21 @@ function filterProfit(year){
 </div>
 
 <script>
-// LOGIN + STAFF - CLEAN B - NUCLEAR
+// LOGIN + STAFF - CLEAN B - FIXED
 var AUTH = null;
+
+function isOwner(){
+  return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'owner';
+}
+function isStaff(){
+  return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
+}
 
 function forceLoginBox(){
   if(AUTH) return;
+  var h = document.getElementById('instantHide');
+  if(h) h.remove();
+  if(document.body) document.body.style.visibility = 'visible';
   var box = document.getElementById('loginBox');
   if(box){
     box.classList.remove('hideBox');
@@ -1151,7 +1148,6 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   if(e.key === 'Enter') doLogin();
 });
 
-// START - ALWAYS ASK PW, NO AUTO LOGIN - NUCLEAR
 (function(){
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
@@ -1159,7 +1155,6 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   forceLoginBox();
   try{ restoreAll(); }catch(e){}
   forceLoginBox();
-  // Keep forcing for 3 seconds - beats any other onload that tries to hide it
   setInterval(forceLoginBox, 200);
   window.addEventListener('load', forceLoginBox);
 })();
