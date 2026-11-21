@@ -1174,34 +1174,26 @@ function filterProfit(year){
 </script>
   <script>
 function applyStaffMode(){
-  // Check if we are in STAFF mode
-  let isStaff = document.body.innerText.includes('Staff') || localStorage.getItem('role')=='staff' || localStorage.getItem('mode')=='staff';
-  if(!isStaff){
-    // Owner mode - show everything
-    document.querySelectorAll('button, a').forEach(b=>{ b.style.display=''; });
-    document.querySelectorAll('.owner-only').forEach(e=>{ e.style.display=''; });
+  // 1. DON'T run on login screen - if password box visible, do nothing
+  let loginBox = document.getElementById('loginBox');
+  if(loginBox && loginBox.style.display !== 'none' && loginBox.offsetParent !== null){
     return;
   }
-  // STAFF MODE - hide everything except allowed
-  let allowed = ['SALE','CREDITOR','COLLECT','+IB','STOCK','LEDGER','LOGOUT'];
-  document.querySelectorAll('button, a').forEach(b=>{
+  // 2. ONLY use saved role, NOT body text - body text always has word Staff
+  let role = localStorage.getItem('role') || localStorage.getItem('mode') || '';
+  let isStaff = (role === 'staff');
+  if(!isStaff) return; // owner - show everything, do nothing
+
+  // 3. Staff - hide menu buttons EXCEPT allowed + login buttons
+  let allowed = ['SALE','CREDITOR','COLLECT','+IB','STOCK','LEDGER','LOGOUT','LOGIN','OWNER','STAFF','ENTER'];
+  document.querySelectorAll('button').forEach(b=>{
     let t = b.innerText.trim().toUpperCase();
+    if(t.length==0 || t.length>30) return;
     let keep = allowed.some(a=> t.includes(a));
-    // Keep LOGOUT always, keep SALE etc
-    if(!keep && t.length>0 && t.length<30){
-      b.style.display='none';
-    }
-  });
-  // Hide owner money cards by text
-  document.querySelectorAll('div').forEach(d=>{
-    let t = d.innerText || '';
-    if(t.includes('CASH') || t.includes('BANK') || t.includes('REAL PROFIT') || t.includes('AVG COST') || t.includes('Average Cost Profit') || t.includes('TARGET')){
-      // Don't hide the whole SALE page, only small cards - hide if div is small
-      if(d.innerText.length < 200) d.style.display='none';
-    }
+    if(!keep) b.style.display='none';
   });
 }
-setInterval(applyStaffMode, 1000);
+setInterval(applyStaffMode, 1500);
 </script>
 </body>
 </html>
