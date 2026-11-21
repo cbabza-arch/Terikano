@@ -1610,5 +1610,54 @@ function filterProfit(year){
   });
 })();
 </script>
+    <script>
+// === ONE OPEN AT A TIME - MINIMISE SCROLL ===
+(function(){
+  var SECTIONS = ['SALE','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','PURCHASE','EXPENSE'];
+  
+  function hideAllExcept(keep){
+    document.querySelectorAll('div').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('MENU V28')) return;
+      if(el.children.length > 10) return; // Don't hide big container
+      // If this div is a section panel, and it's NOT the one we keep
+      for(var i=0;i<SECTIONS.length;i++){
+        var sec = SECTIONS[i];
+        if(sec === keep) continue;
+        // Section panel has its title + a HIDE button + content
+        if(t.includes(sec) && (t.includes('HIDE') || t.includes('CUSTOMER') || t.includes('ITEM') || t.includes('TOTAL'))){
+          // Only hide small panel, not MENU container
+          if(el.children.length < 8){
+            el.style.display = 'none';
+          }
+        }
+      }
+    });
+    // Clear SALE flag if we opened something else
+    if(keep !== 'SALE') sessionStorage.removeItem('terikano_sale_opened');
+    else sessionStorage.setItem('terikano_sale_opened','1');
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var t = (b.textContent||'').toUpperCase().trim();
+    // Only for MENU buttons
+    for(var i=0;i<SECTIONS.length;i++){
+      if(t === SECTIONS[i]){
+        var keep = SECTIONS[i];
+        // Wait 500ms for app to open it, then hide others
+        setTimeout(function(){ hideAllExcept(keep); }, 500);
+        setTimeout(function(){ hideAllExcept(keep); }, 1200);
+        break;
+      }
+    }
+    if(t === 'HIDE'){
+      sessionStorage.removeItem('terikano_sale_opened');
+    }
+  });
+})();
+</script>
 </body>
 </html>
