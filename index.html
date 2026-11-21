@@ -232,6 +232,26 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
 <meta name="theme-color" content="#2e7d32">
 
 </head><body>
+  <style id="instantHide">body{visibility:hidden !important;}</style>
+<script>
+// === INSTANT HIDE - RUNS BEFORE MENU SHOWS ===
+(function(){
+  var auth = sessionStorage.getItem('terikano_session_auth');
+  // If no login, show body so LOGIN shows - loginBox will cover it
+  if(!auth){
+    var s = document.getElementById('instantHide');
+    if(s) s.remove();
+    document.body.style.visibility = 'visible';
+    return;
+  }
+  // If logged in, keep hidden for 1 sec, then show - patches will have hidden owner stuff by then
+  setTimeout(function(){
+    var s2 = document.getElementById('instantHide');
+    if(s2) s2.remove();
+    document.body.style.visibility = 'visible';
+  }, 1200);
+})();
+</script>
   <div id="terikanoDeviceHeader" style="display:inline-flex; align-items:center; gap:6px; font-family:system-ui; font-size:11px; background:#fff; padding:4px 10px; border-radius:20px; border:1px solid #ddd; margin-right:10px;">
   <span id="lockDot" style="width:8px; height:8px; background:#34c759; border-radius:50%; display:inline-block;"></span>
   <span id="myDeviceId">ID...</span>
