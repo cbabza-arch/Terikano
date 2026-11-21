@@ -1167,50 +1167,88 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// FINAL FIX - Staff Restrict + Auto Wipe PW in 5 sec - ONLY ONE BLOCK
+// STAFF FIX V3 - For DIV Menu + Activate Buttons - From Screenshot
 (function(){
+  // 1. Staff COUNTS as Owner so buttons WORK - this fixes "buttons not active"
+  window.isOwner = function(){
+    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    return a === 'owner' || a === 'staff';
+  };
+  window.isStaff = function(){
+    return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
+  };
   window.canEdit = function(){ return true; };
   window.hasAccess = function(){ return true; };
+  window.checkAccess = function(){ return true; };
 
   function isStaffNow(){
     return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
   }
 
+  // Staff ALLOWED - everything else HIDDEN
+  var ALLOWED = ['sale','stock','creditors','ledger','collect','logout','cash','bank'];
+  var FORBIDDEN = ['closing','coco mill','expiry','clearance','waste','bank + ib','drawing','capital','target set','normal','monthly','yearly','pw','coco rate','backup','rename','wholesaler','setting','other','profit','report','user','admin','dashboard','delete','expense','purchase','coco'];
+
   function fixStaff(){
     if(!isStaffNow()) return;
-    document.querySelectorAll('button, a, [onclick]').forEach(function(b){
-      b.disabled = false;
-      b.style.pointerEvents = 'auto';
-      b.style.opacity = '1';
+
+    // A. RE-ACTIVATE all buttons - remove disabled / grey
+    document.querySelectorAll('*').forEach(function(el){
+      if(el.disabled) el.disabled = false;
+      // Only fix elements that look like buttons/cards
+      if(el.onclick || el.tagName === 'BUTTON' || el.tagName === 'A'){
+        el.style.pointerEvents = 'auto';
+        el.style.opacity = '1';
+        el.style.filter = 'none';
+        el.classList.remove('disabled','no-access','staff-hide','owner-only');
+      }
     });
-    document.querySelectorAll('button, a, .nav-item, .menu-item, .tab, [onclick]').forEach(function(el){
+
+    // B. HIDE forbidden DIV menu cards + dashboard cards
+    // Check EVERY div/button/a - your menu is divs
+    document.querySelectorAll('div, button, a, span').forEach(function(el){
       var t = (el.textContent||'').toLowerCase().trim();
-      if(t === '' || t.length > 25) return;
-      if(t.includes('setting') || t.includes('other') || t.includes('profit') || t.includes('report') || t.includes('user') || t.includes('admin') || t.includes('dashboard') || t.includes('delete') || t.includes('expense') || t.includes('purchase')){
+      // Only small menu items, not big containers
+      if(t === '' || t.length > 30) return;
+      // Don't hide if it's an allowed one and nothing else
+      var isAllowed = ALLOWED.some(function(a){ return t === a || t === '🔒 '+a || t === a+' 🔒'; });
+      if(isAllowed) return;
+      var isForbidden = FORBIDDEN.some(function(f){ return t.includes(f); });
+      if(isForbidden){
+        // Hide the card itself - find closest clickable card
+        var card = el.closest('div[onclick], button, a');
+        if(card) card.style.display = 'none';
+        else el.style.display = 'none';
+      }
+    });
+
+    // C. Hide whole DASHBOARD OWNER ONLY section
+    document.querySelectorAll('div, section').forEach(function(el){
+      var t = (el.textContent||'').toLowerCase();
+      if(t.includes('dashboard owner only') && el.textContent.length < 500){
+        el.style.display = 'none';
+      }
+      if(t.includes('target today') && el.textContent.length < 200){
         el.style.display = 'none';
       }
     });
-    document.querySelectorAll('[id*=profit], [class*=profit], [id*=setting], [class*=setting]').forEach(function(el){
-      el.style.display = 'none';
-    });
   }
 
-  // Auto wipe PW 5 sec after stop typing
+  // Auto wipe PW 5 sec
   var pwTimer = null;
   function wipePw(){
     var inp = document.getElementById('loginPass');
-    if(inp){ inp.value = ''; inp.setAttribute('value',''); inp.type = 'password'; }
-  }
-  function startPwTimer(){
-    clearTimeout(pwTimer);
-    pwTimer = setTimeout(wipePw, 5000);
+    if(inp){ inp.value=''; inp.setAttribute('value',''); inp.type='password'; }
   }
   document.addEventListener('input', function(e){
-    if(e.target && e.target.id === 'loginPass') startPwTimer();
+    if(e.target && e.target.id === 'loginPass'){
+      clearTimeout(pwTimer);
+      pwTimer = setTimeout(wipePw, 5000);
+    }
   });
 
   fixStaff();
-  setInterval(fixStaff, 500);
+  setInterval(fixStaff, 400);
 })();
 </script>
 </body>
