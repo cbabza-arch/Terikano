@@ -1,20 +1,33 @@
 <html><head>
+<style id="noFlash">html{visibility:hidden !important;}</style>
+<script>
+// === NO FLASH TOP - MUST BE FIRST ===
+(function(){
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  // Sync both storages so all checks agree
+  if(auth){
+    try{ sessionStorage.setItem('terikano_session_auth', auth); }catch(e){}
+    try{ localStorage.setItem('terikano_session_auth', auth); }catch(e){}
+  }
+  if(auth === 'staff'){
+    document.documentElement.classList.add('staff-mode');
+  }
+})();
+</script>
 <script>
 // === TOP BLOCKER - FIXED - NO HIDE, NO WIPE ===
 (function(){
-  // Use real session, not just_logged
   var auth = null;
   try{ auth = sessionStorage.getItem('terikano_session_auth'); }catch(e){}
   if(auth === 'owner' || auth === 'staff'){
     window.TERIKANO_JUST_ROLE = auth;
   }
-  // NEVER hide body, NEVER clear session here
-  // Bottom will show loginBox if no session
 })();
 </script>
   <style>
-  /* Prevent Owner flash for Staff */
+  /* Prevent Owner flash for Staff - by TEXT fallback in bottom patch, class here for any owner-only boxes */
   html.staff-mode .owner-only { display: none !important; }
+  html.staff-mode body { visibility: hidden; }
   </style>
 <script>
   // EARLY CHECK - runs before page shows
@@ -23,7 +36,6 @@
     if(auth === 'staff'){
       document.documentElement.classList.add('staff-mode');
     }
-    // If logged out, don't show dashboard at all
     })();
 </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -58,7 +70,6 @@
     localStorage.removeItem('terikano_session_auth');
     try{sessionStorage.clear();}catch(e){}
      }
-  // If corrupted: isOwner=0 but no session -> force logout
   var flag = localStorage.getItem('isOwner');
   var sess = localStorage.getItem('terikano_session_auth');
   if(flag==='0' && !sess && !url.includes('staff=')){
@@ -77,7 +88,6 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  // === STAFF PW ONLINE SYNC ===
 firebase.database().ref('terikano_config/passwords/staffPw').on('value', (snap)=>{
   let cloudPw = snap.val();
   if(cloudPw){
@@ -123,7 +133,6 @@ function changePw(){
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FFD700">
 <meta name="viewport" content="width=device-width, initial-scale=1"><script>
-// CLOUD SAVE/LOAD
 var purchases = [];
 var sales = [];
 var CLOUD_READY = false;
@@ -151,7 +160,6 @@ async function loadFromCloud(){
       if(typeof renderAll === 'function') renderAll();
       if(typeof autoSellCalc === 'function') autoSellCalc();
     } else {
-      // Migrate old local if cloud empty
       let local = localStorage.getItem('Terikano_storage_data');
       if(local){
         if(confirm('Move 2 months old data to CLOUD? Click OK')){
@@ -164,7 +172,6 @@ async function loadFromCloud(){
         }
       }
     }
-    // Live listener - other phones update instantly
     db.ref('shop').on('value', s=>{
       if(!CLOUD_READY) return;
       let d = s.val();
@@ -226,30 +233,23 @@ body{font-family:Arial,sans-serif;background:#e8f5e9;margin:0;padding:6px;zoom:0
 .dark-mode .menu-section,.dark-mode .dashboard,.dark-mode .sale-section{background:#222!important;color:#eee!important}
 .dark-mode table{background:#333!important;color:#eee!important}
 #targetTopBar{display:none;background:#000;color:gold;padding:8px;border-radius:10px;margin:8px;border:2px solid gold;font-size:12px;font-weight:bold;text-align:center}
-
 </style>
 <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVEVSSUtBTk8gVjI4LjIgQVZHIFByaWNlIEhpc3RvcnkiLCJzaG9ydF9uYW1lIjoiVEVSSUtBTk8iLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzAwMDAwMCIsInRoZW1lX2NvbG9yIjoiIzJlN2QzMiIsImljb25zIjpbXX0=">
 <meta name="theme-color" content="#2e7d32">
-
 </head><body>
   <style id="instantHide">body{visibility:hidden !important;}</style>
 <script>
-// === INSTANT HIDE - RUNS BEFORE MENU SHOWS ===
+// === INSTANT HIDE - FIXED - CHECKS BOTH STORAGES ===
 (function(){
-  var auth = sessionStorage.getItem('terikano_session_auth');
-  // If no login, show body so LOGIN shows - loginBox will cover it
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
   if(!auth){
     var s = document.getElementById('instantHide');
     if(s) s.remove();
     document.body.style.visibility = 'visible';
     return;
   }
-  // If logged in, keep hidden for 1 sec, then show - patches will have hidden owner stuff by then
-  setTimeout(function(){
-    var s2 = document.getElementById('instantHide');
-    if(s2) s2.remove();
-    document.body.style.visibility = 'visible';
-  }, 1200);
+  // If logged in, DON'T auto-show after 1200ms - bottom patch will show after cleaning
+  // Keep hidden until bottom SHOW patch removes noFlash + instantHide
 })();
 </script>
   <div id="terikanoDeviceHeader" style="display:inline-flex; align-items:center; gap:6px; font-family:system-ui; font-size:11px; background:#fff; padding:4px 10px; border-radius:20px; border:1px solid #ddd; margin-right:10px;">
@@ -1838,6 +1838,29 @@ function filterProfit(year){
   var s = document.getElementById('instantHide');
   if(s) s.remove();
   document.body.style.visibility = 'visible';
+})();
+</script>
+  <script>
+// === SHOW PAGE ONLY AFTER CLEANING ===
+(function(){
+  function showPage(){
+    var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+    if(auth === 'staff'){
+      document.querySelectorAll('div').forEach(function(el){
+        if(el.closest && el.closest('#loginBox')) return;
+        var t = (el.textContent||'').toUpperCase().trim();
+        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('UPDATE SELL') || t.startsWith('ADJUST DIFF')){
+          el.style.setProperty('display','none','important');
+        }
+      });
+    }
+    var nf = document.getElementById('noFlash'); if(nf) nf.remove();
+    var ih = document.getElementById('instantHide'); if(ih) ih.remove();
+    document.documentElement.style.visibility = 'visible';
+    document.body.style.visibility = 'visible';
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', function(){ setTimeout(showPage, 300); }); }
+  else { setTimeout(showPage, 300); }
 })();
 </script>
 </body>
