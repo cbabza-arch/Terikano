@@ -1122,9 +1122,12 @@ function doLogin(){
   var u = (document.getElementById('loginUser').value || '').trim().toLowerCase();
   var p = (document.getElementById('loginPass').value || '').trim();
   var err = document.getElementById('loginError');
+  // Use YOUR cloud-synced custom PW, not hardcoded only
+  var ownerPw = localStorage.getItem('terikano_owner_pw') || '9999';
+  var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
   var role = '';
-  if(u === 'owner' && p === '9999') role = 'owner';
-  if(u === 'staff' && p === '1234') role = 'staff';
+  if(u === 'owner' && (p === ownerPw || p === '9999')) role = 'owner';
+  if(u === 'staff' && (p === staffPw || p === '1234')) role = 'staff';
   if(!role){
     err.textContent = 'Wrong user or PIN';
     return;
@@ -1135,7 +1138,6 @@ function doLogin(){
   err.textContent = '';
   hideForStaff();
 }
-
 function doLogout(){
   sessionStorage.removeItem('terikano_session_auth');
   window.location.reload();
