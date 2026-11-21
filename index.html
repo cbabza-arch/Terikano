@@ -1160,5 +1160,40 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
+  <script>
+// STAFF FIX - Staff can use all buttons like Owner
+(function(){
+  // Staff counts as Owner for button permissions
+  window.isOwner = function(){
+    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    return a === 'owner' || a === 'staff';
+  };
+  window.isStaff = function(){
+    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    return a === 'staff';
+  };
+  window.canEdit = function(){ return true; };
+  window.hasAccess = function(){ return true; };
+
+  // Re-enable all buttons that were disabled for Staff
+  function fixButtons(){
+    document.querySelectorAll('button, a, [onclick]').forEach(function(b){
+      b.disabled = false;
+      b.style.pointerEvents = 'auto';
+      b.style.opacity = '1';
+      b.classList.remove('disabled','no-access','staff-hide');
+    });
+    // Unhide any Staff-hidden sections
+    document.querySelectorAll('.staff-hide, .owner-only').forEach(function(el){
+      el.style.display = '';
+    });
+  }
+  fixButtons();
+  setInterval(fixButtons, 500);
+  window.addEventListener('load', fixButtons);
+})();
+</script>
+</body>
+</html>
 </body>
 </html>
