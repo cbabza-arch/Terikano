@@ -1419,30 +1419,43 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === STAFF PATCH - STAFF SEES ONLY SALE / STOCK, NO OWNER ===
+// === STAFF PATCH V2 - STRONG - KEEPS HIDING ===
 (function(){
+  var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
   function hideForStaff(){
     if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    // Hide DASHBOARD OWNER ONLY completely for staff
+    // 1. Hide DASHBOARD + top boxes for staff
     document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toUpperCase();
       if(t.includes('DASHBOARD OWNER ONLY') && !t.includes('MENU V28')) el.style.display = 'none';
     });
-    // Hide OWNER MENU buttons for staff
-    var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
-    document.querySelectorAll('button, div, a').forEach(function(el){
+    // 2. Hide OWNER buttons - check BUTTONS ONLY, exact text
+    document.querySelectorAll('button').forEach(function(btn){
+      if(btn.closest && btn.closest('#loginBox')) return;
+      var t = (btn.textContent||'').toUpperCase().trim();
+      // Keep these for staff
+      if(t.includes('SALE') || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT')) return;
+      // Hide these for staff
+      for(var i=0;i<HIDE.length;i++){
+        if(t.includes(HIDE[i])){ btn.style.display = 'none'; btn.style.visibility = 'hidden'; break; }
+      }
+      if(t.includes('PW') && t.length < 10) btn.style.display = 'none';
+    });
+    // 3. Also hide DIV buttons that look like buttons (your MENU uses divs sometimes)
+    document.querySelectorAll('div').forEach(function(el){
       if(el.closest && el.closest('#loginBox')) return;
+      if(el.children.length !== 0) return; // only leaf divs, not containers
       var t = (el.textContent||'').toUpperCase().trim();
-      if(!t || t.length > 90 || el.children.length > 2) return;
-      if(t.includes('PASSWORD') || t.includes('LOGIN')) return;
-      if(t.includes('STOCK') || t === 'SALE' || t.includes('SALE') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT') || t.includes('MENU')) return;
-      for(var i=0;i<HIDE.length;i++){ if(t.includes(HIDE[i])){ el.style.display = 'none'; break; } }
+      if(t.length > 40) return;
+      for(var i=0;i<HIDE.length;i++){
+        if(t.includes(HIDE[i]) && t.length < 40){ el.style.display = 'none'; break; }
+      }
     });
   }
-  setTimeout(hideForStaff, 1000);
-  setTimeout(hideForStaff, 2000);
-  document.addEventListener('click', function(){ setTimeout(hideForStaff, 500); });
+  // Run every 800ms ONLY for staff - this is safe, it never hides login or MENU
+  setInterval(hideForStaff, 800);
+  setTimeout(hideForStaff, 500);
 })();
-  </script>
+</script>
 </body>
 </html>
