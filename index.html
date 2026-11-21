@@ -1147,11 +1147,12 @@ document.querySelectorAll('button').forEach(function(b){
 
 // START - on page load - ALWAYS ASK PW, NO AUTO LOGIN
 (function(){
+  var loginBox = document.getElementById('loginBox');
+  if(loginBox) loginBox.style.display = 'flex';
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
-  restoreAll();
-  var loginBox = document.getElementById('loginBox');
-  loginBox.style.display = 'flex';
+  try{ restoreAll(); }catch(e){}
+  if(loginBox) loginBox.style.display = 'flex';
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
