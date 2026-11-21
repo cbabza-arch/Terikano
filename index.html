@@ -1520,7 +1520,7 @@ function filterProfit(year){
 })();
 </script>
 <script>
-// === TERIKANO FINAL PRO V4 - COMPACT + SAFE ACCORDION - ONE SCRIPT ONLY ===
+// === TERIKANO FINAL PRO V5 - NO AUTO HIDE - ONE SCRIPT ONLY ===
 (function(){
   // ---------- ROLE ----------
   var badge = document.getElementById('roleBadge');
@@ -1541,7 +1541,6 @@ function filterProfit(year){
     var role = p === '1234' ? 'staff' : p === '200175' ? 'owner' : '';
     if(!role){ alert('Wrong PW'); return; }
     setRole(role); alert(role.toUpperCase() + ' LOGIN OK');
-    document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
 
@@ -1556,20 +1555,23 @@ function filterProfit(year){
   `;
   document.head.appendChild(css);
 
-  // ---------- STAFF HIDE ----------
+  // ---------- STAFF HIDE - NEVER TOUCH LOGIN / PW / BLACK SCREEN ----------
   var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
   function isInsideMenu(el){ var cur=el; for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur=cur.parentElement; if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true; } return false; }
   function fixStaff(){
     var role = getRole(); badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE'); badge.style.background = role === 'staff' ? 'green' : 'red';
     if(role !== 'staff') return;
+    // NEVER hide if it contains PW / LOGIN
     document.querySelectorAll('div').forEach(function(el){
       var t=(el.textContent||'').toUpperCase();
+      if(t.includes('PASSWORD') || t.includes('LOGIN') || t.includes('PW')) return;
       if(t.includes('CONFIRM') && t.includes('CLOSE 2025') && el.children.length < 10) el.style.display='none';
       if(t.length < 300 && (t.includes('CLOSE YEAR') || t.includes('YEAR END CLOSE') || t.includes('STAFF PASSWORD'))) el.style.display='none';
     });
     document.querySelectorAll('button, div, a').forEach(function(el){
       var t=(el.textContent||'').toUpperCase().trim();
       if(!t || t.length > 90 || el.children.length > 2) return;
+      if(t.includes('PASSWORD') || t.includes('LOGIN')) return;
       if(t.includes('STOCK') || t==='SALE' || t.includes('SALE') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT') || t.includes('MENU')) return;
       if(!isInsideMenu(el)) return;
       for(var i=0;i<HIDE_MENU.length;i++){ if(t.includes(HIDE_MENU[i])){ el.style.display='none'; if(el.parentElement && el.parentElement.children.length===1) el.parentElement.style.display='none'; break; } }
@@ -1591,18 +1593,15 @@ function filterProfit(year){
     });
   }
 
-  // ---------- SALE COMPACT - BY PLACEHOLDER, NOT BY TITLE - SURVIVES HIDE/REOPEN ----------
+  // ---------- SALE COMPACT - BY PLACEHOLDER ----------
   function fixSaleCompact(){
-    // Find SALE inputs by placeholder - these are recreated on every reopen, so we find them fresh each time
-    var custInput = null, qtyInput = null, priceInput = null;
+    var custInput = null, qtyInput = null;
     document.querySelectorAll('input, select').forEach(function(inp){
       var ph = (inp.placeholder||'').toLowerCase();
       if(ph.includes('customer')) custInput = inp;
       if(ph.includes('qty lik') || ph === 'qty') qtyInput = inp;
     });
     if(!custInput) return;
-
-    // ROW 1: Date + Cust - parent of Cust input
     var row1 = custInput.parentElement;
     if(row1){
       row1.style.setProperty('display','flex','important');
@@ -1611,7 +1610,6 @@ function filterProfit(year){
       row1.style.setProperty('align-items','center','important');
       row1.style.setProperty('width','100%','important');
       row1.style.setProperty('flex-wrap','nowrap','important');
-      // Date input is the one before Cust in same row
       var row1Inputs = row1.querySelectorAll('input, select');
       row1Inputs.forEach(function(inp, idx){
         inp.style.setProperty('min-height','44px','important');
@@ -1621,8 +1619,6 @@ function filterProfit(year){
         inp.style.setProperty('flex','none','important');
       });
     }
-
-    // ROW 2: Item + Qty + Price + CASH - parent of Qty input
     if(qtyInput){
       var row2 = qtyInput.parentElement;
       if(row2){
@@ -1644,8 +1640,6 @@ function filterProfit(year){
         });
       }
     }
-
-    // STOCK row - parent of Stock input - full width
     document.querySelectorAll('input, select').forEach(function(inp){
       var ph = (inp.placeholder||'');
       if(ph.includes('Stock:') || ph.includes('Avg Cost')){
@@ -1669,55 +1663,21 @@ function filterProfit(year){
     fixSaleCompact();
   }
 
-  // ---------- SAFE ACCORDION - ONLY PANELS WITH HIDE BUTTON, NEVER INNER ROWS ----------
-  function getPanels(){
-    var panels = [];
-    document.querySelectorAll('button').forEach(function(btn){
-      if((btn.textContent||'').toUpperCase().trim() === 'HIDE'){
-        var panel = btn.parentElement;
-        // Climb to panel that contains QTY KEYPAD or big content, but NOT inner row
-        for(var i=0;i<6;i++){
-          if(!panel.parentElement) break;
-          panel = panel.parentElement;
-          if((panel.textContent||'').length > 500) break;
-        }
-        if(panel && panels.indexOf(panel) === -1) panels.push(panel);
-      }
-    });
-    return panels;
-  }
-  var didInit = false;
-  function initAccordion(){
-    if(didInit) return;
-    if(document.querySelector('#loginBox')) return;
-    if(!getRole()) return;
-    didInit = true;
-    // On first login, close all panels except none - use their own HIDE logic via display
-    setTimeout(function(){
-      getPanels().forEach(function(p){ p.style.display = 'none'; p.dataset.panelClosed = '1'; });
-    }, 500);
-  }
-
-  // ---------- CLICKS - NEVER TOUCH INNER ROWS ----------
+  // ---------- CLICKS - NO AUTO HIDE, NO BLOCKING ----------
   document.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('button, a') : null;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
     if(t.includes('LOGOUT')){ doLogout(); return; }
     if(t.includes('LOGIN') && t.length < 30){ tryLogin(); return; }
-    // When user clicks a MENU button like SALE, just let original code open it, then re-fix after 500ms
-    // We DO NOT hide inner divs anymore
-    if(t === 'SALE' || t.includes('SALE') || t === 'STOCK' || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT')){
+    if(t === 'SALE' || t.includes('SALE') || t === 'STOCK' || t.includes('STOCK') || t === 'HIDE'){
       setTimeout(fixPro, 400);
       setTimeout(fixPro, 900);
     }
-    // When user clicks HIDE, original hides panel. When they click SHOW/SALE again, original shows it. Re-fix.
-    if(t === 'HIDE'){
-      setTimeout(fixPro, 400);
-    }
   });
 
-  setInterval(function(){ fixStaff(); fixPro(); initAccordion(); }, 600);
+  // NO initAccordion anymore - we never auto-hide anything
+  setInterval(function(){ fixStaff(); fixPro(); }, 600);
 })();
 </script>
 </body>
