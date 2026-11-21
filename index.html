@@ -1172,5 +1172,36 @@ function filterProfit(year){
   setTimeout(hideForStaff, 500);
 })();
 </script>
+  <script>
+function applyStaffMode(){
+  // Check if we are in STAFF mode
+  let isStaff = document.body.innerText.includes('Staff') || localStorage.getItem('role')=='staff' || localStorage.getItem('mode')=='staff';
+  if(!isStaff){
+    // Owner mode - show everything
+    document.querySelectorAll('button, a').forEach(b=>{ b.style.display=''; });
+    document.querySelectorAll('.owner-only').forEach(e=>{ e.style.display=''; });
+    return;
+  }
+  // STAFF MODE - hide everything except allowed
+  let allowed = ['SALE','CREDITOR','COLLECT','+IB','STOCK','LEDGER','LOGOUT'];
+  document.querySelectorAll('button, a').forEach(b=>{
+    let t = b.innerText.trim().toUpperCase();
+    let keep = allowed.some(a=> t.includes(a));
+    // Keep LOGOUT always, keep SALE etc
+    if(!keep && t.length>0 && t.length<30){
+      b.style.display='none';
+    }
+  });
+  // Hide owner money cards by text
+  document.querySelectorAll('div').forEach(d=>{
+    let t = d.innerText || '';
+    if(t.includes('CASH') || t.includes('BANK') || t.includes('REAL PROFIT') || t.includes('AVG COST') || t.includes('Average Cost Profit') || t.includes('TARGET')){
+      // Don't hide the whole SALE page, only small cards - hide if div is small
+      if(d.innerText.length < 200) d.style.display='none';
+    }
+  });
+}
+setInterval(applyStaffMode, 1000);
+</script>
 </body>
 </html>
