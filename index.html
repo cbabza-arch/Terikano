@@ -1081,8 +1081,37 @@ function filterProfit(year){
 </div>
 
 <script>
-// LOGIN + STAFF - CLEAN B
+<!-- LOGIN BOX - CLEAN B -->
+<style>
+#loginBox{ display:flex !important; }
+#loginBox.hideBox{ display:none !important; }
+</style>
+<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:999999;">
+  <div style="background:#fff;padding:24px;border-radius:12px;width:300px;text-align:center;">
+    <h2 style="margin:0 0 4px 0;">TERIKANO</h2>
+    <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Please Login</p>
+    <input id="loginUser" type="text" placeholder="Username" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;">
+    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:14px;box-sizing:border-box;">
+    <button id="loginBtn" style="width:100%;padding:11px;background:#0f172a;color:#fff;border:0;border-radius:6px;font-weight:bold;">LOGIN</button>
+    <p id="loginMsg" style="color:red;font-size:12px;min-height:16px;margin:10px 0 0 0;"></p>
+    <p style="font-size:11px;color:#999;margin:12px 0 0 0;">Owner: owner / 9999<br>Staff: staff / 1234</p>
+  </div>
+</div>
+
+<script>
+// LOGIN + STAFF - CLEAN B - NUCLEAR
 var AUTH = null;
+
+function forceLoginBox(){
+  if(AUTH) return;
+  var box = document.getElementById('loginBox');
+  if(box){
+    box.classList.remove('hideBox');
+    box.style.display = 'flex';
+    box.style.visibility = 'visible';
+    box.style.opacity = '1';
+  }
+}
 
 function doLogin(){
   var u = document.getElementById('loginUser').value.trim().toLowerCase();
@@ -1098,7 +1127,7 @@ function doLogin(){
   AUTH = role;
   sessionStorage.setItem('terikano_session_auth', role);
   var box = document.getElementById('loginBox');
-  if(box) box.style.display = 'none';
+  if(box) box.classList.add('hideBox');
   if(msg) msg.textContent = '';
   document.getElementById('loginPass').value = '';
   if(typeof showPage === 'function') showPage('home');
@@ -1108,8 +1137,7 @@ function doLogout(){
   AUTH = null;
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
-  var box = document.getElementById('loginBox');
-  if(box) box.style.display = 'flex';
+  forceLoginBox();
 }
 
 var _loginBtn = document.getElementById('loginBtn');
@@ -1123,14 +1151,17 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   if(e.key === 'Enter') doLogin();
 });
 
-// START - on page load - ALWAYS ASK PW, NO AUTO LOGIN
+// START - ALWAYS ASK PW, NO AUTO LOGIN - NUCLEAR
 (function(){
-  var loginBox = document.getElementById('loginBox');
-  if(loginBox) loginBox.style.display = 'flex';
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
+  AUTH = null;
+  forceLoginBox();
   try{ restoreAll(); }catch(e){}
-  if(loginBox) loginBox.style.display = 'flex';
+  forceLoginBox();
+  // Keep forcing for 3 seconds - beats any other onload that tries to hide it
+  setInterval(forceLoginBox, 200);
+  window.addEventListener('load', forceLoginBox);
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
