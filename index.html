@@ -1140,6 +1140,7 @@ function doLogin(){
 }
 function doLogout(){
   sessionStorage.removeItem('terikano_session_auth');
+  localStorage.removeItem('terikano_session_auth');
   window.location.reload();
 }
 
@@ -1159,6 +1160,7 @@ document.querySelectorAll('button').forEach(function(b){
 // START - on page load - ALWAYS ASK PW, NO AUTO LOGIN
 (function(){
   sessionStorage.removeItem('terikano_session_auth');
+  localStorage.removeItem('terikano_session_auth');
   restoreAll();
   var loginBox = document.getElementById('loginBox');
   loginBox.style.display = 'flex';
