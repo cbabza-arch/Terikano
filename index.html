@@ -1520,7 +1520,8 @@ function filterProfit(year){
 })();
 </script>
   <script>
-// === TERIKANO FINAL PRO - ONE SCRIPT ONLY ===
+<script>
+// === TERIKANO FINAL PRO V3 COMPACT - ONE SCRIPT ONLY ===
 (function(){
   // ---------- ROLE ----------
   var badge = document.getElementById('roleBadge');
@@ -1545,16 +1546,19 @@ function filterProfit(year){
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
 
-  // ---------- PRO CSS ----------
+  // ---------- PRO CSS - COMPACT ----------
   var css = document.createElement('style');
   css.innerHTML = `
-    .pro-wrap{ overflow-x:auto !important; width:100% !important; background:#fff !important; border:1px solid #e0e0e0 !important; border-radius:12px !important; box-shadow:0 2px 10px rgba(0,0,0,0.06) !important; margin-top:10px !important; }
+    .pro-wrap{ overflow-x:auto !important; width:100% !important; background:#fff !important; border:1px solid #e0e0e0 !important; border-radius:12px !important; margin-top:10px !important; }
     .pro-wrap table{ min-width:650px !important; width:100% !important; border-collapse:collapse !important; font-size:14px !important; }
-    .pro-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:12px 10px !important; white-space:nowrap !important; text-align:center !important; position:sticky !important; top:0 !important; }
+    .pro-wrap th{ background:#1a5c2a !important; color:#fff !important; padding:12px 10px !important; white-space:nowrap !important; text-align:center !important; }
     .pro-wrap td{ padding:11px 10px !important; text-align:center !important; border-bottom:1px solid #f0f0f0 !important; white-space:nowrap !important; }
     .pro-wrap tr:nth-child(even) td{ background:#f8fdf9 !important; }
-    .pro-input input, .pro-input select{ width:100% !important; min-height:48px !important; font-size:16px !important; display:block !important; margin-bottom:8px !important; border:1px solid #ddd !important; border-radius:10px !important; padding:10px 12px !important; background:#fff !important; }
-    .pro-box{ background:#fff !important; border-radius:14px !important; padding:14px !important; margin-top:10px !important; box-shadow:0 2px 12px rgba(0,0,0,0.06) !important; }
+    .sale-compact{ background:#fff !important; border-radius:14px !important; padding:12px !important; margin-top:10px !important; display:block !important; width:100% !important; }
+    .sale-row1{ display:flex !important; flex-direction:row !important; gap:6px !important; align-items:center !important; width:100% !important; margin-bottom:6px !important; }
+    .sale-row2{ display:flex !important; flex-direction:row !important; gap:6px !important; align-items:center !important; width:100% !important; margin-bottom:6px !important; }
+    .sale-row1 input, .sale-row1 select{ min-height:44px !important; font-size:15px !important; }
+    .sale-row2 input, .sale-row2 select{ min-height:44px !important; font-size:15px !important; }
   `;
   document.head.appendChild(css);
 
@@ -1579,37 +1583,98 @@ function filterProfit(year){
     });
   }
 
-  // ---------- PRO TABLES + ACCORDION ----------
+  // ---------- AUTO DATE ----------
+  function fixDate(){
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var d = new Date();
+    var todayStr = ('0'+d.getDate()).slice(-2) + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+    var iso = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+    document.querySelectorAll('input').forEach(function(inp){
+      var ph = (inp.placeholder||'').toLowerCase();
+      var isDate = ph.includes('date') || (inp.type === 'date');
+      // Find SALE date input: near SALE box, first input
+      if(!isDate) return;
+      if(!inp.value || inp.value === ''){
+        if(inp.type === 'date') inp.value = iso;
+        else inp.value = todayStr;
+      }
+    });
+  }
+
+  // ---------- PRO TABLES + SALE COMPACT - FIRST + SECOND OPEN SAME ----------
   function fixPro(){
-    // 1. Wrap every table in PRO wrap
     document.querySelectorAll('table').forEach(function(tbl){
       if(tbl.parentElement.classList.contains('pro-wrap')) return;
-      // Skip tiny layout tables
       if(tbl.rows.length < 2) return;
       var wrap = document.createElement('div');
       wrap.className = 'pro-wrap';
       tbl.parentNode.insertBefore(wrap, tbl);
       wrap.appendChild(tbl);
     });
-    // 2. SALE box PRO
-    var titleEl=null;
+
+    // SALE COMPACT
+    var titleEl = null;
     document.querySelectorAll('div, b, span').forEach(function(el){
-      if((el.textContent||'').includes('SALE - Average Cost') && (el.textContent||'').length < 100) titleEl=el;
+      if((el.textContent||'').includes('SALE - Average Cost') && (el.textContent||'').length < 100) titleEl = el;
     });
-    if(titleEl){
-      var root=titleEl;
-      for(var i=0;i<6;i++){ if(!root.parentElement) break; root=root.parentElement; if((root.textContent||'').includes('QTY KEYPAD') && (root.textContent||'').includes('ADD TO CART')) break; }
-      if(root && root.classList && !root.classList.contains('pro-input')){
-        root.classList.add('pro-input'); root.classList.add('pro-box');
-        root.style.setProperty('display','block','important');
-        root.querySelectorAll('div').forEach(function(d){ if(d.querySelector('input, select')){ d.style.setProperty('display','block','important'); d.style.setProperty('width','100%','important'); } });
-      }
+    if(!titleEl) return;
+    var root = titleEl;
+    for(var i=0;i<8;i++){
+      if(!root.parentElement) break;
+      root = root.parentElement;
+      if((root.textContent||'').includes('QTY KEYPAD') && (root.textContent||'').includes('ADD TO CART')) break;
     }
+    if(!root || !root.classList) return;
+    root.classList.add('sale-compact');
+    root.style.setProperty('display','block','important');
+
+    // Find the rows inside SALE by their labels
+    // Row 1 = Date + Cust, Row 2 = Item + Qty + Price + CASH
+    root.querySelectorAll('div').forEach(function(d){
+      var t = d.textContent||'';
+      // Skip QTY KEYPAD, skip black bar, skip table wrap
+      if(t.includes('QTY KEYPAD') || t.includes('ADD TO CART') || t.includes('AVERAGE COST')) return;
+      if(d.querySelector('table')) return;
+      // Row with Date + Cust
+      if(t.includes('Date') && t.includes('Cust')){
+        d.classList.add('sale-row1');
+        d.style.setProperty('display','flex','important');
+        d.style.setProperty('flex-direction','row','important');
+        // Date input small, Cust bigger
+        var inputs = d.querySelectorAll('input, select');
+        inputs.forEach(function(inp, idx){
+          if(idx === 0) inp.style.setProperty('width','38%','important');
+          else inp.style.setProperty('width','62%','important');
+          inp.style.setProperty('flex','none','important');
+        });
+      }
+      // Row with Item + Qty + Price + CASH
+      if(t.includes('Item') && t.includes('Qty') && t.includes('Price')){
+        d.classList.add('sale-row2');
+        d.style.setProperty('display','flex','important');
+        d.style.setProperty('flex-direction','row','important');
+        var inputs2 = d.querySelectorAll('input, select');
+        inputs2.forEach(function(inp, idx){
+          if(idx === 0) inp.style.setProperty('width','38%','important'); // Item
+          else if(idx === 1) inp.style.setProperty('width','18%','important'); // Qty
+          else if(idx === 2) inp.style.setProperty('width','22%','important'); // Price
+          else inp.style.setProperty('width','22%','important'); // CASH
+          inp.style.setProperty('flex','none','important');
+        });
+      }
+      // Stock row - full width
+      if(t.includes('Stock:') && t.includes('Avg Cost')){
+        d.style.setProperty('display','block','important');
+        d.style.setProperty('width','100%','important');
+        d.querySelectorAll('input, select').forEach(function(inp){
+          inp.style.setProperty('width','100%','important');
+        });
+      }
+    });
+    fixDate();
   }
 
   // ---------- ACCORDION - ONE OPEN ONLY ----------
-  // Your sections: SALE, STOCK, CREDITORS, LEDGER, COLLECT, etc.
-  // We hide all section boxes, then show only clicked one.
   var SECTION_WORDS = ['SALE -','STOCK','CREDITORS','LEDGER','COLLECT','CLOSING','COCO MILL','EXPENSE','BANK +','DRAWING','CAPITAL','TARGET','REPORT','PURCHASE','WHOLESALER','EXPIRY'];
   function closeAllSections(exceptText){
     document.querySelectorAll('div').forEach(function(el){
@@ -1618,11 +1683,7 @@ function filterProfit(year){
       for(var i=0;i<SECTION_WORDS.length;i++){
         if(t.includes(SECTION_WORDS[i]) && t.length > 50 && t.length < 4000){
           if(exceptText && t.includes(exceptText)) continue;
-          // Only hide if it is a panel, not menu button
-          if(el.style.display !== 'none' && el.querySelector('table, input')){
-            el.dataset.wasOpen = '1';
-            el.style.display = 'none';
-          }
+          if(el.style.display !== 'none' && el.querySelector('table, input')){ el.dataset.wasOpen='1'; el.style.display='none'; }
           break;
         }
       }
@@ -1631,35 +1692,28 @@ function filterProfit(year){
   function openSection(word){
     document.querySelectorAll('div').forEach(function(el){
       var t=(el.textContent||'').toUpperCase();
-      if(t.includes(word) && el.dataset.wasOpen === '1'){
-        el.style.display = 'block';
-        el.dataset.wasOpen = '';
-      }
+      if(t.includes(word) && el.dataset.wasOpen==='1'){ el.style.display='block'; el.dataset.wasOpen=''; }
     });
   }
-
-  // On load: close all, show nothing - user clicks one box
   var didInit = false;
   function initAccordion(){
     if(didInit) return;
-    // Wait for login - if login box still there, don't close yet
     if(document.querySelector('#loginBox')) return;
     if(!getRole()) return;
     didInit = true;
     setTimeout(function(){ closeAllSections(''); }, 500);
   }
 
-  // ---------- CLICKS - NO BLOCKING ----------
+  // ---------- CLICKS ----------
   document.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('button, a') : null;
     if(!btn) return;
     var t = (btn.textContent||'').toUpperCase().trim();
     if(t.includes('LOGOUT')){ doLogout(); return; }
     if(t.includes('LOGIN') && t.length < 30){ tryLogin(); return; }
-    // Accordion: click menu -> close others, open this one
     var map = {'SALE':'SALE -','STOCK':'STOCK','CREDITORS':'CREDITORS','LEDGER':'LEDGER','COLLECT':'COLLECT'};
     for(var k in map){
-      if(t === k || t.includes('💰 '+k) || t.includes(k+' ')){
+      if(t === k || t.includes(k)){
         closeAllSections(map[k]);
         setTimeout(function(){ openSection(map[k]); fixPro(); }, 300);
         setTimeout(fixPro, 800);
