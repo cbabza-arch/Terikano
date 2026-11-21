@@ -1167,9 +1167,8 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// STAFF NUCLEAR V4 - Rebuild menu for Staff only
+// STAFF NUCLEAR V5 - Hide Dashboard Owner Cards
 (function(){
-  // Staff = Owner so buttons work
   window.isOwner = function(){
     var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
     return a === 'owner' || a === 'staff';
@@ -1181,79 +1180,66 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
     return (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase() === 'staff';
   }
 
-  function buildStaffMenu(){
-    if(!isStaffNow()) {
-      var old = document.getElementById('staffOnlyMenu');
-      if(old) old.remove();
-      return;
-    }
-    // If menu already built, don't rebuild
-    if(document.getElementById('staffOnlyMenu')) return;
+  function fixStaff(){
+    if(!isStaffNow()) return;
 
-    // 1. Hide EVERYTHING that looks like menu/dashboard for Staff
-    document.querySelectorAll('div, section').forEach(function(el){
+    // 1. Top Staff Menu - keep it
+    if(!document.getElementById('staffOnlyMenu')){
+      var menu = document.createElement('div');
+      menu.id = 'staffOnlyMenu';
+      menu.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#0f172a;padding:10px;display:flex;gap:8px;overflow-x:auto;';
+      var pages = [['SALE','sale'],['STOCK','stock'],['CREDITORS','creditors'],['LEDGER','ledger'],['COLLECT','collect'],['LOGOUT','logout']];
+      pages.forEach(function(p){
+        var b = document.createElement('button');
+        b.textContent = p[0];
+        b.style.cssText = 'padding:10px 14px;background:#fff;color:#0f172a;border:0;border-radius:6px;font-weight:bold;white-space:nowrap;cursor:pointer;';
+        b.onclick = function(){
+          if(p[1] === 'logout'){
+            if(typeof doLogout === 'function') doLogout();
+            else { sessionStorage.removeItem('terikano_session_auth'); location.reload(); }
+            return;
+          }
+          if(typeof showPage === 'function') showPage(p[1]);
+          else if(typeof showTab === 'function') showTab(p[1]);
+          setTimeout(fixStaff, 300);
+        };
+        menu.appendChild(b);
+      });
+      document.body.appendChild(menu);
+      document.body.style.paddingTop = '60px';
+    }
+
+    // 2. Hide Dashboard Owner Cards - by text inside card
+    document.querySelectorAll('div').forEach(function(el){
       var t = (el.textContent||'').toLowerCase();
-      // Hide dashboard owner only + target
-      if(t.includes('dashboard owner only') || t.includes('target today')){
-        if(el.textContent.length < 800) el.style.display = 'none';
+      // Only small cards, not big containers
+      if(t.length > 0 && t.length < 120){
+        if(t.includes('real profit') || t.includes('drawing owner') || t.includes('drawing') ||
+           t.includes('coco stock') || t.includes('coco mill') || t.includes('coco sard') ||
+           t.includes('coco') || t.includes('expense') || t.includes('profit owner') ||
+           t.includes('target today') || t.includes('dashboard owner')){
+          el.style.display = 'none';
+          // Also hide parent card if this is inside it
+          var parent = el.parentElement;
+          if(parent && parent.textContent.length < 200) parent.style.display = 'none';
+        }
       }
     });
 
-    // 2. Hide original menu container - find container with SALE + LOGOUT
-    // We hide all big menu buttons by text, but keep page content
+    // 3. Hide forbidden menu buttons again
     document.querySelectorAll('div[onclick], button').forEach(function(el){
       var t = (el.textContent||'').toLowerCase().trim();
-      if(t.length > 0 && t.length < 30){
-        var forbidden = ['closing','coco','expiry','clearance','waste','drawing','capital','target','normal','monthly','yearly','pw','backup','rename','wholesaler','setting','other','profit','report','user','admin','dashboard','delete','expense','purchase','bank'];
-        // Keep allowed ones - we will hide them too and use our own menu, cleaner
-        var allowed = ['sale','stock','creditors','ledger','collect','logout'];
-        if(forbidden.some(function(f){ return t.includes(f); }) || allowed.some(function(a){ return t === a; })){
-          el.style.display = 'none';
-        }
+      if(t.length > 0 && t.length < 30 && !el.closest('#staffOnlyMenu')){
+        var forbidden = ['closing','coco','expiry','clearance','waste','drawing','capital','target','normal','monthly','yearly','pw','backup','rename','wholesaler','setting','other','profit','report','user','admin','dashboard','delete','expense','purchase','bank + ib'];
+        // Don't hide our allowed menu in original MENU box - those are allowed
+        var allowed = ['sale','stock','creditors','ledger','collect','logout','collect + ib'];
+        if(allowed.some(function(a){ return t.includes(a); })) return;
+        if(forbidden.some(function(f){ return t.includes(f); })) el.style.display = 'none';
       }
     });
-
-    // 3. Create NEW Staff menu at top - these buttons CALL your app directly
-    var menu = document.createElement('div');
-    menu.id = 'staffOnlyMenu';
-    menu.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#0f172a;padding:10px;display:flex;gap:8px;overflow-x:auto;';
-    var pages = [
-      ['SALE','sale'], ['STOCK','stock'], ['CREDITORS','creditors'],
-      ['LEDGER','ledger'], ['COLLECT','collect'], ['LOGOUT','logout']
-    ];
-    pages.forEach(function(p){
-      var b = document.createElement('button');
-      b.textContent = p[0];
-      b.style.cssText = 'padding:10px 14px;background:#fff;color:#0f172a;border:0;border-radius:6px;font-weight:bold;white-space:nowrap;cursor:pointer;';
-      b.onclick = function(){
-        if(p[1] === 'logout'){
-          // Call your logout
-          if(typeof doLogout === 'function') doLogout();
-          else { sessionStorage.removeItem('terikano_session_auth'); location.reload(); }
-          return;
-        }
-        // Try all possible show functions your app uses
-        if(typeof showPage === 'function') showPage(p[1]);
-        else if(typeof showTab === 'function') showTab(p[1]);
-        else if(typeof openPage === 'function') openPage(p[1]);
-        else {
-          // Fallback: click original hidden button
-          var orig = Array.from(document.querySelectorAll('div[onclick], button')).find(function(el){
-            return (el.textContent||'').toLowerCase().trim() === p[1];
-          });
-          if(orig) orig.click();
-        }
-        // Hide menu items again after navigation
-        setTimeout(buildStaffMenu, 300);
-      };
-      menu.appendChild(b);
-    });
-    document.body.appendChild(menu);
-    // Push content down so menu doesn't cover it
-    document.body.style.paddingTop = '60px';
   }
 
-  // Auto wipe PW 5 sec
+  // Auto wipe PW
   var pwTimer = null;
   function wipePw(){
     var inp = document.getElementById('loginPass');
@@ -1266,7 +1252,7 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
     }
   });
 
-  setInterval(buildStaffMenu, 800);
+  setInterval(fixStaff, 500);
 })();
 </script>
 </body>
