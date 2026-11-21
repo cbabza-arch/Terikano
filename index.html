@@ -1068,81 +1068,59 @@ function filterProfit(year){
 }
   
 <!-- LOGIN BOX - CLEAN B -->
-<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999">
-  <div style="background:#fff;padding:24px;border-radius:14px;width:300px;text-align:center">
-    <h2 style="margin:0 0 12px">TERIKANO</h2>
-    <input id="loginUser" placeholder="User" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
-    <input id="loginPass" type="password" placeholder="PIN" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
-    <div id="loginError" style="color:red;font-size:13px;min-height:18px"></div>
-    <button id="loginBtn" style="width:100%;padding:12px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-weight:bold">LOGIN</button>
-    <div style="font-size:12px;color:#666;margin-top:10px">Owner: owner / 9999<br>Staff: staff / 1234</div>
+<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999;">
+  <div style="background:#fff;padding:24px;border-radius:12px;width:300px;text-align:center;">
+    <h2 style="margin:0 0 4px 0;">TERIKANO</h2>
+    <p style="margin:0 0 16px 0;color:#666;font-size:13px;">Please Login</p>
+    <input id="loginUser" type="text" placeholder="Username" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;">
+    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:10px;margin-bottom:14px;box-sizing:border-box;">
+    <button id="loginBtn" style="width:100%;padding:11px;background:#0f172a;color:#fff;border:0;border-radius:6px;font-weight:bold;">LOGIN</button>
+    <p id="loginMsg" style="color:red;font-size:12px;min-height:16px;margin:10px 0 0 0;"></p>
+    <p style="font-size:11px;color:#999;margin:12px 0 0 0;">Owner: owner / 9999<br>Staff: staff / 1234</p>
   </div>
 </div>
 
 <script>
-// ===== LOGIN + LOGOUT + STAFF - CLEAN B - ONE BLOCK =====
-function restoreAll(){
-  document.querySelectorAll('.menu-section button, .owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
-    el.style.display = '';
-  });
-  var cashBox = document.getElementById('cashBoxIsolated');
-  if(cashBox) cashBox.style.display = '';
-}
-
-function hideForStaff(){
-  restoreAll();
-  if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-  var keepWords = ['SALE','CREDITORS','COLLECT','STOCK','LEDGER','LOGOUT'];
-  document.querySelectorAll('.menu-section button').forEach(function(btn){
-    var t = (btn.innerText || '').toUpperCase();
-    var keep = false;
-    for(var i=0;i<keepWords.length;i++){ if(t.indexOf(keepWords[i]) !== -1) keep = true; }
-    if(!keep) btn.style.display = 'none';
-  });
-  document.querySelectorAll('.owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
-    el.style.display = 'none';
-  });
-  var cashBox2 = document.getElementById('cashBoxIsolated');
-  if(cashBox2) cashBox2.style.display = 'none';
-}
+// LOGIN + STAFF - CLEAN B
+var AUTH = null;
 
 function doLogin(){
-  var u = (document.getElementById('loginUser').value || '').trim().toLowerCase();
-  var p = (document.getElementById('loginPass').value || '').trim();
-  var err = document.getElementById('loginError');
-  // Use YOUR cloud-synced custom PW, not hardcoded only
-  var ownerPw = localStorage.getItem('terikano_owner_pw') || '9999';
-  var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
-  var role = '';
-  if(u === 'owner' && (p === ownerPw || p === '9999')) role = 'owner';
-  if(u === 'staff' && (p === staffPw || p === '1234')) role = 'staff';
+  var u = document.getElementById('loginUser').value.trim().toLowerCase();
+  var p = document.getElementById('loginPass').value.trim();
+  var msg = document.getElementById('loginMsg');
+  var role = null;
+  if(u === 'owner' && p === '9999') role = 'Owner';
+  if(u === 'staff' && p === '1234') role = 'Staff';
   if(!role){
-    err.textContent = 'Wrong user or PIN';
+    if(msg) msg.textContent = 'Wrong username or password';
     return;
   }
+  AUTH = role;
   sessionStorage.setItem('terikano_session_auth', role);
-  document.getElementById('loginBox').style.display = 'none';
+  var box = document.getElementById('loginBox');
+  if(box) box.style.display = 'none';
+  if(msg) msg.textContent = '';
   document.getElementById('loginPass').value = '';
-  err.textContent = '';
-  hideForStaff();
+  if(typeof showPage === 'function') showPage('home');
 }
+
 function doLogout(){
+  AUTH = null;
   sessionStorage.removeItem('terikano_session_auth');
   localStorage.removeItem('terikano_session_auth');
-  window.location.reload();
+  var box = document.getElementById('loginBox');
+  if(box) box.style.display = 'flex';
 }
 
-document.getElementById('loginBtn').onclick = doLogin;
-document.getElementById('loginPass').addEventListener('keydown', function(e){
-  if(e.key === 'Enter') doLogin();
-});
+var _loginBtn = document.getElementById('loginBtn');
+if(_loginBtn) _loginBtn.onclick = doLogin;
 
-// LOGOUT BUTTON FIX - bind ALL LOGOUT buttons to doLogout
-document.querySelectorAll('button').forEach(function(b){
-  var t = (b.innerText || '').toUpperCase();
-  if(t.indexOf('LOGOUT') !== -1){
-    b.onclick = function(){ doLogout(); };
-  }
+var _logoutBtn = document.getElementById('logoutBtn');
+if(_logoutBtn) _logoutBtn.onclick = doLogout;
+
+var _loginPass = document.getElementById('loginPass');
+if(_loginPass) _loginPass.addEventListener('keydown', function(e){
+  if(e.key === 'Enter') doLogin();
 });
 
 // START - on page load - ALWAYS ASK PW, NO AUTO LOGIN
