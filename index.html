@@ -1808,5 +1808,37 @@ function filterProfit(year){
   });
 })();
 </script>
+  <script>
+// === FIX HEAD BUGS - OVERRIDE, NO DELETE ===
+(function(){
+  // 1. Sync auth - copy localStorage to sessionStorage so body check works
+  var lsAuth = localStorage.getItem('terikano_session_auth');
+  var ssAuth = sessionStorage.getItem('terikano_session_auth');
+  if(lsAuth && !ssAuth) sessionStorage.setItem('terikano_session_auth', lsAuth);
+  if(ssAuth && !lsAuth) localStorage.setItem('terikano_session_auth', ssAuth);
+
+  var auth = sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth');
+  if(auth === 'staff'){
+    document.documentElement.classList.add('staff-mode');
+    // 2. Real hide - by TEXT, not by class, because boxes have no owner-only class
+    var hideTimer = setInterval(function(){
+      document.querySelectorAll('div').forEach(function(el){
+        if(el.closest && el.closest('#loginBox')) return;
+        var t = (el.textContent||'').toUpperCase().trim();
+        if(t.startsWith('BANK SETTINGS') || t.startsWith('MANUAL ADJUST') || t.startsWith('UPDATE SELL') || t.startsWith('ADJUST DIFF')){
+          el.style.setProperty('display','none','important');
+        }
+      });
+    }, 200);
+    // Stop after 5 secs to save battery
+    setTimeout(function(){ clearInterval(hideTimer); }, 5000);
+  }
+
+  // 3. Remove instantHide FASTER - don't wait 1200ms
+  var s = document.getElementById('instantHide');
+  if(s) s.remove();
+  document.body.style.visibility = 'visible';
+})();
+</script>
 </body>
 </html>
