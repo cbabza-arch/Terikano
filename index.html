@@ -1335,7 +1335,7 @@ function filterProfit(year){
     }
   }, true);
 
-  // START - session only, NO localStorage auto-login
+ // START - session only, NO localStorage auto-login
   if(location.href.toLowerCase().indexOf('logout') !== -1){
     sessionStorage.clear();
     try{ if(window.history.replaceState) window.history.replaceState(null,'',location.pathname); }catch(e){}
@@ -1348,139 +1348,22 @@ function filterProfit(year){
   }
 })();
 </script>
-  <script>
-// === CREATE LOGIN IF MISSING + FORCE SHOW ===
-(function(){
-  // 1. Force body visible - beat TOP
-  var s = document.createElement('style');
-  s.innerHTML = 'body{visibility:visible !important; opacity:1 !important;}';
-  document.head.appendChild(s);
-  document.body.style.visibility = 'visible';
-
-  // 2. If no loginBox, create it - like old FIREBASE GATE did
-  if(!document.getElementById('loginBox')){
-    var box = document.createElement('div');
-    box.id = 'loginBox';
-    box.style.cssText = 'position:fixed;inset:0;z-index:99999999;background:#111;display:flex;align-items:center;justify-content:center;';
-    box.innerHTML = '<div style="background:#222;padding:24px;border-radius:16px;width:300px;text-align:center;color:#fff;font-family:sans-serif;">'
-      + '<h2 style="margin:0 0 12px;">🔒 TERIKANO</h2>'
-      + '<p style="font-size:13px;color:#aaa;margin:0 0 12px;">Enter password to continue</p>'
-      + '<input id="pwInput" type="password" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px;font-size:16px;">'
-      + '<button id="loginBtn" onclick="checkLogin()" style="width:100%;padding:12px;background:#FFD700;border:none;border-radius:10px;font-weight:bold;font-size:16px;">LOGIN</button>'
-      + '<p id="loginErr" style="color:#ff6666;font-size:13px;min-height:18px;margin:8px 0 0;"></p>'
-      + '</div>';
-    document.body.appendChild(box);
-    // Connect new inputs to ONE code
-    var inp = document.getElementById('pwInput');
-    if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
-    var btn = document.getElementById('loginBtn');
-    if(btn) btn.onclick = window.checkLogin;
-  } else {
-    var lb = document.getElementById('loginBox');
-    lb.style.display = 'flex'; lb.style.visibility = 'visible';
-  }
-})();
-</script>
 <script>
-// === PRO TABLES + STAFF HIDES ===
+// === TERIKANO V6 - ONE SCRIPT ONLY - FIXES BLACK SCREEN ===
 (function(){
-  // --- PRO TABLE CSS ---
-  var css = document.createElement('style');
-  css.innerHTML = `
-    /* PRO TABLE LAYOUT */
-    table{ width:100% !important; min-width:720px !important; border-collapse:collapse !important; font-size:14px !important; }
-    /* Wrap every table in scroll box */
-    .pro-scroll{ overflow-x:auto !important; -webkit-overflow-scrolling:touch !important; width:100% !important; max-width:100% !important; border-radius:12px !important; border:1px solid #ddd !important; background:#fff !important; }
-    .pro-scroll table{ min-width:720px !important; }
-    table th{
-      position:sticky !important; top:0 !important; z-index:2 !important;
-      background:#1a5c2a !important; color:#fff !important;
-      padding:10px 8px !important; text-align:center !important; font-size:13px !important; font-weight:800 !important; white-space:nowrap !important;
-    }
-    table td{ padding:10px 8px !important; text-align:center !important; border-bottom:1px solid #eee !important; white-space:nowrap !important; font-size:14px !important; }
-    table tr:nth-child(even) td{ background:#f6fff6 !important; }
-    table tr:hover td{ background:#fff3cd !important; }
-    /* First column - Item name - sticky left + left align */
-    table td:first-child, table th:first-child{ text-align:left !important; font-weight:700 !important; position:sticky !important; left:0 !important; background:#fff !important; z-index:1 !important; min-width:110px !important; }
-    table th:first-child{ background:#1a5c2a !important; color:#fff !important; z-index:3 !important; }
-    /* Inputs inside tables - not crushed */
-    table input, table select{ min-width:70px !important; height:38px !important; font-size:14px !important; padding:6px !important; }
-    /* Boxes - no overflow cut */
-    div{ max-width:100% !important; }
-  `;
-  document.head.appendChild(css);
-
-  function proTables(){
-    document.querySelectorAll('table').forEach(function(tbl){
-      if(tbl.parentElement && tbl.parentElement.classList.contains('pro-scroll')) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'pro-scroll';
-      tbl.parentNode.insertBefore(wrap, tbl);
-      wrap.appendChild(tbl);
-    });
-  }
-
   var badge = document.getElementById('roleBadge');
   if(!badge){
     badge = document.createElement('div');
     badge.id = 'roleBadge';
-    badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:16px;';
+    badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:15px;';
     badge.textContent = 'ROLE: NONE';
     document.body.appendChild(badge);
   }
-  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || ''; }
-  function setRole(role){
-    sessionStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_session_auth', role);
-    localStorage.setItem('terikano_role', role);
-    badge.textContent = 'ROLE: ' + role.toUpperCase();
-    badge.style.background = role === 'staff' ? 'green' : 'red';
-  }
-  var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
-  function isInsideMenu(el){
-    var cur = el;
-    for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur = cur.parentElement; var t=(cur.textContent||'').toUpperCase(); if(t.includes('MENU V28')) return true; }
-    return false;
-  }
-  function fixStaff(){
-    var role = getRole();
-    badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
-    badge.style.background = role === 'staff' ? 'green' : 'red';
-    proTables(); // Pro tables for BOTH owner + staff
-    if(role !== 'staff') return;
-    document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.includes('DASHBOARD OWNER ONLY') && el.children.length < 30) el.style.display='none';
-      if(t.includes('TARGET TODAY') && t.length < 200 && el.children.length < 5) el.style.display='none';
-      if(t.includes('6.00 TIP') && el.children.length < 10) el.style.display='none';
-    });
-    document.querySelectorAll('button, div, a').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if(!t || t.length > 90) return;
-      if(el.children.length > 2) return;
-      if(t.includes('STOCK')) return;
-      if(t === 'SALE' || (t.includes('SALE') && t.length < 15)) return;
-      if(t.includes('CREDITORS')) return;
-      if(t.includes('LEDGER')) return;
-      if(t.includes('COLLECT')) return;
-      if(t.includes('LOGOUT')) return;
-      if(t.includes('MENU')) return;
-      if(!isInsideMenu(el)) return;
-      for(var i=0;i<HIDE.length;i++){ if(t.includes(HIDE[i])){ el.style.display='none'; if(el.parentElement && el.parentElement.children.length === 1) el.parentElement.style.display='none'; break; } }
-      if(t === 'PW' || t.endsWith(' PW')) el.style.display='none';
-    });
-    document.querySelectorAll('div, button').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase();
-      if(t.length > 400) return;
-      if(t.includes('MANUAL ADJUST') || t.includes('BANK SETTINGS') || t.includes('UPDATE SELL PRICE') || t.includes('ADJUST DIFF') || t.includes('SAVE BANK')){
-        el.style.display='none';
-        if(el.parentElement && (el.parentElement.textContent||'').length < 600) el.parentElement.style.display='none';
-      }
-    });
-    document.querySelectorAll('button, div').forEach(function(el){
-      var t = (el.textContent||'').toUpperCase().trim();
-      if((t === 'ADJUST DIFF' || t === 'SAVE BANK%' || t === 'UPDATE SELL') && t.length < 30) el.style.display='none';
-    });
+  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || ''; }
+  function setRole(r){
+    sessionStorage.setItem('terikano_session_auth', r);
+    badge.textContent = 'ROLE: ' + r.toUpperCase();
+    badge.style.background = r === 'staff' ? 'green' : 'red';
   }
   function getPW(){
     var el = document.getElementById('pwInput');
@@ -1493,58 +1376,28 @@ function filterProfit(year){
     var p = getPW();
     if(!p){ alert('Type PW first'); return; }
     var role = '';
-    if(p === '1234') role='staff';
-    else if(p === '200175') role='owner';
+    if(p === '1234') role = 'staff';
+    else if(p === '200175') role = 'owner';
     else {
       var co = String(window.OWNER_PW || localStorage.getItem('terikano_owner_pw') || '');
       var cs = String(window.STAFF_PW || localStorage.getItem('terikano_staff_pw') || '');
       if(p===co && co) role='owner'; else if(p===cs && cs) role='staff';
     }
     if(!role){ alert('Wrong PW: '+p); return; }
-    setRole(role); alert(role.toUpperCase()+' LOGIN OK');
+    setRole(role);
     document.querySelectorAll('#loginBox, .loginBox').forEach(function(b){ b.remove(); });
+    if(typeof window.hideLogin === 'function'){ try{ window.hideLogin(); }catch(e){} }
+    if(role === 'staff') document.body.classList.add('staff-mode');
+    else document.body.classList.remove('staff-mode');
+    alert(role.toUpperCase() + ' LOGIN OK');
   }
   function doLogout(){
-    ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); });
-    badge.textContent='ROLE: NONE'; badge.style.background='red'; alert('Logged out'); location.reload();
+    sessionStorage.removeItem('terikano_session_auth');
+    try{ sessionStorage.clear(); }catch(e){}
+    badge.textContent='ROLE: NONE'; badge.style.background='red';
+    location.reload();
   }
   window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
-  document.addEventListener('click', function(e){
-    var btn = e.target.closest ? e.target.closest('button, a') : null;
-    if(!btn) btn = e.target;
-    var t = (btn.textContent||'').toUpperCase().trim();
-    if(t === 'LOGOUT' || (t.includes('LOGOUT') && t.length < 20)){ e.preventDefault(); e.stopPropagation(); doLogout(); return; }
-    if(t.includes('LOGIN') && t.length < 30 && !t.includes('LOGOUT')){ e.preventDefault(); e.stopPropagation(); tryLogin(); return; }
-  }, true);
-  setInterval(fixStaff, 500);
-})();
-</script>
-<script>
-// === TERIKANO FINAL PRO V5 - NO AUTO HIDE - ONE SCRIPT ONLY ===
-(function(){
-  // ---------- ROLE ----------
-  var badge = document.getElementById('roleBadge');
-  if(!badge){
-    badge = document.createElement('div');
-    badge.id = 'roleBadge';
-    badge.style.cssText = 'position:fixed;top:5px;left:5px;z-index:99999;background:red;color:white;padding:8px 12px;border-radius:10px;font-weight:900;font-size:15px;';
-    badge.textContent = 'ROLE: NONE';
-    document.body.appendChild(badge);
-  }
-  function getRole(){ return sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_role') || ''; }
-  function setRole(r){ sessionStorage.setItem('terikano_session_auth', r); localStorage.setItem('terikano_session_auth', r); localStorage.setItem('terikano_role', r); badge.textContent = 'ROLE: ' + r.toUpperCase(); badge.style.background = r === 'staff' ? 'green' : 'red'; }
-  function doLogout(){ ['terikano_session_auth','terikano_auth','auth','loggedIn','terikano_role'].forEach(function(k){ sessionStorage.removeItem(k); localStorage.removeItem(k); }); badge.textContent = 'ROLE: NONE'; badge.style.background = 'red'; location.reload(); }
-  function tryLogin(){
-    var p = ''; var inputs = document.querySelectorAll('input');
-    for(var i=0;i<inputs.length;i++){ var v=(inputs[i].value||'').trim(); if(v==='1234'||v==='200175') p=v; }
-    if(!p){ alert('Type PW first'); return; }
-    var role = p === '1234' ? 'staff' : p === '200175' ? 'owner' : '';
-    if(!role){ alert('Wrong PW'); return; }
-    setRole(role); alert(role.toUpperCase() + ' LOGIN OK');
-  }
-  window.checkLogin = tryLogin; window.login = tryLogin; window.doLogin = tryLogin; window.logout = doLogout;
-
-  // ---------- CSS ----------
   var css = document.createElement('style');
   css.innerHTML = `
     .pro-wrap{ overflow-x:auto !important; width:100% !important; background:#fff !important; border:1px solid #e0e0e0 !important; border-radius:12px !important; margin-top:10px !important; }
@@ -1554,20 +1407,13 @@ function filterProfit(year){
     .pro-wrap tr:nth-child(even) td{ background:#f8fdf9 !important; }
   `;
   document.head.appendChild(css);
-
-  // ---------- STAFF HIDE - NEVER TOUCH LOGIN / PW / BLACK SCREEN ----------
   var HIDE_MENU = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
   function isInsideMenu(el){ var cur=el; for(var i=0;i<6;i++){ if(!cur.parentElement) break; cur=cur.parentElement; if((cur.textContent||'').toUpperCase().includes('MENU V28')) return true; } return false; }
   function fixStaff(){
-    var role = getRole(); badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE'); badge.style.background = role === 'staff' ? 'green' : 'red';
+    var role = getRole();
+    badge.textContent = 'ROLE: ' + (role ? role.toUpperCase() : 'NONE');
+    badge.style.background = role === 'staff' ? 'green' : 'red';
     if(role !== 'staff') return;
-    // NEVER hide if it contains PW / LOGIN
-    document.querySelectorAll('div').forEach(function(el){
-      var t=(el.textContent||'').toUpperCase();
-      if(t.includes('PASSWORD') || t.includes('LOGIN') || t.includes('PW')) return;
-      if(t.includes('CONFIRM') && t.includes('CLOSE 2025') && el.children.length < 10) el.style.display='none';
-      if(t.length < 300 && (t.includes('CLOSE YEAR') || t.includes('YEAR END CLOSE') || t.includes('STAFF PASSWORD'))) el.style.display='none';
-    });
     document.querySelectorAll('button, div, a').forEach(function(el){
       var t=(el.textContent||'').toUpperCase().trim();
       if(!t || t.length > 90 || el.children.length > 2) return;
@@ -1578,8 +1424,6 @@ function filterProfit(year){
       if(t==='PW' || t.endsWith(' PW')) el.style.display='none';
     });
   }
-
-  // ---------- AUTO DATE ----------
   function fixDate(){
     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var d = new Date();
@@ -1587,13 +1431,9 @@ function filterProfit(year){
     var iso = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
     document.querySelectorAll('input').forEach(function(inp){
       var ph = (inp.placeholder||'').toLowerCase();
-      if(ph.includes('date') || inp.type === 'date'){
-        if(!inp.value){ if(inp.type === 'date') inp.value = iso; else inp.value = todayStr; }
-      }
+      if(ph.includes('date') || inp.type === 'date'){ if(!inp.value){ if(inp.type === 'date') inp.value = iso; else inp.value = todayStr; } }
     });
   }
-
-  // ---------- SALE COMPACT - BY PLACEHOLDER ----------
   function fixSaleCompact(){
     var custInput = null, qtyInput = null;
     document.querySelectorAll('input, select').forEach(function(inp){
@@ -1607,13 +1447,10 @@ function filterProfit(year){
       row1.style.setProperty('display','flex','important');
       row1.style.setProperty('flex-direction','row','important');
       row1.style.setProperty('gap','6px','important');
-      row1.style.setProperty('align-items','center','important');
       row1.style.setProperty('width','100%','important');
       row1.style.setProperty('flex-wrap','nowrap','important');
-      var row1Inputs = row1.querySelectorAll('input, select');
-      row1Inputs.forEach(function(inp, idx){
+      row1.querySelectorAll('input, select').forEach(function(inp, idx){
         inp.style.setProperty('min-height','44px','important');
-        inp.style.setProperty('font-size','15px','important');
         if(idx === 0) inp.style.setProperty('width','38%','important');
         else inp.style.setProperty('width','62%','important');
         inp.style.setProperty('flex','none','important');
@@ -1625,13 +1462,10 @@ function filterProfit(year){
         row2.style.setProperty('display','flex','important');
         row2.style.setProperty('flex-direction','row','important');
         row2.style.setProperty('gap','6px','important');
-        row2.style.setProperty('align-items','center','important');
         row2.style.setProperty('width','100%','important');
         row2.style.setProperty('flex-wrap','nowrap','important');
-        var row2Inputs = row2.querySelectorAll('input, select');
-        row2Inputs.forEach(function(inp, idx){
+        row2.querySelectorAll('input, select').forEach(function(inp, idx){
           inp.style.setProperty('min-height','44px','important');
-          inp.style.setProperty('font-size','15px','important');
           inp.style.setProperty('flex','none','important');
           if(idx === 0) inp.style.setProperty('width','38%','important');
           else if(idx === 1) inp.style.setProperty('width','18%','important');
@@ -1640,17 +1474,8 @@ function filterProfit(year){
         });
       }
     }
-    document.querySelectorAll('input, select').forEach(function(inp){
-      var ph = (inp.placeholder||'');
-      if(ph.includes('Stock:') || ph.includes('Avg Cost')){
-        var p = inp.parentElement;
-        if(p){ p.style.setProperty('display','block','important'); p.style.setProperty('width','100%','important'); }
-        inp.style.setProperty('width','100%','important');
-      }
-    });
     fixDate();
   }
-
   function fixPro(){
     document.querySelectorAll('table').forEach(function(tbl){
       if(tbl.parentElement.classList.contains('pro-wrap')) return;
@@ -1662,8 +1487,6 @@ function filterProfit(year){
     });
     fixSaleCompact();
   }
-
-  // ---------- CLICKS - NO AUTO HIDE, NO BLOCKING ----------
   document.addEventListener('click', function(e){
     var btn = e.target.closest ? e.target.closest('button, a') : null;
     if(!btn) return;
@@ -1675,8 +1498,10 @@ function filterProfit(year){
       setTimeout(fixPro, 900);
     }
   });
-
-  // NO initAccordion anymore - we never auto-hide anything
+  if(!getRole()){
+    var lb = document.getElementById('loginBox');
+    if(lb){ lb.style.display='flex'; lb.style.visibility='visible'; }
+  }
   setInterval(function(){ fixStaff(); fixPro(); }, 600);
 })();
 </script>
