@@ -1418,5 +1418,31 @@ function filterProfit(year){
   if(getRole()) setTimeout(hideTopBoxes, 1000);
 })();
 </script>
+  <script>
+// === STAFF PATCH - STAFF SEES ONLY SALE / STOCK, NO OWNER ===
+(function(){
+  function hideForStaff(){
+    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
+    // Hide DASHBOARD OWNER ONLY completely for staff
+    document.querySelectorAll('div').forEach(function(el){
+      var t = (el.textContent||'').toUpperCase();
+      if(t.includes('DASHBOARD OWNER ONLY') && !t.includes('MENU V28')) el.style.display = 'none';
+    });
+    // Hide OWNER MENU buttons for staff
+    var HIDE = ['CLOSING','COCO MILL','CLEARANCE','WASTE','EXPENSE','BANK + IB','DRAWING','CAPITAL','TARGET SET','REPORT','NORMAL MONTHLY','COCO RATE','BACKUP','RENAME','PURCHASE','WHOLESALER DEBT','EXPIRY + ACK'];
+    document.querySelectorAll('button, div, a').forEach(function(el){
+      if(el.closest && el.closest('#loginBox')) return;
+      var t = (el.textContent||'').toUpperCase().trim();
+      if(!t || t.length > 90 || el.children.length > 2) return;
+      if(t.includes('PASSWORD') || t.includes('LOGIN')) return;
+      if(t.includes('STOCK') || t === 'SALE' || t.includes('SALE') || t.includes('CREDITORS') || t.includes('LEDGER') || t.includes('COLLECT') || t.includes('LOGOUT') || t.includes('MENU')) return;
+      for(var i=0;i<HIDE.length;i++){ if(t.includes(HIDE[i])){ el.style.display = 'none'; break; } }
+    });
+  }
+  setTimeout(hideForStaff, 1000);
+  setTimeout(hideForStaff, 2000);
+  document.addEventListener('click', function(){ setTimeout(hideForStaff, 500); });
+})();
+  </script>
 </body>
 </html>
