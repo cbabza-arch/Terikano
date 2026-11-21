@@ -1154,17 +1154,12 @@ document.querySelectorAll('button').forEach(function(b){
   }
 });
 
-// START - on page load
+// START - on page load - ALWAYS ASK PW, NO AUTO LOGIN
 (function(){
-  var auth = sessionStorage.getItem('terikano_session_auth');
+  sessionStorage.removeItem('terikano_session_auth');
+  restoreAll();
   var loginBox = document.getElementById('loginBox');
-  if(auth === 'owner' || auth === 'staff'){
-    loginBox.style.display = 'none';
-    hideForStaff();
-  } else {
-    restoreAll();
-    loginBox.style.display = 'flex';
-  }
+  loginBox.style.display = 'flex';
 })();
 </script>
 <!-- END LOGIN + STAFF - CLEAN B -->
