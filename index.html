@@ -1167,7 +1167,7 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// STAFF NUCLEAR V5 - Hide Dashboard Owner Cards
+// STAFF V7 - NO DOUBLE MENU - Hide Dashboard Boxes Only
 (function(){
   window.isOwner = function(){
     var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
@@ -1181,59 +1181,48 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
   }
 
   function fixStaff(){
-    if(!isStaffNow()) return;
-
-    // 1. Top Staff Menu - keep it
-    if(!document.getElementById('staffOnlyMenu')){
-      var menu = document.createElement('div');
-      menu.id = 'staffOnlyMenu';
-      menu.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#0f172a;padding:10px;display:flex;gap:8px;overflow-x:auto;';
-      var pages = [['SALE','sale'],['STOCK','stock'],['CREDITORS','creditors'],['LEDGER','ledger'],['COLLECT','collect'],['LOGOUT','logout']];
-      pages.forEach(function(p){
-        var b = document.createElement('button');
-        b.textContent = p[0];
-        b.style.cssText = 'padding:10px 14px;background:#fff;color:#0f172a;border:0;border-radius:6px;font-weight:bold;white-space:nowrap;cursor:pointer;';
-        b.onclick = function(){
-          if(p[1] === 'logout'){
-            if(typeof doLogout === 'function') doLogout();
-            else { sessionStorage.removeItem('terikano_session_auth'); location.reload(); }
-            return;
-          }
-          if(typeof showPage === 'function') showPage(p[1]);
-          else if(typeof showTab === 'function') showTab(p[1]);
-          setTimeout(fixStaff, 300);
-        };
-        menu.appendChild(b);
-      });
-      document.body.appendChild(menu);
-      document.body.style.paddingTop = '60px';
+    if(!isStaffNow()){
+      // Owner: make sure nothing hidden
+      return;
     }
 
-    // 2. Hide Dashboard Owner Cards - by text inside card
+    // 1. REMOVE the double top black bar from V4/V5/V6 if it exists
+    var old = document.getElementById('staffOnlyMenu');
+    if(old) old.remove();
+    document.body.style.paddingTop = '0px';
+
+    // 2. HIDE ALL DASHBOARD SMALL BOXES - SALES, CASH, BANK, etc.
+    // These are the small inline boxes on top
     document.querySelectorAll('div').forEach(function(el){
-      var t = (el.textContent||'').toLowerCase();
-      // Only small cards, not big containers
-      if(t.length > 0 && t.length < 120){
-        if(t.includes('real profit') || t.includes('drawing owner') || t.includes('drawing') ||
-           t.includes('coco stock') || t.includes('coco mill') || t.includes('coco sard') ||
-           t.includes('coco') || t.includes('expense') || t.includes('profit owner') ||
-           t.includes('target today') || t.includes('dashboard owner')){
+      var t = (el.textContent||'').toLowerCase().trim();
+      if(t.length > 0 && t.length < 150){
+        if(t.startsWith('sales') || t.startsWith('cash') || t.startsWith('bank') ||
+           t.startsWith('creditors') || t.startsWith('stock') || t.startsWith('expense') ||
+           t.startsWith('real profit') || t.startsWith('drawing') || t.startsWith('coco') ||
+           t.startsWith('target') || t.includes('dashboard owner') || t.includes('total stock')){
+          // Don't hide the MENU box itself - MENU box has SALE + STOCK + LOGOUT together
+          if(t.includes('menu')) return;
+          if(t.includes('logout') && t.includes('sale') && t.includes('collect')) return;
           el.style.display = 'none';
-          // Also hide parent card if this is inside it
-          var parent = el.parentElement;
-          if(parent && parent.textContent.length < 200) parent.style.display = 'none';
+          var p1 = el.parentElement;
+          if(p1 && p1.textContent.length < 300 && !p1.textContent.toLowerCase().includes('menu')) p1.style.display = 'none';
         }
       }
     });
 
-    // 3. Hide forbidden menu buttons again
+    // 3. Hide forbidden MENU buttons - keep ONLY 6 in original MENU
     document.querySelectorAll('div[onclick], button').forEach(function(el){
       var t = (el.textContent||'').toLowerCase().trim();
-      if(t.length > 0 && t.length < 30 && !el.closest('#staffOnlyMenu')){
+      if(t.length > 0 && t.length < 30){
         var forbidden = ['closing','coco','expiry','clearance','waste','drawing','capital','target','normal','monthly','yearly','pw','backup','rename','wholesaler','setting','other','profit','report','user','admin','dashboard','delete','expense','purchase','bank + ib'];
-        // Don't hide our allowed menu in original MENU box - those are allowed
-        var allowed = ['sale','stock','creditors','ledger','collect','logout','collect + ib'];
-        if(allowed.some(function(a){ return t.includes(a); })) return;
+        var allowed = ['sale','stock','creditors','ledger','collect','logout'];
+        if(allowed.some(function(a){ return t === a; })) {
+          // Make allowed buttons work + visible
+          el.style.display = '';
+          el.style.pointerEvents = 'auto';
+          el.style.opacity = '1';
+          return;
+        }
         if(forbidden.some(function(f){ return t.includes(f); })) el.style.display = 'none';
       }
     });
