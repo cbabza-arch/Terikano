@@ -1066,110 +1066,86 @@ function filterProfit(year){
     if(typeof renderProfit === 'function') renderProfit(filtered, purchasesData, year);
   }catch(e){ console.log('filterProfit error', e); alert('Error: '+e.message); }
 }
-</script>
-<div id="loginBox" style="display:flex; position:fixed; inset:0; z-index:99999999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
-<div style="background:#222; padding:20px; border-radius:12px; border:2px solid gold; width:300px; text-align:center;">
-<b style="color:gold; font-size:18px;">🏪 TERIKANO LOGIN</b><br><br>
-<input id="staffPass" type="password" placeholder="Enter Owner or Staff PW" style="width:100%; padding:12px; border:2px solid gold; border-radius:8px;"><br><br>
-<button onclick="checkLogin()" style="background:gold; color:#000; width:100%; padding:12px; border-radius:10px; font-weight:bold; border:2px solid #000;">🔓 LOGIN</button>
-<div id="loginErr" style="display:none; margin-top:10px; color:#ff5555; font-weight:bold;">❌ WRONG PASSWORD</div>
-</div></div>
-
-<div id="terikanoOnlineMain" style="display:inline-flex; align-items:center; gap:6px; background:#000; color:#0f0; padding:5px 12px; border-radius:20px; border:2px solid #0f0; font-weight:bold; font-size:11px; position:fixed; top:6px; right:6px; z-index:999999999;">● Online</div>
+<!-- LOGIN BOX - CLEAN B -->
+<div id="loginBox" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:99999">
+  <div style="background:#fff;padding:24px;border-radius:14px;width:300px;text-align:center">
+    <h2 style="margin:0 0 12px">TERIKANO</h2>
+    <input id="loginUser" placeholder="User" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
+    <input id="loginPass" type="password" placeholder="PIN" style="width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px">
+    <div id="loginError" style="color:red;font-size:13px;min-height:18px"></div>
+    <button id="loginBtn" style="width:100%;padding:12px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-weight:bold">LOGIN</button>
+    <div style="font-size:12px;color:#666;margin-top:10px">Owner: owner / 9999<br>Staff: staff / 1234</div>
+  </div>
+</div>
 
 <script>
-// === LOGIN - ONE ONLY - CLEAN ===
+// ===== LOGIN + LOGOUT + STAFF - CLEAN B - ONE BLOCK =====
+function restoreAll(){
+  document.querySelectorAll('.menu-section button, .owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
+    el.style.display = '';
+  });
+  var cashBox = document.getElementById('cashBoxIsolated');
+  if(cashBox) cashBox.style.display = '';
+}
+
+function hideForStaff(){
+  restoreAll();
+  if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
+  var keepWords = ['SALE','CREDITORS','COLLECT','STOCK','LEDGER','LOGOUT'];
+  document.querySelectorAll('.menu-section button').forEach(function(btn){
+    var t = (btn.innerText || '').toUpperCase();
+    var keep = false;
+    for(var i=0;i<keepWords.length;i++){ if(t.indexOf(keepWords[i]) !== -1) keep = true; }
+    if(!keep) btn.style.display = 'none';
+  });
+  document.querySelectorAll('.owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
+    el.style.display = 'none';
+  });
+  var cashBox2 = document.getElementById('cashBoxIsolated');
+  if(cashBox2) cashBox2.style.display = 'none';
+}
+
+function doLogin(){
+  var u = (document.getElementById('loginUser').value || '').trim().toLowerCase();
+  var p = (document.getElementById('loginPass').value || '').trim();
+  var err = document.getElementById('loginError');
+  var role = '';
+  if(u === 'owner' && p === '9999') role = 'owner';
+  if(u === 'staff' && p === '1234') role = 'staff';
+  if(!role){
+    err.textContent = 'Wrong user or PIN';
+    return;
+  }
+  sessionStorage.setItem('terikano_session_auth', role);
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+  err.textContent = '';
+  hideForStaff();
+}
+
+function doLogout(){
+  sessionStorage.removeItem('terikano_session_auth');
+  window.location.reload();
+}
+
+document.getElementById('loginBtn').onclick = doLogin;
+document.getElementById('loginPass').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') doLogin();
+});
+
+// START - on page load
 (function(){
-  function $id(i){ return document.getElementById(i); }
-  var OWNER_PW = '200175';
-  var STAFF_PW = '1234';
-  try{
-    var o = localStorage.getItem('terikano_owner_pw');
-    if(o) OWNER_PW = o;
-    var st = localStorage.getItem('terikano_staff_custom_pw');
-    if(st) STAFF_PW = st;
-  }catch(e){}
-  try{
-    if(window.db) db.ref('terikano_config/passwords').on('value', function(snap){
-      var v = snap.val() || {};
-      if(v.ownerPw) OWNER_PW = v.ownerPw;
-      if(v.staffPw) STAFF_PW = v.staffPw;
-    });
-  }catch(e){}
-
-  window.checkLogin = function(){
-    var pwEl = $id('staffPass');
-    var p = pwEl ? (pwEl.value||'').trim() : '';
-    if(!p) return;
-    if(p === OWNER_PW){
-      sessionStorage.setItem('terikano_session_auth','owner');
-      $id('loginErr').style.display = 'none';
-      $id('loginBox').style.display = 'none';
-    } else if(p === STAFF_PW){
-      sessionStorage.setItem('terikano_session_auth','staff');
-      $id('loginErr').style.display = 'none';
-      $id('loginBox').style.display = 'none';
-    } else {
-      $id('loginErr').style.display = 'block';
-    }
-    if(pwEl) pwEl.value = '';
-  };
-
-  window.safeLogout = function(){
-    sessionStorage.removeItem('terikano_session_auth');
-    sessionStorage.removeItem('terikano_sale_opened');
-    sessionStorage.removeItem('terikano_stock_opened');
-    $id('loginBox').style.display = 'flex';
-  };
-  window.logout = window.safeLogout;
-  window.doLogout = window.safeLogout;
-
-  var inp = $id('staffPass');
-  if(inp) inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') window.checkLogin(); });
-
-  document.addEventListener('click', function(e){
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if(!b) return;
-    var t = (b.innerText||'').trim().toLowerCase();
-    if(t === 'logout' || t.includes('logout') || t === '🚪 logout'){
-      e.preventDefault(); window.safeLogout();
-    }
-  }, true);
-
-  // START - session only
   var auth = sessionStorage.getItem('terikano_session_auth');
+  var loginBox = document.getElementById('loginBox');
   if(auth === 'owner' || auth === 'staff'){
-    $id('loginBox').style.display = 'none';
+    loginBox.style.display = 'none';
+    hideForStaff();
   } else {
-    $id('loginBox').style.display = 'flex';
+    restoreAll();
+    loginBox.style.display = 'flex';
   }
 })();
 </script>
-
-<script>
-// === STAFF HIDE - YOUR CODE - FIXED ===
-(function(){
-  function hideForStaff(){
-    if(sessionStorage.getItem('terikano_session_auth') !== 'staff') return;
-    // A. MENU - Keep ONLY 6: SALE, STOCK, CREDITORS, COLLECT, LEDGER, LOGOUT
-    document.querySelectorAll('.menu-section button').forEach(function(btn){
-      var t = (btn.textContent||'').toUpperCase();
-      var keep = t.includes('SALE') || t.includes('STOCK') || t.includes('CREDITORS') || t.includes('COLLECT') || t.includes('LEDGER') || t.includes('LOGOUT');
-      if(!keep) btn.style.display = 'none';
-    });
-    // B. Hide ALL owner-only in YOUR code
-    document.querySelectorAll('.owner-only-btn, .owner-only-div, .owner-profit').forEach(function(el){
-      el.style.display = 'none';
-    });
-       // C. Hide CASH/BANK box ONLY
-    var cashBox = document.getElementById('cashBoxIsolated');
-    if(cashBox) cashBox.style.display = 'none';
-  }
-  window.hideForStaff = hideForStaff;
-  // Run on load + on any click (menu open) + after login
-  document.addEventListener('click', function(){ setTimeout(hideForStaff, 300); });
-  setTimeout(hideForStaff, 500);
-})();
-</script>
+<!-- END LOGIN + STAFF - CLEAN B -->
 </body>
 </html>
