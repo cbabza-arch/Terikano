@@ -1597,5 +1597,112 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   console.log('CLEAN FIX V9 LOADED - No popup, Date 22, Price never 2026');
 })();
 </script>
+  <script>
+// FIX V10 - Orange Back/Delete + Checkout Window ALWAYS shows
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+  function activeInput(){
+    // Last focused input, or visible QTY, or Pay in checkout
+    var a=document.activeElement;
+    if(a && a.tagName==='INPUT') return a;
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      if(boxes[i].style.display==='none') continue;
+      var els=boxes[i].querySelectorAll('input');
+      for(var j=0;j<els.length;j++){ var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1) return els[j]; }
+    }
+    return null;
+  }
+  function isOrange(btn){
+    var st=window.getComputedStyle(btn);
+    var bg=(st.backgroundColor||'').toLowerCase();
+    // orange = rgb(255,165,0) / #ffa500 / #ff9800 / #ff8c00
+    return bg.indexOf('255, 165')!==-1 || bg.indexOf('255,152')!==-1 || bg.indexOf('255,140')!==-1 || bg.indexOf('255, 140')!==-1 || btn.style.background.indexOf('orange')!==-1 || (btn.className||'').toLowerCase().indexOf('orange')!==-1;
+  }
+  function openCheckoutForce(){
+    var win=document.getElementById('checkoutWin');
+    if(!win){ alert('Checkout window not found - cart has '+window._cart.length+' items'); return; }
+    if(!window._cart || !window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
+    var tot=0, html='';
+    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
+    var ckCust=document.getElementById('ckCust'); if(ckCust) ckCust.textContent=window._cust||'Walk-in';
+    var ckDate=document.getElementById('ckDate'); if(ckDate) ckDate.textContent=new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});
+    var ckList=document.getElementById('ckList'); if(ckList) ckList.innerHTML=html;
+    var ckTotal=document.getElementById('ckTotal'); if(ckTotal) ckTotal.textContent=tot.toFixed(2);
+    var ckPay=document.getElementById('ckPay'); if(ckPay) ckPay.value='';
+    var ckCh=document.getElementById('ckChange'); if(ckCh) ckCh.textContent='0.00';
+    // Force show - override any display:none from old code
+    win.style.setProperty('display','flex','important');
+    win.style.setProperty('visibility','visible','important');
+    win.style.setProperty('opacity','1','important');
+    win.style.zIndex='100000';
+    console.log('CHECKOUT FORCED OPEN - Items:', window._cart.length, 'Total:', tot);
+  }
+  window._openCheckoutForce=openCheckoutForce;
+
+  // --- CAPTURE click - runs BEFORE old broken handlers ---
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
+    var txt=(btn.textContent||'').trim();
+    var low=txt.toLowerCase();
+    var orange=isOrange(btn);
+    var isBack = low==='←' || low==='⌫' || low==='back' || low.indexOf('back')!==-1 || low==='del' || low==='⌫' || txt==='←' || txt==='⌫' || txt==='Back' || txt==='◀';
+    var isDelete = low==='delete' || low==='del' || low.indexOf('delete')!==-1 || txt==='x' || txt==='✕' || txt==='🗑' || txt==='🗑️';
+    var isCheckout = low.indexOf('checkout')!==-1 || low.indexOf('check out')!==-1 || low==='pay' || low.indexOf('pay now')!==-1 || low.indexOf('confirm')!==-1 && btn.id==='cartOpenBtn';
+
+    // 1. ORANGE BACK / DELETE on calculator - delete LAST CHAR, not whole QTY
+    if(isBack || (orange && (isDelete || isBack))){
+      var inp=activeInput();
+      if(inp){
+        // If in Checkout Pay, delete last char from Pay
+        if(inp.id==='ckPay'){ inp.value=inp.value.slice(0,-1); inp.dispatchEvent(new Event('input',{bubbles:true})); }
+        else {
+          // QTY: backspace 1 char. If long-press / double? single = 1 char
+          inp.value=String(inp.value||'').slice(0,-1);
+          inp.dispatchEvent(new Event('input',{bubbles:true}));
+          inp.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+        console.log('BACKSPACE - QTY now:', inp.value);
+      } else {
+        // No input focused - try delete cart row if in cart
+        var row=btn.closest?btn.closest('tr'):null; if(row) row.remove();
+      }
+      e.stopPropagation(); e.preventDefault();
+      return;
+    }
+
+    // 2. DELETE button anywhere - delete row OR clear QTY
+    if(isDelete && !orange){
+      var row2=btn.closest?btn.closest('tr'):null;
+      if(row2){ var idx=btn.getAttribute('data-index')||row2.getAttribute('data-index'); if(idx!==null && window._cart && window._cart[idx]!==undefined){ window._cart.splice(parseInt(idx),1); if(window._updCart) window._updCart(); } row2.remove(); e.stopPropagation(); e.preventDefault(); return; }
+      var box=btn.closest?btn.closest('div[id$="Div"]'):null;
+      if(box){ var ins=box.querySelectorAll('input'); for(var k=0;k<ins.length;k++){ var s=(ins[k].id+' '+(ins[k].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1||s.indexOf('total')!==-1) ins[k].value=''; } e.stopPropagation(); e.preventDefault(); return; }
+    }
+
+    // 3. CHECKOUT - ANY checkout button, anywhere, always open window
+    if(isCheckout || btn.id==='cartOpenBtn'){
+      e.stopPropagation(); e.preventDefault();
+      openCheckoutForce();
+      return;
+    }
+  }, true); // capture = before old code
+
+  // 4. Make sure black cart bar CHECKOUT button works even if old code broke it
+  setInterval(function(){
+    var b=document.getElementById('cartOpenBtn');
+    if(b && !b.dataset.fixed){
+      b.dataset.fixed='1';
+      b.onclick=function(ev){ if(ev) ev.preventDefault(); openCheckoutForce(); };
+    }
+    // If cart has items but bar hidden, force bar show
+    if(window._cart && window._cart.length){
+      var bar=document.getElementById('cartBar');
+      if(bar){ bar.style.setProperty('display','block','important'); }
+    }
+  }, 500);
+
+  console.log('FIX V10 LOADED - Orange Back + Checkout Force');
+})();
+</script>
 </body>
 </html>
