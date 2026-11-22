@@ -2412,5 +2412,116 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V25 LOADED - PW HIDDEN');
 })();
 </script>
+<script>
+// V26 - STOP CLOUD RESURRECT + REAL CLEAR ALL + FIX OWNER BUTTONS
+(function(){
+  // 1. STOP live sync that brings old data back - we will re-enable after Clear
+  try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
+
+  // 2. STOP forceLoginBox 200ms loop from kicking Owner out - it hides Owner buttons
+  // We keep login box logic, but stop the interval by overriding forceLoginBox to do nothing if logged in
+  var _origForce = window.forceLoginBox;
+  window.forceLoginBox = function(){
+    var a = sessionStorage.getItem('terikano_session_auth');
+    if(a==='Owner' || a==='Staff'){ 
+      var box=document.getElementById('loginBox'); if(box) box.classList.add('hideBox');
+      return; 
+    }
+    if(typeof _origForce==='function'){ try{ _origForce(); }catch(e){} }
+  };
+
+  // 3. FIX showWin - Owner must ALWAYS open Capital / Bank / Backup
+  window.showWin = function(id){
+    var el=document.getElementById(id); if(!el) { alert('Window not found: '+id); return; }
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    var OWNER_IDS=['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
+    if(a!=='owner' && OWNER_IDS.indexOf(id)!==-1){ alert('OWNER ONLY! Login as Owner.'); return; }
+    el.style.display='flex';
+    // bring to front
+    el.style.zIndex='9999';
+  };
+
+  // 4. FIX lockAll - don't hide Owner buttons when Owner is logged in
+  window.lockAll = function(){
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    var owner=(a==='owner');
+    var btns=document.querySelectorAll('.owner-only-btn');
+    for(var i=0;i<btns.length;i++){ btns[i].style.display= owner ? 'inline-block' : 'none'; }
+    if(!owner){
+      var ids=['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
+      for(var k=0;k<ids.length;k++){ var el=document.getElementById(ids[k]); if(el) el.style.display='none'; }
+    }
+  };
+
+  // 5. REAL CLEAR ALL - Clears Local + Cloud + Stops Resurrect
+  window.clearAllTestData = async function(){
+    if(!confirm('⚠️ CLEAR ALL TEST DATA?\n\nThis deletes Sales + Purchases + Capital + Bank + Expenses + All lists on THIS phone + CLOUD (Tablet too).\n\nPW + Business Name will be KEPT.\n\nContinue?')) return;
+    if(!confirm('Are you SURE? Type OK - This cannot be undone.')) return;
+
+    var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+    var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+    var biz = localStorage.getItem('terikano_name') || 'TERIKANO';
+
+    // Stop cloud from pushing old data back during clear
+    try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
+
+    // Clear in-memory arrays - these are your real data arrays
+    try{
+      purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; collects=[]; ownerTakes=[]; tips=[]; waste=[]; clearance=[]; cart=[]; cocoBuys=[]; cocoMills=[]; badDebts=[]; priceHistory=[];
+      if(typeof wholesalerDebts!=='undefined') wholesalerDebts=[];
+      if(typeof dailyNotesArr!=='undefined') dailyNotesArr=[];
+    }catch(e){}
+
+    // Clear localStorage data keys - keep PW + Name + Theme only
+    var keep={'terikano_owner_pw':ownerPw,'TERI_PW':ownerPw,'terikano_staff_custom_pw':staffPw,'terikano_name':biz,'DARK_MODE':localStorage.getItem('DARK_MODE')||'0','terikano_cloud_migrated':'1'};
+    var keysToRemove=[];
+    for(var i=0;i<localStorage.length;i++){ keysToRemove.push(localStorage.key(i)); }
+    for(var j=0;j<keysToRemove.length;j++){
+      if(!keep.hasOwnProperty(keysToRemove[j])){ try{ localStorage.removeItem(keysToRemove[j]); }catch(e){} }
+    }
+    for(var k in keep){ localStorage.setItem(k, keep[k]); }
+
+    // Clear Cloud - set empty shop with only PW + Name
+    try{
+      if(window.db){
+        await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], ALL_LOCAL:{}, clearedAt: new Date().toISOString() });
+        await db.ref('terikano_config/passwords/ownerPw').set(ownerPw);
+        await db.ref('terikano_config/passwords/staffPw').set(staffPw);
+      }
+    }catch(e){ console.log('Cloud clear err', e); }
+
+    // Re-render empty
+    try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+    try{ if(typeof populateDatalist==='function') populateDatalist(); }catch(e){}
+    alert('✅ ALL TEST DATA CLEARED - Local + Cloud.\n\nNow enter NEW data for Sales test. It will NOT come back.');
+    // Reload clean - with ?v=V26 to beat cache
+    setTimeout(function(){ location.href = location.pathname + '?v=V26'; }, 500);
+  };
+
+  // 6. Make ANY existing Clear / Backup Clear button use our new function
+  document.addEventListener('click', function(e){
+    var b=e.target.closest?e.target.closest('button'):null; if(!b) return;
+    var txt=(b.textContent||'').toLowerCase();
+    if(txt.indexOf('clear')!==-1 && (txt.indexOf('data')!==-1 || txt.indexOf('all')!==-1 || txt.indexOf('test')!==-1)){
+      e.preventDefault(); e.stopPropagation();
+      window.clearAllTestData();
+    }
+  });
+
+  // 7. Add a floating CLEAR button - always visible for Owner, so you can test even if Backup window is broken
+  var fb=document.createElement('button');
+  fb.textContent='🗑️ CLEAR TEST DATA';
+  fb.style.cssText='position:fixed;bottom:12px;right:12px;z-index:10000;background:#d32f2f;color:#fff;padding:12px 14px;border:3px solid #000;border-radius:12px;font-weight:bold;display:none;';
+  fb.onclick=function(){ window.clearAllTestData(); };
+  document.body.appendChild(fb);
+  function showFloat(){
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    fb.style.display=(a==='owner')?'block':'none';
+  }
+  showFloat(); setInterval(showFloat, 1000);
+
+  console.log('V26 LOADED - Clear + Owner buttons fixed');
+})();
+</script>
 </body>
 </html>
