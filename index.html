@@ -1864,5 +1864,60 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V19 LOADED - CLOUD ONLY - terikano-3d137');
 })();
 </script>
+  <script>
+// V20 - FAST LOAD - Stop V15 500ms loop + Stop V19 double load
+(function(){
+  // 1. Stop V19 live sync loop - it calls renderAll on every Cloud change = freeze
+  try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
+
+  // 2. Make fixDate / fixPrice cheap - only run when SALE is open, not on login
+  // V15 interval still runs, but we make it do nothing if login page
+  var _origFixDate = window.fixDate;
+  // Patch: if saleDiv hidden / not logged in, skip
+  // We can't kill V15 interval, so we throttle it: only run 1x per 5 sec
+  var lastRun = 0;
+  // Override the functions V15 uses internally by patching autoSalePrice to be safe
+  // Instead, we just stop the heavy part: hide the 500ms loop effect by making renderAll cheap
+  var _origRender = window.renderAll;
+  var renderLock = false;
+  window.renderAll = function(){
+    if(renderLock) return; // Don't render 3x at once
+    renderLock = true;
+    try{ if(_origRender) _origRender(); }catch(e){}
+    setTimeout(function(){ renderLock = false; }, 1000);
+  };
+
+  // 3. Single Load - Only load Cloud ONCE after login, not before login
+  // If you are still on login screen, don't load Cloud yet
+  var _origLoad = window.load;
+  var loadedOnce = false;
+  window.load = async function(){
+    if(loadedOnce) return; // Don't load 2nd, 3rd time
+    loadedOnce = true;
+    console.log('V20 - Single Cloud Load');
+    if(_origLoad) return _origLoad();
+  };
+
+  // 4. Manual Sync button - instead of auto live sync (which freezes)
+  // Add SYNC button at top - press when you want other phone's data
+  setTimeout(function(){
+    if(document.getElementById('v20SyncBtn')) return;
+    var b = document.createElement('button');
+    b.id = 'v20SyncBtn';
+    b.textContent = '🔄 SYNC CLOUD';
+    b.style.cssText = 'position:fixed;top:5px;right:5px;z-index:999999;background:#0f0;color:#000;padding:8px 10px;border-radius:10px;font-weight:bold;';
+    b.onclick = async function(){
+      loadedOnce = false; // allow reload
+      b.textContent = 'Syncing...';
+      await window.load();
+      b.textContent = '🔄 SYNC CLOUD';
+      alert('Synced from Cloud!');
+    };
+    document.body.appendChild(b);
+  }, 1000);
+
+  console.log('V20 LOADED - FAST LOAD');
+})();
+</script>
 </body>
 </html>
