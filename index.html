@@ -1167,9 +1167,8 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
 <!-- END LOGIN + STAFF - CLEAN B -->
 
 <script>
-// FIX FINAL - SINGLE BLOCK - PASTE THIS ONLY
+// FIX FINAL - Owner / Staff - Keep
 (function(){
-  // 1. Owner / Staff - case-insensitive, always works
   window.isOwner = function(){
     var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
     return a === 'owner' || a === '1' || a === 'true';
@@ -1178,153 +1177,56 @@ if(_loginPass) _loginPass.addEventListener('keydown', function(e){
     var a = (sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth') || '').toString().toLowerCase().trim();
     return a === 'staff';
   };
-
-  // 2. Owner-only windows list
   var OWNER_IDS = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
-
-  // 3. NEW showWin - Staff blocked BEFORE open, Owner stays open, NO lockAll() after open
   window.showWin = function(id){
     var el = document.getElementById(id);
     if(!el) return;
-    if(!window.isOwner() && OWNER_IDS.indexOf(id) !== -1){
-      alert('OWNER ONLY!');
-      return;
-    }
+    if(!window.isOwner() && OWNER_IDS.indexOf(id) !== -1){ alert('OWNER ONLY!'); return; }
     el.style.display = 'flex';
   };
-  window.hideWin = function(id){
-    var e = document.getElementById(id);
-    if(e) e.style.display = 'none';
-  };
-
-  // 4. NEW lockAll wrapper - hide Staff stuff, but NEVER hide a window that is already open
+  window.hideWin = function(id){ var e = document.getElementById(id); if(e) e.style.display = 'none'; };
   var _origLockAll = window.lockAll;
   window.lockAll = function(){
     var owner = window.isOwner();
-    if(typeof _origLockAll === 'function'){
-      try{ _origLockAll(); }catch(e){}
-    }
-    // If owner, make sure owner buttons are visible
+    if(typeof _origLockAll === 'function'){ try{ _origLockAll(); }catch(e){} }
     if(owner){
       var btns = document.querySelectorAll('.owner-only-btn');
       for(var i=0;i<btns.length;i++){ btns[i].style.display = 'inline-block'; }
     } else {
-      // If staff, hide owner buttons + owner windows - but only if they are NOT open by owner check above
       var btns2 = document.querySelectorAll('.owner-only-btn');
       for(var j=0;j<btns2.length;j++){ btns2[j].style.display = 'none'; }
-      for(var k=0;k<OWNER_IDS.length;k++){
-        var el2 = document.getElementById(OWNER_IDS[k]);
-        if(el2) el2.style.display = 'none';
-      }
-      var dash = document.querySelector('.dashboard');
-      if(dash) dash.style.display = 'none';
-      var cashBox = document.getElementById('cashBoxIsolated');
-      if(cashBox) cashBox.style.display = 'none';
+      for(var k=0;k<OWNER_IDS.length;k++){ var el2 = document.getElementById(OWNER_IDS[k]); if(el2) el2.style.display = 'none'; }
+      var dash = document.querySelector('.dashboard'); if(dash) dash.style.display = 'none';
+      var cashBox = document.getElementById('cashBoxIsolated'); if(cashBox) cashBox.style.display = 'none';
     }
   };
-
-  // 5. Patch doLogin - after login, lock immediately
   var _origDoLogin = window.doLogin;
   if(typeof _origDoLogin === 'function'){
-    window.doLogin = function(){
-      _origDoLogin();
-      setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300);
-    };
-    var lb = document.getElementById('loginBtn');
-    if(lb) lb.onclick = window.doLogin;
+    window.doLogin = function(){ _origDoLogin(); setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300); };
+    var lb = document.getElementById('loginBtn'); if(lb) lb.onclick = window.doLogin;
   }
-
-  // 6. Run lock once on load - NO setInterval, no fighting
   setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 500);
 })();
 </script>
-  <style>
-/* TABLE FIX FINAL - Pro V - No sideways page scroll */
+<style>
+/* TABLE FIX FINAL - Merged, 1x only, no sideways scroll */
 html, body{ overflow-x:hidden !important; max-width:100vw !important; box-sizing:border-box; }
 *{ box-sizing:border-box; }
 #mainContent, .container, .page, main, #app{ max-width:100vw !important; overflow-x:hidden !important; }
-
-/* Every table gets its own scroll box - page itself never scrolls sideways */
-table{
-  width:100% !important;
-  max-width:100% !important;
-  border-collapse:collapse !important;
-  table-layout:auto !important;
-  font-size:11px !important;
-  display:table !important;
-}
-th, td{
-  padding:5px 4px !important;
-  font-size:11px !important;
-  white-space:normal !important;
-  word-break:break-word !important;
-  overflow-wrap:break-word !important;
-  vertical-align:top !important;
-  text-align:left !important;
-}
-/* First column wider, numbers tighter */
-th:first-child, td:first-child{ min-width:70px !important; }
-th:last-child, td:last-child{ white-space:nowrap !important; }
-
-/* Main tables - full width, Pro look */
-#stockTbl, #mainTbl, #saleTbl, #cocoBuyTbl, #closingTbl, #ledgerTbl{
-  width:100% !important;
-  min-width:0 !important;
-  background:#fff !important;
-}
-#stockTbl th, #mainTbl th{
-  background:#0f172a !important;
-  color:#fff !important;
-  position:sticky !important;
-  top:0 !important;
-  z-index:2 !important;
-}
-/* Popups / windows - fit screen, scroll inside */
-#closingDiv, #purDiv, #stockDiv, #creditDiv, #ledgerDiv, #cocoMillDiv, #expiryDiv, #expenseDiv, #bankDiv, #analyticDiv{
-  max-width:96vw !important;
-  max-height:92vh !important;
-  overflow-y:auto !important;
-  overflow-x:hidden !important;
-  left:50% !important;
-  transform:translateX(-50%) !important;
-  margin:8px auto !important;
-}
-<style>
-/* TABLE FIX V2 - Works even after rebuild() */
-html, body{ overflow-x:hidden !important; width:100% !important; max-width:100vw !important; }
-*{ box-sizing:border-box !important; max-width:100vw; }
-div[id$="Div"], .owner-only-div{
-  width:100% !important; max-width:100vw !important;
-  overflow-x:hidden !important; padding:8px !important;
-}
-/* Popups MUST be fixed, otherwise left/transform does nothing */
+div[id$="Div"], .owner-only-div{ width:100% !important; max-width:100vw !important; overflow-x:hidden !important; padding:8px !important; }
 #closingDiv, #purDiv, #stockDiv, #creditDiv, #ledgerDiv, #cocoMillDiv, #expiryDiv, #expenseDiv, #bankDiv, #analyticDiv, #saleDiv, #cocoBuyDiv{
-  position:fixed !important; inset:8px !important;
-  width:auto !important; max-width:calc(100vw - 16px) !important;
-  max-height:calc(100vh - 16px) !important;
-  overflow-y:auto !important; overflow-x:hidden !important;
-  margin:0 !important; left:8px !important; right:8px !important;
-  transform:none !important; z-index:9999 !important;
+  position:fixed !important; inset:8px !important; width:auto !important; max-width:calc(100vw - 16px) !important;
+  max-height:calc(100vh - 16px) !important; overflow-y:auto !important; overflow-x:hidden !important;
+  margin:0 !important; left:8px !important; right:8px !important; transform:none !important; z-index:9999 !important;
   display:none; flex-direction:column !important;
 }
 #closingDiv[style*="flex"], #purDiv[style*="flex"], #stockDiv[style*="flex"], #creditDiv[style*="flex"], #ledgerDiv[style*="flex"]{ display:flex !important; }
-/* THE TABLE ITSELF scrolls - no wrapper needed, works for rebuilt tables */
-table{
-  width:100% !important; max-width:100% !important;
-  display:block !important; overflow-x:auto !important;
-  border-collapse:collapse !important; font-size:10px !important;
-  -webkit-overflow-scrolling:touch;
-}
+table{ width:100% !important; max-width:100% !important; display:block !important; overflow-x:auto !important; border-collapse:collapse !important; font-size:10px !important; -webkit-overflow-scrolling:touch; }
 thead, tbody{ display:table !important; width:100% !important; }
 tr{ display:table-row !important; }
-th, td{
-  padding:4px 3px !important; font-size:10px !important;
-  white-space:nowrap !important; word-break:normal !important;
-  min-width:52px !important; max-width:110px !important;
-  overflow:hidden !important; text-overflow:ellipsis !important;
-}
+th, td{ padding:4px 3px !important; font-size:10px !important; white-space:nowrap !important; min-width:52px !important; max-width:110px !important; overflow:hidden !important; text-overflow:ellipsis !important; }
 th:first-child, td:first-child{ min-width:60px !important; max-width:90px !important; }
-/* Hide least important columns on phone so it fits - Pro V still shows them on desktop */
+#stockTbl th, #mainTbl th{ background:#0f172a !important; color:#fff !important; position:sticky !important; top:0 !important; z-index:2 !important; }
 @media (max-width:600px){
   #stockTbl th:nth-child(5), #stockTbl td:nth-child(5),
   #stockTbl th:nth-child(8), #stockTbl td:nth-child(8),
@@ -1335,545 +1237,137 @@ th:first-child, td:first-child{ min-width:60px !important; max-width:90px !impor
 .table-wrap{ width:100% !important; max-width:100% !important; overflow-x:auto !important; }
 </style>
 <script>
-// Re-wrap + re-fix EVERY time rebuild() creates a new table
+// Re-wrap tables after rebuild()
 (function(){
   function fixTables(){
     var tables = document.querySelectorAll('table');
     for(var i=0;i<tables.length;i++){
       var t = tables[i];
-      t.style.width = '100%';
-      t.style.display = 'block';
-      t.style.overflowX = 'auto';
+      t.style.width = '100%'; t.style.display = 'block'; t.style.overflowX = 'auto';
       if(t.parentNode && t.parentNode.className !== 'table-wrap'){
-        var w = document.createElement('div');
-        w.className = 'table-wrap';
+        var w = document.createElement('div'); w.className = 'table-wrap';
         w.style.cssText = 'width:100%;max-width:100%;overflow-x:auto;';
-        t.parentNode.insertBefore(w, t);
-        w.appendChild(t);
-      }
-    }
-    // Force popups to stay inside screen
-    var ids = ['closingDiv','purDiv','stockDiv','creditDiv','ledgerDiv','cocoMillDiv','expiryDiv','expenseDiv','bankDiv','analyticDiv'];
-    for(var j=0;j<ids.length;j++){
-      var el = document.getElementById(ids[j]);
-      if(el && el.style.display !== 'none'){
-        el.style.position = 'fixed';
-        el.style.inset = '8px';
-        el.style.maxWidth = 'calc(100vw - 16px)';
-        el.style.overflowX = 'hidden';
+        t.parentNode.insertBefore(w, t); w.appendChild(t);
       }
     }
   }
-  fixTables();
-  setInterval(fixTables, 800);
-  // Watch for rebuild() making new tables
-  if(window.MutationObserver){
-    var obs = new MutationObserver(function(){ fixTables(); });
-    obs.observe(document.body, {childList:true, subtree:true});
-  }
+  fixTables(); setInterval(fixTables, 800);
+  if(window.MutationObserver){ var obs = new MutationObserver(function(){ fixTables(); }); obs.observe(document.body, {childList:true, subtree:true}); }
 })();
 </script>
-  <style>
-/* INSIDE ONLY - Fields inside popups 2 per row, Main window untouched */
-/* Only inputs INSIDE a popup - not main, not buttons, not popup box itself */
-div[id$="Div"] input, div[id$="Div"] select{
-  display:inline-block !important;
-  width:48% !important;
-  margin:0 1% 6px 0 !important;
-  padding:6px !important;
-  height:32px !important;
-  font-size:13px !important;
-  vertical-align:top !important;
-}
-div[id$="Div"] label{
-  display:inline-block !important;
-  width:48% !important;
-  font-size:11px !important;
-  margin:4px 1% 1px 0 !important;
-}
-/* Pay / Customer stay full - they need full line */
-div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"],
-div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
-  width:98% !important;
-}
+<style>
+/* INSIDE ONLY - Fields inside popups 2 per row, Main untouched */
+div[id$="Div"] input, div[id$="Div"] select{ display:inline-block !important; width:48% !important; margin:0 1% 6px 0 !important; padding:6px !important; height:32px !important; font-size:13px !important; vertical-align:top !important; }
+div[id$="Div"] label{ display:inline-block !important; width:48% !important; font-size:11px !important; margin:4px 1% 1px 0 !important; }
+div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{ width:98% !important; }
 </style>
 <script>
-// CLEAN FIX V9 - Replaces V1+V2+V4+TEST+V7 - ONE block only, NO debug popup
+// INSIDE-BODY FIX V14 FINAL - Uses YOUR cart[] / qtyPress / checkout, NOT _cart
+// Date: Kiribati Tarawa via your original code, no hard-coded 2026-11-23
 (function(){
-  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-  function find(box, keys){
-    if(!box) return null;
-    var els=box.querySelectorAll('input,select');
-    for(var i=0;i<els.length;i++){
-      var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase();
-      for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1) return els[i];
+  // 1. PRICE - getLastSell never returns 2026
+  var _origGetLastSell = window.getLastSell;
+  window.getLastSell = function(item){
+    var v = _origGetLastSell ? _origGetLastSell(item) : 2;
+    v = parseFloat(v)||0;
+    if(v===2026 || v>=1000 || v<=0){
+      try{
+        var h = (window.priceHistory||[]).slice().reverse();
+        for(var i=0;i<h.length;i++){ if(h[i].item && String(h[i].item).toLowerCase()===String(item||'').toLowerCase() && h[i].sell>0 && h[i].sell<1000) return h[i].sell; }
+      }catch(e){}
+      return 2;
     }
-    return null;
-  }
-  function findAll(box, keys){
-    var out=[]; if(!box) return out;
-    var els=box.querySelectorAll('input,select');
-    for(var i=0;i<els.length;i++){
-      var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase();
-      for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1){ out.push(els[i]); break; }
+    return v;
+  };
+  // 2. ORANGE BACK - Fix inside qtyPress / paidPress, NO capture block
+  window.qtyPress = function(k){
+    var el = document.getElementById('s_qty'); var disp = document.getElementById('qtyDisplay');
+    if(!el) return;
+    if(k==='C'){ el.value=''; }
+    else if(k==='⌫'){ el.value=String(el.value||'').slice(0,-1); }
+    else if(k==='.'){ if(el.value==='') el.value='0'; if(el.value.indexOf('.')!==-1) return; el.value+='.'; }
+    else { el.value=(el.value||'')+k; }
+    if(disp) disp.textContent=el.value||'0';
+    if(typeof autoSalePrice==='function') autoSalePrice();
+  };
+  window.paidPress = function(v){
+    var e = document.getElementById('paidAmt'); if(!e) return;
+    if(v==='C') e.value='';
+    else if(v==='⌫') e.value=String(e.value||'').slice(0,-1);
+    else e.value=(e.value||'')+v;
+    if(typeof calcChange==='function') calcChange();
+  };
+  // 3. CART - Use YOUR cart[] + cartDiv, sync _cart only for old code
+  var _origUpdateCart = window.updateCart;
+  window.updateCart = function(){
+    if(typeof _origUpdateCart==='function') _origUpdateCart();
+    var cd = document.getElementById('cartDiv');
+    if(cd && window.cart && window.cart.length>0) cd.style.display='block';
+    window._cart = (window.cart||[]).map(function(c){ return {item:c.item, qty:c.qty, price:c.price, total:c.price}; });
+  };
+  // 4. PAY / CHANGE / PAY LATER / SMALL CENT NOTEPAD
+  window.calcChange = function(){
+    var tot=0; for(var i=0;i<(window.cart||[]).length;i++) tot+=Number(window.cart[i].price||0);
+    tot=Math.ceil((tot*20)-0.000001)/20;
+    var paid=Math.ceil(((parseFloat(document.getElementById('paidAmt')?document.getElementById('paidAmt').value:0)||0)*20)-0.000001)/20;
+    var ch=Math.ceil(((paid-tot)*20)-0.000001)/20;
+    var el=document.getElementById('changeAmt'); if(el) el.innerText=ch.toFixed(2);
+    var big=document.getElementById('bigChangeDisplay');
+    if(big){
+      if(ch>0){ big.innerText='CHANGE $'+ch.toFixed(2); big.style.display='block'; }
+      else if(ch<0){ big.innerText='TO PAY LATER $'+Math.abs(ch).toFixed(2)+' - '+((document.getElementById('s_cust')||{}).value||'Walk-in'); big.style.display='block'; }
+      else { big.style.display='none'; }
     }
-    return out;
-  }
-
-  // ========== 1. DATE - Kiribati Tarawa, 22, NO +12, NO hard-coded 23 ==========
-  function kiribatiToday(){
-    try{ return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa', year:'numeric', month:'2-digit', day:'2-digit'}); }
-    catch(e){ return new Date().toISOString().slice(0,10); }
-  }
-  function fixDate(){
-    var ds=document.querySelectorAll('input[type="date"]');
-    for(var i=0;i<ds.length;i++){
-      var want=kiribatiToday();
-      if(ds[i].value!==want) ds[i].value=want;
-      ds[i].readOnly=true; ds[i].style.background='#ff0';
+    var pl=document.getElementById('payLaterLine');
+    if(!pl){
+      pl=document.createElement('div'); pl.id='payLaterLine';
+      pl.style.cssText='background:#ff0;color:#000;padding:6px;margin:6px 0;border-radius:8px;font-weight:bold;text-align:center;display:none;';
+      var pb=document.getElementById('paidAmt'); if(pb && pb.parentElement) pb.parentElement.appendChild(pl);
     }
-  }
-
-  // ========== 2. PRICE - NEVER from Stock last column, NEVER 2026 ==========
-  // Price comes ONLY from: 1) Your manual type (saved) 2) Last Sell Map
-  // If no Last Sell, leave BLANK - do NOT guess from Stock/Expiry
-  function lastSellPrice(name){
-    if(!name) return 0;
-    try{
-      var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}');
-      var v=map[name.trim().toLowerCase()];
-      if(v>0 && v!==2026 && v<1000) return v;
-    }catch(e){}
-    return 0;
-  }
-  // Save when YOU type correct price
+    if(ch<0){ pl.style.display='block'; pl.innerText='TO PAY LATER: $'+Math.abs(ch).toFixed(2)+' - Customer: '+((document.getElementById('s_cust')||{}).value||'Walk-in'); }
+    else if(ch>0 && ch<0.10){ pl.style.display='block'; pl.innerText='Small change $'+ch.toFixed(2)+' < $0.10 - Will auto-save to NOTEPAD as Customer CREDIT'; }
+    else { pl.style.display='none'; }
+    return ch;
+  };
+  // 5. CHECKOUT - Save Pay Later + Small Cent Credit, then YOUR checkout
+  var _origCheckout = window.checkoutCartWithConfirm;
+  window.checkoutCartWithConfirm = function(){
+    var tot=0; for(var i=0;i<(window.cart||[]).length;i++) tot+=Number(window.cart[i].price||0);
+    var paid=parseFloat(document.getElementById('paidAmt')?document.getElementById('paidAmt').value:0)||0;
+    var ch=paid-tot; var cust=(document.getElementById('s_cust')||{}).value||'Walk-in';
+    if(ch>0 && ch<0.10){
+      try{
+        var notes=JSON.parse(localStorage.getItem('Terikano_notepad')||'[]');
+        notes.push({date:new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'}), cust:cust, type:'CREDIT - Small Change', amt:ch, note:'Change $'+ch.toFixed(2)+' from sale $'+tot.toFixed(2)+' - use for next buy'});
+        localStorage.setItem('Terikano_notepad', JSON.stringify(notes));
+        alert('Small Change $'+ch.toFixed(2)+' saved to NOTEPAD as CREDIT for '+cust);
+      }catch(e){}
+    }
+    if(ch<0){
+      try{
+        if(typeof window.badDebts==='undefined') window.badDebts=[];
+        window.badDebts.push({date:new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'}), cust:cust, amt:Math.abs(ch), note:'Pay Later from SALE - Total $'+tot.toFixed(2)+' Paid $'+paid.toFixed(2)});
+        if(typeof save==='function') save();
+        alert('TO PAY LATER $'+Math.abs(ch).toFixed(2)+' saved for '+cust);
+      }catch(e){}
+    }
+    if(typeof _origCheckout==='function') return _origCheckout();
+  };
+  // 6. FUTURE PRICE CHANGE - Type new price once in SALE, it becomes new Last Sell
   document.addEventListener('change', function(e){
-    var t=e.target; if(!t||t.tagName!=='INPUT') return;
-    var id=(t.id||'').toLowerCase();
-    if(id.indexOf('price')===-1 && id.indexOf('sell')===-1) return;
-    if(num(t.value)===2026 || num(t.value)>=2000){ t.value=''; return; }
-    var box=t.closest?t.closest('div[id$="Div"]'):null; if(!box) return;
-    var item=find(box,['item','product']);
-    if(item&&item.value&&num(t.value)>0){
-      try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); map[item.value.trim().toLowerCase()]=num(t.value); localStorage.setItem('lastSellMap', JSON.stringify(map)); t.dataset.manual='1'; }catch(e){}
-    }
-  });
-
-  // ========== 3. CALC - SALE / PURCHASE / COCO G1+G2 ==========
-  var MARKUP=1.30; // Purchase: Sell = Cost x 1.30, change if yours different
-  function calcBox(box){
-    if(!box||box.style.display==='none') return;
-    var id=(box.id||'').toLowerCase();
-    // COCO - G1 + G2 separate
-    if(id.indexOf('coco')!==-1 || id.indexOf('copra')!==-1){
-      var qtys=findAll(box,['qty','pcs','kg','weight']);
-      var prices=findAll(box,['price','cost','rate']);
-      var totals=findAll(box,['total','amount']);
-      for(var t=0;t<totals.length;t++){
-        var q=qtys[t]?num(qtys[t].value):0; var p=prices[t]?num(prices[t].value):0;
-        if(q>0&&p>0) totals[t].value=(q*p).toFixed(2);
-      }
-      var grand=find(box,['grand','final']);
-      if(grand&&totals.length>=2) grand.value=(num(totals[0].value)+num(totals[1].value)).toFixed(2);
-      return;
-    }
-    // PURCHASE - Cost editable, Sell auto but can override
-    if(id.indexOf('pur')!==-1){
-      var cost=find(box,['cost']); var sell=find(box,['sell']);
-      if(cost){ cost.disabled=false; cost.readOnly=false; cost.removeAttribute('readonly'); cost.removeAttribute('disabled'); }
-      if(sell){ sell.disabled=false; sell.readOnly=false; sell.removeAttribute('readonly'); sell.removeAttribute('disabled'); }
-      if(cost&&sell&&num(cost.value)>0&&!sell.dataset.manual){
-        var want=(num(cost.value)*MARKUP).toFixed(2);
-        if(num(sell.value)!==num(want)){ sell.dataset.autoFilling='1'; sell.value=want; delete sell.dataset.autoFilling; }
-      }
-      var pq=find(box,['qty','pcs']); var ptot=find(box,['total']);
-      if(pq&&cost&&ptot){ var pt=num(pq.value)*num(cost.value); if(pt>0) ptot.value=pt.toFixed(2); }
-      return;
-    }
-    // SALE
-    if(id.indexOf('sale')===-1 && id.indexOf('sell')===-1) return;
-    var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price']); var total=find(box,['total']); var pay=find(box,['pay','paid','cash']); var change=find(box,['change','balance','return']);
-    if(price && (num(price.value)===2026 || num(price.value)>=2000)) price.value='';
-    if(item&&price&&item.value&&!price.dataset.manual){
-      var last=lastSellPrice(item.value);
-      if(last>0) price.value=last.toFixed(2);
-    }
-    if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); else if(num(qty.value)>0&&num(price.value)===0) total.value=''; }
-    if(pay&&total&&change&&num(pay.value)>0) change.value=(num(pay.value)-num(total.value)).toFixed(2);
-  }
-  // Override: ONLY when YOU type in Sell/Price, lock it. Auto-fill does NOT lock.
-  document.addEventListener('input', function(e){
-    var t=e.target; if(!t||t.tagName!=='INPUT') return;
-    var id=(t.id||'').toLowerCase();
-    if((id.indexOf('sell')!==-1||id.indexOf('price')!==-1) && !t.dataset.autoFilling) t.dataset.manual='1';
-    if(id.indexOf('sell')!==-1 && t.value==='') delete t.dataset.manual;
-  }, true);
-  document.addEventListener('input', function(e){ var b=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(b) calcBox(b); });
-  document.addEventListener('change', function(e){ var b=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(b) calcBox(b); });
-
-  // ========== 4. NUMBER PAD -> QTY + CART MULTI-ITEM + CHECKOUT WINDOW ==========
-  window._cart=window._cart||[]; window._cust=window._cust||'';
-  function activeBox(){
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') return boxes[i];
-    return null;
-  }
-  function ensureCartUI(){
-    if(document.getElementById('cartBar')) return;
-    var bar=document.createElement('div'); bar.id='cartBar';
-    bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;z-index:99999;display:none;border-top:3px solid #0f0;';
-    bar.innerHTML='<div style="font-weight:bold;">CART - <span id="cartCust">-</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:100px;overflow:auto;margin:6px 0;"></div><button id="cartOpenBtn" style="width:48%;padding:12px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:12px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
-    document.body.appendChild(bar);
-    var win=document.createElement('div'); win.id='checkoutWin';
-    win.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100000;display:none;align-items:center;justify-content:center;';
-    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3>CHECKOUT</h3><div>Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;" placeholder="Enter Pay"><div>Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE SALE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
-    document.body.appendChild(win);
-    document.getElementById('cartOpenBtn').onclick=function(){ openCheckout(); };
-    document.getElementById('cartClearBtn').onclick=function(){ window._cart=[]; updateCart(); };
-    document.getElementById('ckClose').onclick=function(){ document.getElementById('checkoutWin').style.display='none'; };
-    document.getElementById('ckPay').addEventListener('input', function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2); });
-    document.getElementById('ckConfirm').onclick=function(){
-      var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total;
-      var pay=num(document.getElementById('ckPay').value);
-      if(pay<tot){ alert('Pay is less than Total $'+tot.toFixed(2)); return; }
-      alert('SALE SAVED\nCustomer: '+window._cust+'\nItems: '+window._cart.length+'\nTotal: $'+tot.toFixed(2)+'\nPay: $'+pay.toFixed(2)+'\nChange: $'+(pay-tot).toFixed(2));
-      window._cart=[]; updateCart(); document.getElementById('checkoutWin').style.display='none';
-    };
-  }
-  function updateCart(){
-    ensureCartUI(); var bar=document.getElementById('cartBar'); if(!bar) return;
-    if(!window._cart.length){ bar.style.display='none'; return; }
-    bar.style.display='block'; var tot=0, html='';
-    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>'; }
-    document.getElementById('cartCust').textContent=window._cust||'Walk-in'; document.getElementById('cartCount').textContent=window._cart.length; document.getElementById('cartTotal').textContent=tot.toFixed(2); document.getElementById('cartList').innerHTML=html;
-    var dels=document.querySelectorAll('[data-del]'); for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ window._cart.splice(parseInt(this.getAttribute('data-del')),1); updateCart(); }; }
-  }
-  function openCheckout(){
-    ensureCartUI(); if(!window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
-    var tot=0, html=''; for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
-    document.getElementById('ckCust').textContent=window._cust||'Walk-in'; document.getElementById('ckDate').textContent=kiribatiToday(); document.getElementById('ckList').innerHTML=html; document.getElementById('ckTotal').textContent=tot.toFixed(2); document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
-    document.getElementById('checkoutWin').style.display='flex';
-  }
-  window._updCart=updateCart;
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
-    var txt=btn.textContent.trim();
-    // Number pad -> QTY
-    if(/^[0-9]$/.test(txt)||txt==='00'||txt==='.'||txt==='C'){
-      var ab=activeBox(); if(!ab) return; var q=find(ab,['qty','pcs']); if(!q) return;
-      if(txt==='C') q.value=''; else q.value=(q.value||'')+txt;
-      q.dispatchEvent(new Event('input',{bubbles:true})); calcBox(ab); return;
-    }
-    // DELETE in cart / popup - capture handled below, this is for cartBar Delete
-    if(txt.toLowerCase()==='delete'){
-      var row=btn.closest?btn.closest('tr'):null;
-      if(row){ row.remove(); return; }
-      var box=btn.closest?btn.closest('div[id$="Div"]'):null;
-      if(box){ var ins=box.querySelectorAll('input'); for(var k=0;k<ins.length;k++){ var s=(ins[k].id+' '+(ins[k].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1||s.indexOf('total')!==-1) ins[k].value=''; } }
-      return;
-    }
-    // ADD TO CART - PUSH, not replace, multi-item for 1 customer
-    if(txt.toLowerCase().indexOf('add to cart')!==-1){
-      var box2=btn.closest?btn.closest('div[id$="Div"]'):null; if(!box2) return;
-      var item=find(box2,['item','product']); var qty=find(box2,['qty','pcs']); var price=find(box2,['price']); var total=find(box2,['total']); var cust=find(box2,['cust']);
-      window._cust=cust?cust.value:'Walk-in';
-      if(!item||!item.value){ alert('Pick Item first'); return; }
-      if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
-      if(!price||num(price.value)<=0||num(price.value)===2026){ alert('Price wrong / 2026. Type correct Price first, e.g. 3.50'); return; }
-      calcBox(box2);
-      var tt=num(total?total.value:0)||(num(qty.value)*num(price.value));
-      window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
-      updateCart();
-      if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
-      alert('Added: '+item.value+'\nCart now: '+window._cart.length+' items for '+window._cust+'\nAdd another, or press CHECKOUT at bottom.');
-      return;
-    }
-  });
-  setInterval(function(){
-    fixDate();
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') calcBox(boxes[i]);
-  }, 800);
-  console.log('CLEAN FIX V9 LOADED - No popup, Date 22, Price never 2026');
-})();
-</script>
-  <script>
-// FIX V10 - Orange Back/Delete + Checkout Window ALWAYS shows
-(function(){
-  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-  function activeInput(){
-    // Last focused input, or visible QTY, or Pay in checkout
-    var a=document.activeElement;
-    if(a && a.tagName==='INPUT') return a;
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      if(boxes[i].style.display==='none') continue;
-      var els=boxes[i].querySelectorAll('input');
-      for(var j=0;j<els.length;j++){ var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1) return els[j]; }
-    }
-    return null;
-  }
-  function isOrange(btn){
-    var st=window.getComputedStyle(btn);
-    var bg=(st.backgroundColor||'').toLowerCase();
-    // orange = rgb(255,165,0) / #ffa500 / #ff9800 / #ff8c00
-    return bg.indexOf('255, 165')!==-1 || bg.indexOf('255,152')!==-1 || bg.indexOf('255,140')!==-1 || bg.indexOf('255, 140')!==-1 || btn.style.background.indexOf('orange')!==-1 || (btn.className||'').toLowerCase().indexOf('orange')!==-1;
-  }
-  function openCheckoutForce(){
-    var win=document.getElementById('checkoutWin');
-    if(!win){ alert('Checkout window not found - cart has '+window._cart.length+' items'); return; }
-    if(!window._cart || !window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
-    var tot=0, html='';
-    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
-    var ckCust=document.getElementById('ckCust'); if(ckCust) ckCust.textContent=window._cust||'Walk-in';
-    var ckDate=document.getElementById('ckDate'); if(ckDate) ckDate.textContent=new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});
-    var ckList=document.getElementById('ckList'); if(ckList) ckList.innerHTML=html;
-    var ckTotal=document.getElementById('ckTotal'); if(ckTotal) ckTotal.textContent=tot.toFixed(2);
-    var ckPay=document.getElementById('ckPay'); if(ckPay) ckPay.value='';
-    var ckCh=document.getElementById('ckChange'); if(ckCh) ckCh.textContent='0.00';
-    // Force show - override any display:none from old code
-    win.style.setProperty('display','flex','important');
-    win.style.setProperty('visibility','visible','important');
-    win.style.setProperty('opacity','1','important');
-    win.style.zIndex='100000';
-    console.log('CHECKOUT FORCED OPEN - Items:', window._cart.length, 'Total:', tot);
-  }
-  window._openCheckoutForce=openCheckoutForce;
-
-  // --- CAPTURE click - runs BEFORE old broken handlers ---
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
-    var txt=(btn.textContent||'').trim();
-    var low=txt.toLowerCase();
-    var orange=isOrange(btn);
-    var isBack = low==='←' || low==='⌫' || low==='back' || low.indexOf('back')!==-1 || low==='del' || low==='⌫' || txt==='←' || txt==='⌫' || txt==='Back' || txt==='◀';
-    var isDelete = low==='delete' || low==='del' || low.indexOf('delete')!==-1 || txt==='x' || txt==='✕' || txt==='🗑' || txt==='🗑️';
-    var isCheckout = low.indexOf('checkout')!==-1 || low.indexOf('check out')!==-1 || low==='pay' || low.indexOf('pay now')!==-1 || low.indexOf('confirm')!==-1 && btn.id==='cartOpenBtn';
-
-    // 1. ORANGE BACK / DELETE on calculator - delete LAST CHAR, not whole QTY
-    if(isBack || (orange && (isDelete || isBack))){
-      var inp=activeInput();
-      if(inp){
-        // If in Checkout Pay, delete last char from Pay
-        if(inp.id==='ckPay'){ inp.value=inp.value.slice(0,-1); inp.dispatchEvent(new Event('input',{bubbles:true})); }
-        else {
-          // QTY: backspace 1 char. If long-press / double? single = 1 char
-          inp.value=String(inp.value||'').slice(0,-1);
-          inp.dispatchEvent(new Event('input',{bubbles:true}));
-          inp.dispatchEvent(new Event('change',{bubbles:true}));
-        }
-        console.log('BACKSPACE - QTY now:', inp.value);
-      } else {
-        // No input focused - try delete cart row if in cart
-        var row=btn.closest?btn.closest('tr'):null; if(row) row.remove();
-      }
-      e.stopPropagation(); e.preventDefault();
-      return;
-    }
-
-    // 2. DELETE button anywhere - delete row OR clear QTY
-    if(isDelete && !orange){
-      var row2=btn.closest?btn.closest('tr'):null;
-      if(row2){ var idx=btn.getAttribute('data-index')||row2.getAttribute('data-index'); if(idx!==null && window._cart && window._cart[idx]!==undefined){ window._cart.splice(parseInt(idx),1); if(window._updCart) window._updCart(); } row2.remove(); e.stopPropagation(); e.preventDefault(); return; }
-      var box=btn.closest?btn.closest('div[id$="Div"]'):null;
-      if(box){ var ins=box.querySelectorAll('input'); for(var k=0;k<ins.length;k++){ var s=(ins[k].id+' '+(ins[k].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1||s.indexOf('total')!==-1) ins[k].value=''; } e.stopPropagation(); e.preventDefault(); return; }
-    }
-
-    // 3. CHECKOUT - ANY checkout button, anywhere, always open window
-    if(isCheckout || btn.id==='cartOpenBtn'){
-      e.stopPropagation(); e.preventDefault();
-      openCheckoutForce();
-      return;
-    }
-  }, true); // capture = before old code
-
-  // 4. Make sure black cart bar CHECKOUT button works even if old code broke it
-  setInterval(function(){
-    var b=document.getElementById('cartOpenBtn');
-    if(b && !b.dataset.fixed){
-      b.dataset.fixed='1';
-      b.onclick=function(ev){ if(ev) ev.preventDefault(); openCheckoutForce(); };
-    }
-    // If cart has items but bar hidden, force bar show
-    if(window._cart && window._cart.length){
-      var bar=document.getElementById('cartBar');
-      if(bar){ bar.style.setProperty('display','block','important'); }
-    }
-  }, 500);
-
-  console.log('FIX V10 LOADED - Orange Back + Checkout Force');
-})();
-</script>
-  <script>
-// FIX V11 - Auto Price from STOCK Sell Header + Orange Back on ANY element + Cart Always Shows
-(function(){
-  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-  function find(box, keys){
-    if(!box) return null; var els=box.querySelectorAll('input,select');
-    for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase(); for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1) return els[i]; }
-    return null;
-  }
-  // --- 1. AUTO PRICE - Find Sell column by HEADER, NOT last column ---
-  function stockSell(name){
-    if(!name) return 0;
-    var tables=document.querySelectorAll('table');
-    for(var t=0;t<tables.length;t++){
-      var tbl=tables[t];
-      var headers=tbl.querySelectorAll('th'); if(!headers.length) continue;
-      var sellIdx=-1, nameIdx=0;
-      for(var h=0;h<headers.length;h++){
-        var ht=headers[h].textContent.trim().toLowerCase();
-        // Sell column = sell / price / selling - but NOT cost, NOT expiry, NOT date, NOT qty
-        if((ht.indexOf('sell')!==-1 || ht==='price' || ht.indexOf('selling')!==-1) && ht.indexOf('cost')===-1) sellIdx=h;
-        if(ht.indexOf('item')!==-1 || ht.indexOf('product')!==-1 || ht.indexOf('name')!==-1) nameIdx=h;
-      }
-      if(sellIdx===-1) continue; // This table has no Sell column, try next table
-      var rows=tbl.querySelectorAll('tr');
-      for(var i=1;i<rows.length;i++){
-        var c=rows[i].querySelectorAll('td'); if(c.length<=sellIdx) continue;
-        var rn=c[nameIdx]?c[nameIdx].textContent.trim().toLowerCase():'';
-        if(rn===name.trim().toLowerCase() || rn.indexOf(name.trim().toLowerCase())!==-1){
-          var v=num(c[sellIdx].textContent);
-          if(v>0 && v!==2026 && v<1000) return v; // Sell price found, not year
+    if(e.target && e.target.id==='s_price'){
+      var qty = parseFloat(document.getElementById('s_qty').value)||0;
+      var total = parseFloat(e.target.value)||0;
+      if(qty>0 && total>0 && total!==2026){
+        var unit = total/qty; var item = document.getElementById('s_item').value;
+        if(item && window.purchases){
+          for(var i=purchases.length-1;i>=0;i--){ if(purchases[i].item===item){ purchases[i].sell=unit; break; } }
+          try{ if(typeof save==='function') save(); }catch(err){}
         }
       }
     }
-    // Fallback: Last Sell you typed before
-    try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); var m=map[name.trim().toLowerCase()]; if(m>0&&m!==2026) return m; }catch(e){}
-    return 0;
-  }
-  function fixAutoPrice(){
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      var box=boxes[i]; if(box.style.display==='none') continue;
-      if(box.id.toLowerCase().indexOf('sale')===-1) continue;
-      var item=find(box,['item','product']); var price=find(box,['price']); var qty=find(box,['qty','pcs']); var total=find(box,['total']);
-      if(!item||!price||!item.value) continue;
-      if(price.dataset.manual) continue;
-      if(num(price.value)===2026 || num(price.value)>=2000) price.value='';
-      if(!price.value){
-        var sp=stockSell(item.value);
-        if(sp>0) price.value=sp.toFixed(2);
-      }
-      if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
-    }
-  }
-  // Save manual price as Last Sell
-  document.addEventListener('change', function(e){
-    var t=e.target; if(!t||t.tagName!=='INPUT') return;
-    if((t.id||'').toLowerCase().indexOf('price')===-1) return;
-    if(num(t.value)===2026){ t.value=''; return; }
-    var box=t.closest?t.closest('div[id$="Div"]'):null; if(!box) return;
-    var item=find(box,['item','product']);
-    if(item&&item.value&&num(t.value)>0){ try{ var m=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); m[item.value.trim().toLowerCase()]=num(t.value); localStorage.setItem('lastSellMap', JSON.stringify(m)); t.dataset.manual='1'; }catch(e){} }
   });
-
-  // --- 2. ORANGE BACK - Works on button, div, span, ANY element ---
-  function getActiveQty(){
-    var a=document.activeElement; if(a&&a.tagName==='INPUT') return a;
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){ if(boxes[i].style.display==='none') continue; var q=find(boxes[i],['qty','pcs']); if(q) return q; }
-    var pay=document.getElementById('ckPay'); if(pay) return pay;
-    return null;
-  }
-  function isOrangeEl(el){
-    if(!el) return false;
-    try{ var st=window.getComputedStyle(el); var bg=(st.backgroundColor||''); if(bg.indexOf('255, 165')!==-1||bg.indexOf('255, 152')!==-1||bg.indexOf('255, 140')!==-1||bg.indexOf('255, 153')!==-1||bg.indexOf('255, 171')!==-1) return true; }catch(e){}
-    var cls=(el.className||'').toString().toLowerCase(); if(cls.indexOf('orange')!==-1||cls.indexOf('back')!==-1) return true;
-    var style=(el.getAttribute&&el.getAttribute('style')||'').toLowerCase(); if(style.indexOf('orange')!==-1||style.indexOf('#ff')!==-1||style.indexOf('ffa')!==-1) return true;
-    return false;
-  }
-  // Use CAPTURE on document, check ANY clicked element, not just button
-  document.addEventListener('click', function(e){
-    var el=e.target;
-    // Walk up to find clickable parent - button, div, span with onclick or class
-    var cand=el;
-    for(var d=0;d<4 && cand; d++){
-      var txt=(cand.textContent||'').trim();
-      var low=txt.toLowerCase();
-      // Orange Back can be: ← ⌫ Back Del < X - single char or short text, OR orange background
-      var isBackText = txt==='←'||txt==='⌫'||txt==='<'||txt==='Back'||txt==='back'||txt==='DEL'||txt==='Del'||txt==='◀'||txt==='‹';
-      var isBackOrange = isOrangeEl(cand) && (isBackText || txt.length<=3);
-      if(isBackText || isBackOrange){
-        var inp=getActiveQty();
-        if(inp){ inp.value=String(inp.value||'').slice(0,-1); inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); console.log('ORANGE BACK - now:', inp.value); }
-        e.stopPropagation(); e.preventDefault();
-        return;
-      }
-      // Also C / Clear on calculator - clear QTY
-      if(txt==='C' && isOrangeEl(cand)){
-        var inp2=getActiveQty(); if(inp2){ inp2.value=''; inp2.dispatchEvent(new Event('input',{bubbles:true})); }
-        e.stopPropagation(); e.preventDefault(); return;
-      }
-      cand=cand.parentElement;
-    }
-  }, true);
-
-  // --- 3. CART + CHECKOUT - Floating bar ALWAYS, Add works even if Price was blank ---
-  function ensureCartUI(){
-    if(document.getElementById('cartBar')) return;
-    var bar=document.createElement('div'); bar.id='cartBar';
-    bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;z-index:99999;display:block;border-top:3px solid #0f0;';
-    bar.innerHTML='<div style="font-weight:bold;">CART - <span id="cartCust">Walk-in</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:120px;overflow:auto;margin:6px 0;color:#fff;">Cart empty - add item</div><button id="cartOpenBtn" style="width:48%;padding:14px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:14px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
-    document.body.appendChild(bar);
-    var win=document.createElement('div'); win.id='checkoutWin';
-    win.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100000;display:none;align-items:center;justify-content:center;';
-    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3>CHECKOUT</h3><div>Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;" placeholder="Enter Pay"><div>Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
-    document.body.appendChild(win);
-    document.getElementById('cartOpenBtn').onclick=function(ev){ if(ev) ev.preventDefault(); openCheckout(); };
-    document.getElementById('cartClearBtn').onclick=function(){ window._cart=[]; updateCart(); };
-    document.getElementById('ckClose').onclick=function(){ document.getElementById('checkoutWin').style.display='none'; };
-    document.getElementById('ckPay').addEventListener('input', function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2); });
-    document.getElementById('ckConfirm').onclick=function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; var pay=num(document.getElementById('ckPay').value); if(pay<tot){ alert('Pay less than Total $'+tot.toFixed(2)); return; } alert('SALE SAVED\nCustomer: '+window._cust+'\nItems: '+window._cart.length+'\nTotal: $'+tot.toFixed(2)+'\nPay: $'+pay.toFixed(2)+'\nChange: $'+(pay-tot).toFixed(2)); window._cart=[]; updateCart(); document.getElementById('checkoutWin').style.display='none'; };
-  }
-  function updateCart(){
-    ensureCartUI();
-    var tot=0, html='';
-    if(!window._cart || !window._cart.length){ html='Cart empty - add item'; }
-    else { for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>'; } }
-    document.getElementById('cartCust').textContent=window._cust||'Walk-in';
-    document.getElementById('cartCount').textContent=window._cart?window._cart.length:0;
-    document.getElementById('cartTotal').textContent=tot.toFixed(2);
-    document.getElementById('cartList').innerHTML=html;
-    var dels=document.querySelectorAll('[data-del]'); for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ window._cart.splice(parseInt(this.getAttribute('data-del')),1); updateCart(); }; }
-  }
-  function openCheckout(){
-    ensureCartUI();
-    if(!window._cart||!window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
-    var tot=0, html=''; for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
-    document.getElementById('ckCust').textContent=window._cust||'Walk-in';
-    document.getElementById('ckDate').textContent=new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});
-    document.getElementById('ckList').innerHTML=html; document.getElementById('ckTotal').textContent=tot.toFixed(2);
-    document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
-    var w=document.getElementById('checkoutWin'); w.style.setProperty('display','flex','important');
-  }
-  window._updCart=updateCart; window._openCheckout=openCheckout; window._cart=window._cart||[];
-  // ADD TO CART - catch ANY Add button, also if original Add is div
-  document.addEventListener('click', function(e){
-    var cand=e.target;
-    for(var d=0;d<4 && cand; d++){
-      var txt=(cand.textContent||'').trim().toLowerCase();
-      if(txt.indexOf('add to cart')!==-1){
-        var box=cand.closest?cand.closest('div[id$="Div"]'):null; if(!box) return;
-        fixAutoPrice();
-        var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price']); var total=find(box,['total']); var cust=find(box,['cust']);
-        window._cust=cust?cust.value:'Walk-in';
-        if(!item||!item.value){ alert('Pick Item first'); return; }
-        if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
-        if(!price||num(price.value)<=0){ alert('Price still blank - Type Price once, e.g. 3.50, then Add. After that it will auto next time.'); return; }
-        var tt=num(total?total.value:0)||(num(qty.value)*num(price.value));
-        window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
-        updateCart();
-        var qv=qty.value; if(qty) qty.value=''; if(total) total.value='';
-        alert('Added: '+item.value+' x '+qv+'\nCart now: '+window._cart.length+' items\nBlack bar at bottom shows cart. Press CHECKOUT there.');
-        e.stopPropagation(); e.preventDefault(); return;
-      }
-      cand=cand.parentElement;
-    }
-  }, true);
-  setInterval(function(){ fixAutoPrice(); updateCart(); }, 800);
-  ensureCartUI(); updateCart();
-  console.log('FIX V11 LOADED - Stock Sell Header + Orange Back Any Element + Cart Always');
+  console.log('V14 LOADED - Inside-body fix');
 })();
 </script>
 </body>
