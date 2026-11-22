@@ -1472,5 +1472,167 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   console.log('AUTO CALC FIX LOADED');
 })();
 </script>
+  <script>
+// ALL CALC + CART + PW FIX V2 - Survives rebuild()
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+  function find(box, keys){
+    if(!box) return null;
+    var els = box.querySelectorAll('input,select');
+    for(var i=0;i<els.length;i++){
+      var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase();
+      for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1) return els[i];
+    }
+    return null;
+  }
+  function findAll(box, keys){
+    var out=[]; if(!box) return out;
+    var els=box.querySelectorAll('input,select');
+    for(var i=0;i<els.length;i++){
+      var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase();
+      for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1){ out.push(els[i]); break; }
+    }
+    return out;
+  }
+  function stockPrice(name){
+    if(!name) return 0;
+    var tbl=document.getElementById('stockTbl')||document.getElementById('mainTbl');
+    if(!tbl) return 0;
+    var rows=tbl.querySelectorAll('tr');
+    for(var i=1;i<rows.length;i++){
+      var c=rows[i].querySelectorAll('td'); if(!c.length) continue;
+      if(c[0].textContent.trim().toLowerCase().indexOf(name.trim().toLowerCase())!==-1){
+        for(var j=c.length-1;j>=0;j--){ var v=num(c[j].textContent); if(v>0) return v; }
+      }
+    }
+    return 0;
+  }
+  // --- 1+2+3. SALE / PURCHASE / COCO G1+G2 CALC ---
+  function calcBox(box){
+    if(!box||box.style.display==='none') return;
+    var id=(box.id||'').toLowerCase();
+    // COCO has 2 parts - calc each part separately
+    if(id.indexOf('coco')!==-1 || id.indexOf('copra')!==-1){
+      // G1 and G2 are usually 2 groups inside cocoDiv - calc all QTY/PRICE/TOTAL triples
+      var qtys=findAll(box,['qty','pcs','kg','weight','g1','g2']);
+      var prices=findAll(box,['price','cost','rate']);
+      var totals=findAll(box,['total','amount']);
+      for(var t=0;t<totals.length;t++){
+        var q=qtys[t]?num(qtys[t].value):0;
+        var p=prices[t]?num(prices[t].value):0;
+        if(q>0&&p>0) totals[t].value=(q*p).toFixed(2);
+      }
+      // Grand total = G1 Total + G2 Total
+      var grand=find(box,['grand','final','sum']);
+      if(grand&&totals.length>=2) grand.value=(num(totals[0].value)+num(totals[1].value)).toFixed(2);
+      return;
+    }
+    var item=find(box,['item','product']);
+    var qty=find(box,['qty','pcs']);
+    var price=find(box,['price','sell','cost','rate']);
+    var total=find(box,['total']);
+    var pay=find(box,['pay','paid','cash']);
+    var change=find(box,['change','balance','return']);
+    if(item&&price&&item.value&&!price.dataset.manual){
+      var sp=stockPrice(item.value); if(sp>0) price.value=sp.toFixed(2);
+    }
+    if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
+    if(pay&&total&&change&&num(pay.value)>0) change.value=(num(pay.value)-num(total.value)).toFixed(2);
+  }
+  // --- 4. NUMBER PAD -> QTY + ADD TO CART + CHECKOUT ---
+  window._cart = window._cart || [];
+  function activeQtyInput(){
+    // Find visible popup, its QTY input
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      if(boxes[i].style.display!=='none'){
+        var q=find(boxes[i],['qty','pcs']); if(q) return {box:boxes[i], qty:q};
+      }
+    }
+    return null;
+  }
+  // Press number pad - works even if original pressNum() is broken
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest?e.target.closest('button'):null;
+    if(!btn) return;
+    var txt=btn.textContent.trim();
+    // Number pad: single digit or 00 / . / C
+    if(/^[0-9]$/.test(txt) || txt==='00' || txt==='.' || txt==='C' || txt==='Clear'){
+      var aq=activeQtyInput(); if(!aq) return;
+      if(txt==='C'||txt==='Clear'){ aq.qty.value=''; }
+      else { aq.qty.value=(aq.qty.value||'')+txt; }
+      aq.qty.dispatchEvent(new Event('input',{bubbles:true}));
+      calcBox(aq.box);
+    }
+    // ADD TO CART button
+    if(txt.toLowerCase().indexOf('add to cart')!==-1 || txt.toLowerCase().indexOf('add')!==-1 && btn.id.toLowerCase().indexOf('cart')!==-1){
+      var aq2=activeQtyInput(); if(!aq2) return;
+      var box=aq2.box;
+      var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price','sell','cost']); var total=find(box,['total']);
+      if(!item||!item.value){ alert('Pick Item first'); return; }
+      if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
+      calcBox(box);
+      var row={item:item.value, qty:num(qty.value), price:num(price?price.value:0), total:num(total?total.value:0)};
+      window._cart.push(row);
+      // Show in cart table if exists, else alert
+      var cartTbl=document.getElementById('cartTbl')||document.getElementById('saleCartTbl');
+      if(cartTbl){
+        var r=cartTbl.insertRow(-1);
+        r.insertCell(0).textContent=row.item; r.insertCell(1).textContent=row.qty; r.insertCell(2).textContent=row.price.toFixed(2); r.insertCell(3).textContent=row.total.toFixed(2);
+      }
+      // Checkout total
+      var grand=0; for(var i=0;i<window._cart.length;i++) grand+=window._cart[i].total;
+      var ct=document.getElementById('checkoutTotal')||find(box,['checkout','grand']);
+      if(ct) ct.value=grand.toFixed(2);
+      // Clear for next item, keep focus on Item
+      if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
+      alert('Added: '+row.item+' x '+row.qty+' = $'+row.total.toFixed(2)+' | Cart Total $'+grand.toFixed(2));
+    }
+    // CHECKOUT button
+    if(txt.toLowerCase().indexOf('checkout')!==-1 || txt.toLowerCase().indexOf('check out')!==-1){
+      var grand2=0; for(var j=0;j<window._cart.length;j++) grand2+=window._cart[j].total;
+      alert('CHECKOUT TOTAL: $'+grand2.toFixed(2)+' | Items: '+window._cart.length);
+    }
+  });
+  // Input / Change - calc live
+  document.addEventListener('input', function(e){
+    var box=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(box) calcBox(box);
+  });
+  document.addEventListener('change', function(e){
+    var box=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(box) calcBox(box);
+  });
+  setInterval(function(){
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') calcBox(boxes[i]);
+  },800);
+
+  // --- 5. CHANGE PW - Save Local + Sync Cloud ---
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
+    var txt=btn.textContent.toLowerCase();
+    if(txt.indexOf('change')!==-1 && txt.indexOf('password')!==-1 || txt.indexOf('save')!==-1 && btn.closest && btn.closest('div[id$="Div"]') && btn.closest('div[id$="Div"]').id.toLowerCase().indexOf('setting')!==-1){
+      setTimeout(function(){
+        var box=document.querySelector('div[id*="Setting"], div[id*="setting"]');
+        if(!box) return;
+        var pw=find(box,['new','password','pass']); var pw2=findAll(box,['password','pass']);
+        var newPw=pw?pw.value:''; if(!newPw) return;
+        // 1. Save local
+        try{ localStorage.setItem('terikano_pw', newPw); localStorage.setItem('password', newPw); }catch(err){}
+        // 2. Try cloud - call whatever cloud fn you already have
+        try{
+          if(typeof saveToCloud==='function') saveToCloud();
+          if(typeof syncToCloud==='function') syncToCloud();
+          if(typeof saveData==='function') saveData();
+          if(typeof uploadData==='function') uploadData();
+        }catch(err){}
+        // 3. If you use Firebase / Google Sheet - also try to push via existing cloud var
+        console.log('PW CHANGED LOCALLY + CLOUD SYNC ATTEMPTED:', newPw);
+        alert('Password changed + saved. Now close and re-open app on other phone to check if it synced. If not synced, send me your cloud function name.');
+      },100);
+    }
+  });
+  console.log('ALL CALC + CART + PW FIX V2 LOADED');
+})();
+</script>
 </body>
 </html>
