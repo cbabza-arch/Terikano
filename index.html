@@ -2340,5 +2340,77 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V24 LOADED - doLogin now uses Cloud PW, not 9999 hardcoded. Owner PW now:', getOwnerLoginPw());
 })();
 </script>
+  <script>
+// V25 - HIDE PW - No PW shown on Login or Settings
+(function(){
+  // 1. OVERRIDE doLogin again - generic message ONLY, never show PW
+  window.doLogin = function(){
+    var u = document.getElementById('loginUser').value.trim().toLowerCase();
+    var p = document.getElementById('loginPass').value.trim();
+    var msg = document.getElementById('loginMsg');
+    var role = null;
+    var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+    var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+    if(u === 'owner' && p === ownerPw) role = 'Owner';
+    if(u === 'staff' && p === staffPw) role = 'Staff';
+    if(!role){
+      if(msg) msg.textContent = 'Wrong username or password'; // <-- FIXED, no PW here
+      var lp=document.getElementById('loginPass'); if(lp) lp.value='';
+      return;
+    }
+    window.AUTH = role;
+    sessionStorage.setItem('terikano_session_auth', role);
+    var box = document.getElementById('loginBox');
+    if(box) box.classList.add('hideBox');
+    if(msg) msg.textContent = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginUser').value = '';
+    if(typeof showPage === 'function') showPage('home');
+    setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300);
+  };
+  var lb = document.getElementById('loginBtn');
+  if(lb) lb.onclick = window.doLogin;
+
+  // 2. HIDE PW in Settings - show **** instead of real PW
+  function maskPwLabels(){
+    var o = document.getElementById('curPwLabel');
+    if(o) o.innerText = '****';
+    var s = document.getElementById('curStaffPwLabel');
+    if(s) s.innerText = '****';
+  }
+  maskPwLabels();
+  setInterval(maskPwLabels, 1000); // keep it masked even if old code tries to show it
+
+  // 3. OVERRIDE changePw - don't show PW in alert
+  window.changePw = function(){
+    var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
+    if(!newP){ alert('Enter New PW'); return; }
+    localStorage.setItem('terikano_owner_pw', newP);
+    localStorage.setItem('TERI_PW', newP);
+    try{ db.ref('terikano_config/passwords/ownerPw').set(newP); }catch(e){}
+    try{ db.ref('shop/ownerPw').set(newP); }catch(e){}
+    var o=document.getElementById('old_pw'); if(o) o.value='';
+    var n=document.getElementById('new_pw'); if(n) n.value='';
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    alert('✅ Owner PW Changed & Synced to Cloud.\nUse your NEW PW to login on Phone + Tablet.');
+    maskPwLabels();
+  };
+
+  // 4. OVERRIDE setStaffPw - don't show PW in alert
+  window.setStaffPw = function(){
+    var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
+    if(!np){ alert('Enter new Staff PW'); return; }
+    localStorage.setItem('terikano_staff_custom_pw', np);
+    try{ db.ref('terikano_config/passwords/staffPw').set(np); }catch(e){}
+    try{ db.ref('shop/staffPw').set(np); }catch(e){}
+    var inp=document.getElementById('new_staff_pw'); if(inp) inp.value='';
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    alert('Staff PW Changed & Synced.');
+    maskPwLabels();
+  };
+
+  console.log('V25 LOADED - PW HIDDEN');
+})();
+</script>
 </body>
 </html>
