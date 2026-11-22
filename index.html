@@ -1919,5 +1919,187 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V20 LOADED - FAST LOAD');
 })();
 </script>
+<script>
+// V21 - ALL IN CLOUD - EVERYTHING - Password + Notepad + Notes + Daily Notes + All Data
+(function(){
+  // === 1. WHAT IS "ALL"? ===
+  // We save 2 things to Cloud:
+  // A) fullData - your shop data (same as V19)
+  // B) ALL_LOCAL - every single localStorage key on this phone (Notepad, Passwords, Notes, everything)
+  // So NOTHING stays only on phone.
+
+  function fullData(){
+    return {
+      purchases: window.purchases||[],
+      sales: window.sales||[],
+      capitals: window.capitals||[],
+      banks: window.banks||[],
+      expenses: window.expenses||[],
+      collects: window.collects||[],
+      ownerTakes: window.ownerTakes||[],
+      tips: window.tips||[],
+      waste: window.waste||[],
+      clearance: window.clearance||[],
+      dailyTarget: window.dailyTarget||100,
+      cocoRateG1: window.cocoRateG1||0,
+      cocoRateG2: window.cocoRateG2||0,
+      businessName: window.businessName||'TERIKANO',
+      cocoBuys: window.cocoBuys||[],
+      cocoMills: window.cocoMills||[],
+      millRatePerKg: window.millRatePerKg||4,
+      millWeightPerCoco: window.millWeightPerCoco||0,
+      badDebts: window.badDebts||[],
+      priceHistory: window.priceHistory||[],
+      terikanoSet: window.terikanoSet||{},
+      wholesalerDebts: window.wholesalerDebts||[],
+      markup: window.globalMarkup||15,
+      lastSellMap: window.PRICE_MAP||{},
+      // === NEW - ALL THE THINGS V19 MISSED ===
+      notepad: JSON.parse(localStorage.getItem('Terikano_notepad')||'[]'),
+      dailyNotes: JSON.parse(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]'),
+      dailyNotesArr: window.dailyNotesArr||[],
+      terikano_data: JSON.parse(localStorage.getItem('terikano_data')||'{"store":[]}'),
+      terikano_years: JSON.parse(localStorage.getItem('terikano_years')||'{}'),
+      terikano_last_closed_year: localStorage.getItem('terikano_last_closed_year')||'',
+      terikano_name: localStorage.getItem('terikano_name')||'TERIKANO STORE',
+      terikano_logo: localStorage.getItem('Terikano_logo')||'',
+      // === PASSWORDS - THIS FIXES YOUR TABLET BUG ===
+      ownerPw: localStorage.getItem('terikano_owner_pw')||localStorage.getItem('TERI_PW')||'1234',
+      staffPw: localStorage.getItem('terikano_staff_custom_pw')||'Terikano_2005',
+      teriPw: localStorage.getItem('TERI_PW')||'1234',
+      darkMode: localStorage.getItem('DARK_MODE')||'0',
+      time: new Date().toISOString()
+    };
+  }
+
+  // Save EVERY localStorage key too - future proof, nothing left behind
+  function allLocal(){
+    var o={};
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(k==='terikano_session_auth') continue; // Don't sync login session
+        if(k==='terikano_device_id') continue; // Each phone keeps its own ID
+        o[k]=localStorage.getItem(k);
+      }
+    }catch(e){}
+    return o;
+  }
+
+  function applyCloud(d){
+    if(!d) return;
+    if(d.purchases) window.purchases=d.purchases;
+    if(d.sales) window.sales=d.sales;
+    if(d.capitals) window.capitals=d.capitals;
+    if(d.banks) window.banks=d.banks;
+    if(d.expenses) window.expenses=d.expenses;
+    if(d.collects) window.collects=d.collects;
+    if(d.ownerTakes) window.ownerTakes=d.ownerTakes;
+    if(d.tips) window.tips=d.tips;
+    if(d.waste) window.waste=d.waste;
+    if(d.clearance) window.clearance=d.clearance;
+    if(d.dailyTarget!==undefined) window.dailyTarget=d.dailyTarget;
+    if(d.cocoRateG1!==undefined) window.cocoRateG1=d.cocoRateG1;
+    if(d.cocoRateG2!==undefined) window.cocoRateG2=d.cocoRateG2;
+    if(d.businessName) window.businessName=d.businessName;
+    if(d.cocoBuys) window.cocoBuys=d.cocoBuys;
+    if(d.cocoMills) window.cocoMills=d.cocoMills;
+    if(d.millRatePerKg) window.millRatePerKg=d.millRatePerKg;
+    if(d.millWeightPerCoco!==undefined) window.millWeightPerCoco=d.millWeightPerCoco;
+    if(d.badDebts) window.badDebts=d.badDebts;
+    if(d.priceHistory) window.priceHistory=d.priceHistory;
+    if(d.terikanoSet) window.terikanoSet=d.terikanoSet;
+    if(d.wholesalerDebts) window.wholesalerDebts=d.wholesalerDebts;
+    if(d.markup!==undefined) window.globalMarkup=d.markup;
+    if(d.lastSellMap) window.PRICE_MAP=d.lastSellMap;
+    // === RESTORE ALL ===
+    if(d.notepad) localStorage.setItem('Terikano_notepad', JSON.stringify(d.notepad));
+    if(d.dailyNotes) localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(d.dailyNotes));
+    if(d.dailyNotesArr) window.dailyNotesArr=d.dailyNotesArr;
+    if(d.terikano_data) localStorage.setItem('terikano_data', JSON.stringify(d.terikano_data));
+    if(d.terikano_years) localStorage.setItem('terikano_years', JSON.stringify(d.terikano_years));
+    if(d.terikano_last_closed_year) localStorage.setItem('terikano_last_closed_year', d.terikano_last_closed_year);
+    if(d.terikano_name) localStorage.setItem('terikano_name', d.terikano_name);
+    if(d.terikano_logo) localStorage.setItem('Terikano_logo', d.terikano_logo);
+    // === PASSWORDS RESTORE - TABLET WILL NOW USE NEW PW ===
+    if(d.ownerPw){ localStorage.setItem('terikano_owner_pw', d.ownerPw); localStorage.setItem('TERI_PW', d.ownerPw); }
+    if(d.staffPw) localStorage.setItem('terikano_staff_custom_pw', d.staffPw);
+    if(d.teriPw) localStorage.setItem('TERI_PW', d.teriPw);
+    if(d.darkMode) localStorage.setItem('DARK_MODE', d.darkMode);
+    // Restore ALL localStorage keys from Cloud
+    if(d.ALL_LOCAL){
+      for(var k in d.ALL_LOCAL){
+        if(k==='terikano_session_auth'||k==='terikano_device_id') continue;
+        try{ if(!localStorage.getItem(k)) localStorage.setItem(k, d.ALL_LOCAL[k]); }catch(e){}
+      }
+    }
+  }
+
+  window.saveToCloud = async function(){
+    try{
+      var payload = fullData();
+      payload.ALL_LOCAL = allLocal();
+      await db.ref('shop').set(payload);
+      console.log('V21 SAVED ALL TO CLOUD - Notepad + PW + Notes included');
+    }catch(e){ console.log('Cloud save err', e); }
+  };
+
+  window.save = function(){
+    try{
+      var d = fullData();
+      try{ localStorage.setItem('Terikano_storage_data', JSON.stringify(d)); }catch(e){}
+      // Also save Notepad / Notes to localStorage now (so they are in ALL_LOCAL)
+      try{
+        if(window.dailyNotesArr) localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(window.dailyNotesArr));
+      }catch(e){}
+      if(window.db) window.saveToCloud();
+    }catch(e){ console.log('Save err', e); }
+  };
+
+  // === FIX POPUP - Only show ONCE, never every open ===
+  window.load = async function(){
+    try{
+      var snap = await db.ref('shop').once('value');
+      var cloud = snap.val();
+      if(cloud && (cloud.purchases || cloud.sales || cloud.ALL_LOCAL)){
+        applyCloud(cloud);
+        localStorage.setItem('terikano_cloud_migrated','1');
+        console.log('V21 LOADED ALL FROM CLOUD');
+      } else {
+        // Cloud REALLY empty + never migrated before
+        if(localStorage.getItem('terikano_cloud_migrated')!=='1'){
+          var local = null;
+          try{ local = JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}'); }catch(e){}
+          if(local && (local.purchases||local.sales||local.notepad)){
+            if(confirm('Cloud empty. Move ALL your phone data (Sales + Notepad + PW + Notes) to CLOUD now? Click OK ONCE.')){
+              applyCloud(local);
+              await window.saveToCloud();
+              localStorage.setItem('terikano_cloud_migrated','1');
+              alert('Migrated ALL to CLOUD! Now tablet will see same data + same PW + same Notepad.');
+            }
+          }
+        } else {
+          console.log('V21 - Cloud empty but already migrated, no popup');
+        }
+      }
+      if(typeof renderAll==='function') renderAll();
+      if(typeof populateDatalist==='function') populateDatalist();
+      if(typeof loadDailyNotes==='function') loadDailyNotes();
+    }catch(e){ console.log('Cloud load err', e); }
+  };
+
+  // === PASSWORD CHANGE - Force Cloud Save immediately ===
+  // When you change PW in Settings, save to Cloud straight away
+  document.addEventListener('click', function(e){
+    var b = e.target.closest?e.target.closest('button'):null; if(!b) return;
+    var txt=(b.textContent||'').toLowerCase();
+    if(txt.indexOf('change')!==-1 && txt.indexOf('pw')!==-1 || txt.indexOf('save')!==-1 && txt.indexOf('pw')!==-1){
+      setTimeout(function(){ if(typeof save==='function') save(); }, 500);
+    }
+  });
+
+  console.log('V21 LOADED - ALL IN CLOUD');
+})();
+</script>
 </body>
 </html>
