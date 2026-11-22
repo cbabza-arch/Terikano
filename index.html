@@ -1370,5 +1370,125 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V14 LOADED - Inside-body fix');
 })();
 </script>
+  <script>
+// V15 - Date + Auto Price + Add Cart + Checkout - Append after V14, do NOT delete V14
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+
+  // 1. DATE - Kiribati Tarawa, auto, no manual
+  function kiribatiToday(){
+    try{ return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa', year:'numeric', month:'2-digit', day:'2-digit'}); }
+    catch(e){ return new Date().toISOString().slice(0,10); }
+  }
+  function fixDate(){
+    var ds=document.querySelectorAll('input[type="date"]');
+    for(var i=0;i<ds.length;i++){
+      var want=kiribatiToday();
+      if(ds[i].value!==want) ds[i].value=want;
+      ds[i].readOnly=true; ds[i].style.background='#ff0';
+    }
+    var sd=document.getElementById('s_date'); if(sd && !sd.value) sd.value=kiribatiToday();
+  }
+
+  // 2. AUTO PRICE - Force your original autoSalePrice to run
+  function fixPrice(){
+    var item=document.getElementById('s_item');
+    var qty=document.getElementById('s_qty');
+    var price=document.getElementById('s_price');
+    if(!item||!price||!item.value) return;
+    if(num(price.value)===2026 || num(price.value)>=2000) price.value='';
+    // If Price blank and Item picked, call YOUR autoSalePrice
+    if(!price.value){
+      if(typeof autoSalePrice==='function'){ try{ autoSalePrice(); }catch(e){} }
+    }
+    // If still blank after autoSalePrice, use getLastSell directly
+    if(!price.value && typeof getLastSell==='function'){
+      var unit=getLastSell(item.value);
+      var q=num(qty?qty.value:0);
+      if(unit>0 && unit!==2026 && q>0) price.value=(unit*q).toFixed(2);
+      else if(unit>0 && unit!==2026 && !q) price.value=unit.toFixed(2);
+    }
+    // If Qty x Unit = Total, recalc if Qty changed
+    if(price.value && qty && num(qty.value)>0 && typeof autoSalePrice==='function'){
+      // Only recalc if price looks like unit not total - if user typed total, don't overwrite
+      // We call autoSalePrice only when price was auto, not manual
+      if(!price.dataset.manual) { try{ autoSalePrice(); }catch(e){} }
+    }
+  }
+  // When YOU pick Item or type Qty, auto price NOW
+  document.addEventListener('change', function(e){
+    if(e.target && (e.target.id==='s_item' || e.target.id==='s_qty')){ setTimeout(fixPrice, 50); }
+    if(e.target && e.target.id==='s_price'){ if(num(e.target.value)===2026) e.target.value=''; }
+  });
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.id==='s_qty'){ setTimeout(fixPrice, 50); }
+  });
+
+  // 3. ADD TO CART - Fix YOUR addToCart, don't replace with _cart
+  var _origAdd = window.addToCart;
+  window.addToCart = function(){
+    // First try to fix price before add
+    fixPrice();
+    var item=document.getElementById('s_item');
+    var qty=document.getElementById('s_qty');
+    var price=document.getElementById('s_price');
+    if(!item||!item.value){ alert('Pick Item first'); return; }
+    if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
+    if(!price||num(price.value)<=0){ alert('Price blank - Type Price once e.g. 7.00 then Add. After that it will auto.'); return; }
+    // If original addToCart exists, use it
+    if(typeof _origAdd==='function'){
+      try{ _origAdd(); }catch(e){ console.log('orig add failed', e); }
+      // Check if cart actually got item, if not, do manual push
+      setTimeout(function(){
+        if(!window.cart || window.cart.length===0){
+          // Manual push - YOUR cart format: {item, qty, price=total}
+          if(!window.cart) window.cart=[];
+          window.cart.push({item:item.value, qty:num(qty.value), price:num(price.value)});
+          if(typeof updateCart==='function') updateCart();
+          if(typeof save==='function') save();
+          alert('Added: '+item.value+' x '+qty.value+' = $'+num(price.value).toFixed(2));
+          qty.value=''; price.value=''; if(item) item.focus();
+        }
+      }, 100);
+      return;
+    }
+    // No original addToCart at all - manual push
+    if(!window.cart) window.cart=[];
+    window.cart.push({item:item.value, qty:num(qty.value), price:num(price.value)});
+    if(typeof updateCart==='function') updateCart();
+    if(typeof save==='function') save();
+    alert('Added: '+item.value+' x '+qty.value);
+    qty.value=''; price.value='';
+  };
+  // Also catch ANY Add to Cart button click - if button has no onclick, call addToCart
+  document.addEventListener('click', function(e){
+    var b=e.target.closest?e.target.closest('button'):null; if(!b) return;
+    var txt=(b.textContent||'').trim().toLowerCase();
+    if(txt.indexOf('add to cart')!==-1 && !b.onclick && !b.getAttribute('onclick')){
+      e.preventDefault(); window.addToCart();
+    }
+  });
+
+  // 4. CHECKOUT - Make YOUR checkout button always work
+  var _origCheckout2 = window.checkoutCartWithConfirm;
+  // If checkout button is inside saleDiv and does nothing, force it
+  document.addEventListener('click', function(e){
+    var b=e.target.closest?e.target.closest('button'):null; if(!b) return;
+    var txt=(b.textContent||'').trim().toLowerCase();
+    if(txt.indexOf('checkout')!==-1 || txt.indexOf('check out')!==-1){
+      // Let V14 checkout run first - it saves Pay Later / Notepad
+      // If cart empty, warn
+      if(!window.cart || !window.cart.length){ alert('Cart empty. Add 1 item first.'); e.preventDefault(); return; }
+      // If V14 already handled it, don't double-run - V14 is checkoutCartWithConfirm itself
+      // So just ensure cartDiv is visible and paid field focused
+      var cd=document.getElementById('cartDiv'); if(cd) cd.style.display='block';
+    }
+  });
+
+  setInterval(function(){ fixDate(); fixPrice(); }, 500);
+  setTimeout(function(){ fixDate(); fixPrice(); }, 500);
+  console.log('V15 LOADED - Date + Auto Price + Add Cart + Checkout');
+})();
+</script>
 </body>
 </html>
