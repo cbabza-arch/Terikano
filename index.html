@@ -1398,87 +1398,12 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
 }
 </style>
 <script>
-// AUTO CALC FIX V1 - Delegation, survives rebuild()
-(function(){
-  function findInput(box, keys){
-    if(!box) return null;
-    var inputs = box.querySelectorAll('input, select');
-    for(var i=0;i<inputs.length;i++){
-      var s = (inputs[i].id + ' ' + inputs[i].name + ' ' + (inputs[i].placeholder||'') + ' ' + (inputs[i].getAttribute('data-label')||'')).toLowerCase();
-      for(var k=0;k<keys.length;k++){ if(s.indexOf(keys[k])!==-1) return inputs[i]; }
-    }
-    return null;
-  }
-  function num(v){ var n = parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-  function getPriceFromStock(itemName){
-    if(!itemName) return 0;
-    var tbl = document.getElementById('stockTbl') || document.getElementById('mainTbl');
-    if(!tbl) return 0;
-    var rows = tbl.querySelectorAll('tr');
-    for(var i=1;i<rows.length;i++){
-      var cells = rows[i].querySelectorAll('td');
-      if(!cells.length) continue;
-      var name = cells[0].textContent.trim().toLowerCase();
-      if(name === itemName.trim().toLowerCase() || name.indexOf(itemName.trim().toLowerCase())!==-1){
-        // Try last columns - Sell is usually 2nd last or 3rd last
-        for(var c=cells.length-1;c>=0;c--){
-          var v = num(cells[c].textContent);
-          if(v>0) return v;
-        }
-      }
-    }
-    return 0;
-  }
-  function calcBox(box){
-    if(!box) return;
-    var item = findInput(box, ['item','product','name']);
-    var qty = findInput(box, ['qty','quantity','pcs','pc']);
-    var price = findInput(box, ['price','sell','cost','rate','amount']);
-    var total = findInput(box, ['total','sum']);
-    var pay = findInput(box, ['pay','paid','cash']);
-    var change = findInput(box, ['change','balance','return']);
-    // 1. Item -> Auto Price from STOCK
-    if(item && price && item.value && !price.dataset.manual){
-      var p = getPriceFromStock(item.value);
-      if(p>0 && num(price.value)!==p){ price.value = p.toFixed(2); }
-    }
-    // 2. Qty x Price = Total
-    if(qty && price && total){
-      var t = num(qty.value) * num(price.value);
-      if(t>0) total.value = t.toFixed(2);
-    }
-    // 3. Pay - Total = Change
-    if(pay && total && change){
-      var ch = num(pay.value) - num(total.value);
-      if(num(pay.value)>0) change.value = ch.toFixed(2);
-    }
-  }
-  // Listen ONCE on document - works even after rebuild, works on Tab / Type
-  document.addEventListener('input', function(e){
-    var box = e.target.closest ? e.target.closest('div[id$="Div"]') : null;
-    if(box) calcBox(box);
-  });
-  document.addEventListener('change', function(e){
-    var box = e.target.closest ? e.target.closest('div[id$="Div"]') : null;
-    if(box) calcBox(box);
-  });
-  // Also calc every 800ms in case user tabs and value is already there
-  setInterval(function(){
-    var boxes = document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      if(boxes[i].style.display !== 'none') calcBox(boxes[i]);
-    }
-  }, 800);
-  console.log('AUTO CALC FIX LOADED');
-})();
-</script>
-  <script>
-// ALL CALC + CART + PW FIX V2 - Survives rebuild()
+// CLEAN FIX V9 - Replaces V1+V2+V4+TEST+V7 - ONE block only, NO debug popup
 (function(){
   function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
   function find(box, keys){
     if(!box) return null;
-    var els = box.querySelectorAll('input,select');
+    var els=box.querySelectorAll('input,select');
     for(var i=0;i<els.length;i++){
       var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase();
       for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1) return els[i];
@@ -1494,441 +1419,182 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
     }
     return out;
   }
-  function stockPrice(name){
-    if(!name) return 0;
-    var tbl=document.getElementById('stockTbl')||document.getElementById('mainTbl');
-    if(!tbl) return 0;
-    var rows=tbl.querySelectorAll('tr');
-    for(var i=1;i<rows.length;i++){
-      var c=rows[i].querySelectorAll('td'); if(!c.length) continue;
-      if(c[0].textContent.trim().toLowerCase().indexOf(name.trim().toLowerCase())!==-1){
-        for(var j=c.length-1;j>=0;j--){ var v=num(c[j].textContent); if(v>0) return v; }
-      }
-    }
-    return 0;
-  }
-  // --- 1+2+3. SALE / PURCHASE / COCO G1+G2 CALC ---
-  function calcBox(box){
-    if(!box||box.style.display==='none') return;
-    var id=(box.id||'').toLowerCase();
-    // COCO has 2 parts - calc each part separately
-    if(id.indexOf('coco')!==-1 || id.indexOf('copra')!==-1){
-      // G1 and G2 are usually 2 groups inside cocoDiv - calc all QTY/PRICE/TOTAL triples
-      var qtys=findAll(box,['qty','pcs','kg','weight','g1','g2']);
-      var prices=findAll(box,['price','cost','rate']);
-      var totals=findAll(box,['total','amount']);
-      for(var t=0;t<totals.length;t++){
-        var q=qtys[t]?num(qtys[t].value):0;
-        var p=prices[t]?num(prices[t].value):0;
-        if(q>0&&p>0) totals[t].value=(q*p).toFixed(2);
-      }
-      // Grand total = G1 Total + G2 Total
-      var grand=find(box,['grand','final','sum']);
-      if(grand&&totals.length>=2) grand.value=(num(totals[0].value)+num(totals[1].value)).toFixed(2);
-      return;
-    }
-    var item=find(box,['item','product']);
-    var qty=find(box,['qty','pcs']);
-    var price=find(box,['price','sell','cost','rate']);
-    var total=find(box,['total']);
-    var pay=find(box,['pay','paid','cash']);
-    var change=find(box,['change','balance','return']);
-    if(item&&price&&item.value&&!price.dataset.manual){
-      var sp=stockPrice(item.value); if(sp>0) price.value=sp.toFixed(2);
-    }
-    if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
-    if(pay&&total&&change&&num(pay.value)>0) change.value=(num(pay.value)-num(total.value)).toFixed(2);
-  }
-  // --- 4. NUMBER PAD -> QTY + ADD TO CART + CHECKOUT ---
-  window._cart = window._cart || [];
-  function activeQtyInput(){
-    // Find visible popup, its QTY input
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      if(boxes[i].style.display!=='none'){
-        var q=find(boxes[i],['qty','pcs']); if(q) return {box:boxes[i], qty:q};
-      }
-    }
-    return null;
-  }
-  // Press number pad - works even if original pressNum() is broken
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest?e.target.closest('button'):null;
-    if(!btn) return;
-    var txt=btn.textContent.trim();
-    // Number pad: single digit or 00 / . / C
-    if(/^[0-9]$/.test(txt) || txt==='00' || txt==='.' || txt==='C' || txt==='Clear'){
-      var aq=activeQtyInput(); if(!aq) return;
-      if(txt==='C'||txt==='Clear'){ aq.qty.value=''; }
-      else { aq.qty.value=(aq.qty.value||'')+txt; }
-      aq.qty.dispatchEvent(new Event('input',{bubbles:true}));
-      calcBox(aq.box);
-    }
-    // ADD TO CART button
-    if(txt.toLowerCase().indexOf('add to cart')!==-1 || txt.toLowerCase().indexOf('add')!==-1 && btn.id.toLowerCase().indexOf('cart')!==-1){
-      var aq2=activeQtyInput(); if(!aq2) return;
-      var box=aq2.box;
-      var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price','sell','cost']); var total=find(box,['total']);
-      if(!item||!item.value){ alert('Pick Item first'); return; }
-      if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
-      calcBox(box);
-      var row={item:item.value, qty:num(qty.value), price:num(price?price.value:0), total:num(total?total.value:0)};
-      window._cart.push(row);
-      // Show in cart table if exists, else alert
-      var cartTbl=document.getElementById('cartTbl')||document.getElementById('saleCartTbl');
-      if(cartTbl){
-        var r=cartTbl.insertRow(-1);
-        r.insertCell(0).textContent=row.item; r.insertCell(1).textContent=row.qty; r.insertCell(2).textContent=row.price.toFixed(2); r.insertCell(3).textContent=row.total.toFixed(2);
-      }
-      // Checkout total
-      var grand=0; for(var i=0;i<window._cart.length;i++) grand+=window._cart[i].total;
-      var ct=document.getElementById('checkoutTotal')||find(box,['checkout','grand']);
-      if(ct) ct.value=grand.toFixed(2);
-      // Clear for next item, keep focus on Item
-      if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
-      alert('Added: '+row.item+' x '+row.qty+' = $'+row.total.toFixed(2)+' | Cart Total $'+grand.toFixed(2));
-    }
-    // CHECKOUT button
-    if(txt.toLowerCase().indexOf('checkout')!==-1 || txt.toLowerCase().indexOf('check out')!==-1){
-      var grand2=0; for(var j=0;j<window._cart.length;j++) grand2+=window._cart[j].total;
-      alert('CHECKOUT TOTAL: $'+grand2.toFixed(2)+' | Items: '+window._cart.length);
-    }
-  });
-  // Input / Change - calc live
-  document.addEventListener('input', function(e){
-    var box=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(box) calcBox(box);
-  });
-  document.addEventListener('change', function(e){
-    var box=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(box) calcBox(box);
-  });
-  setInterval(function(){
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') calcBox(boxes[i]);
-  },800);
 
-  // --- 5. CHANGE PW - Save Local + Sync Cloud ---
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
-    var txt=btn.textContent.toLowerCase();
-    if(txt.indexOf('change')!==-1 && txt.indexOf('password')!==-1 || txt.indexOf('save')!==-1 && btn.closest && btn.closest('div[id$="Div"]') && btn.closest('div[id$="Div"]').id.toLowerCase().indexOf('setting')!==-1){
-      setTimeout(function(){
-        var box=document.querySelector('div[id*="Setting"], div[id*="setting"]');
-        if(!box) return;
-        var pw=find(box,['new','password','pass']); var pw2=findAll(box,['password','pass']);
-        var newPw=pw?pw.value:''; if(!newPw) return;
-        // 1. Save local
-        try{ localStorage.setItem('terikano_pw', newPw); localStorage.setItem('password', newPw); }catch(err){}
-        // 2. Try cloud - call whatever cloud fn you already have
-        try{
-          if(typeof saveToCloud==='function') saveToCloud();
-          if(typeof syncToCloud==='function') syncToCloud();
-          if(typeof saveData==='function') saveData();
-          if(typeof uploadData==='function') uploadData();
-        }catch(err){}
-        // 3. If you use Firebase / Google Sheet - also try to push via existing cloud var
-        console.log('PW CHANGED LOCALLY + CLOUD SYNC ATTEMPTED:', newPw);
-        alert('Password changed + saved. Now close and re-open app on other phone to check if it synced. If not synced, send me your cloud function name.');
-      },100);
-    }
-  });
-  console.log('ALL CALC + CART + PW FIX V2 LOADED');
-})();
-</script>
-  <script>
-// DELETE + OVERRIDE FIX V4 - Append only, overrides V3
-(function(){
-  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-  var MARKUP = 1.30; // Cost 2.00 = Sell 2.60 - change if your formula different
-
-  // --- OVERRIDE FIX: Only Sell field typed by YOU = manual ---
-  // Auto-fill must NOT mark as manual
-  document.addEventListener('input', function(e){
-    var t=e.target;
-    if(!t || t.tagName!=='INPUT') return;
-    var id=(t.id||'').toLowerCase();
-    var ph=(t.placeholder||'').toLowerCase();
-    var isSell = id.indexOf('sell')!==-1 || id.indexOf('sale')!==-1 && id.indexOf('item')===-1 || ph.indexOf('sell')!==-1;
-    // Only when YOU type in Sell box, lock it
-    if(isSell && !t.dataset.autoFilling){
-      t.dataset.manual='1';
-      console.log('SELL OVERRIDE by user:', t.value);
-    }
-  }, true); // capture = runs before V3
-
-  // Re-do Sell auto, respecting override
-  function fixSell(){
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      var box=boxes[i]; if(box.style.display==='none') continue;
-      if(box.id.toLowerCase().indexOf('pur')===-1 && box.id.toLowerCase().indexOf('purchase')===-1) continue;
-      var cost=null, sell=null;
-      var els=box.querySelectorAll('input');
-      for(var j=0;j<els.length;j++){
-        var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase();
-        if(s.indexOf('cost')!==-1) cost=els[j];
-        if(s.indexOf('sell')!==-1) sell=els[j];
-      }
-      if(cost && sell && num(cost.value)>0 && !sell.dataset.manual){
-        var want=(num(cost.value)*MARKUP).toFixed(2);
-        if(num(sell.value)!==num(want)){
-          sell.dataset.autoFilling='1';
-          sell.value=want;
-          delete sell.dataset.autoFilling;
-        }
-      }
-      // Cost must be editable - force unlock every second
-      if(cost){ cost.disabled=false; cost.readOnly=false; cost.removeAttribute('readonly'); cost.removeAttribute('disabled'); }
-      if(sell){ sell.disabled=false; sell.readOnly=false; sell.removeAttribute('readonly'); sell.removeAttribute('disabled'); }
-    }
-  }
-  setInterval(fixSell, 500);
-
-  // Reset override: If you clear Sell box, auto starts again
-  document.addEventListener('input', function(e){
-    var t=e.target; if(!t || t.tagName!=='INPUT') return;
-    var id=(t.id||'').toLowerCase();
-    if(id.indexOf('sell')!==-1 && t.value===''){ delete t.dataset.manual; console.log('SELL override cleared - auto back on'); }
-  });
-
-  // --- DELETE FIX: Delete works everywhere - cart row, sale row, qty ---
-  // Use capture, so it runs before other handlers
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest?e.target.closest('button'):null;
-    if(!btn) return;
-    var txt=btn.textContent.trim().toLowerCase();
-    if(txt!=='delete' && txt.indexOf('delete')===-1 && txt!=='x' && txt!=='✕' && txt!=='🗑') return;
-
-    // 1. If Delete is in a table row (cart / sale list) - delete THAT row
-    var row=btn.closest?btn.closest('tr'):null;
-    if(row){
-      // If it's a cart row with data-index, also remove from _cart
-      var idx=btn.getAttribute('data-index') || row.getAttribute('data-index');
-      if(idx!==null && window._cart && window._cart[idx]!==undefined){
-        window._cart.splice(parseInt(idx),1);
-        if(window._updCart) window._updCart();
-      }
-      row.remove();
-      console.log('DELETE row removed');
-      e.stopPropagation(); e.preventDefault();
-      return;
-    }
-    // 2. If Delete is in popup - clear QTY + Total in that popup
-    var box=btn.closest?btn.closest('div[id$="Div"]'):null;
-    if(box){
-      var inputs=box.querySelectorAll('input');
-      for(var k=0;k<inputs.length;k++){
-        var s=(inputs[k].id+' '+(inputs[k].placeholder||'')).toLowerCase();
-        if(s.indexOf('qty')!==-1 || s.indexOf('total')!==-1) inputs[k].value='';
-      }
-      console.log('DELETE cleared QTY in popup');
-      e.stopPropagation(); e.preventDefault();
-      return;
-    }
-  }, true);
-
-  // Keyboard Delete also works - in QTY, Delete clears QTY
-  document.addEventListener('keydown', function(e){
-    if(e.key!=='Delete') return;
-    var t=e.target; if(t && t.tagName==='INPUT'){
-      // Let normal Delete delete 1 char inside input - don't block it
-      return;
-    }
-    // If focus is on a row / button, Delete that row
-    var row=document.activeElement && document.activeElement.closest?document.activeElement.closest('tr'):null;
-    if(row){ row.remove(); }
-  });
-
-  console.log('DELETE + OVERRIDE FIX V4 LOADED - Append only, no delete of old code');
-})();
-</script>
-  <script>
-// TEST - If this works you will see a popup
-alert('FIX LOADED - If you see this, insertion works');
-document.addEventListener('DOMContentLoaded', function(){
-  var ds = document.querySelectorAll('input[type="date"]');
-  for(var i=0;i<ds.length;i++){ ds[i].value='2026-11-23'; ds[i].style.background='yellow'; }
-});
-</script>
-  <script>
-// FULL FIX V7 - DATE KIRIBATI + AUTO PRICE + MULTI-ITEM CART + CHECKOUT WINDOW
-(function(){
-  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
-
-  // ========== 1. DATE - KIRIBATI UTC+12 Pacific/Tarawa ==========
+  // ========== 1. DATE - Kiribati Tarawa, 22, NO +12, NO hard-coded 23 ==========
   function kiribatiToday(){
-    try{
-      var parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Tarawa', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(new Date());
-      var y='',m='',d='';
-      for(var i=0;i<parts.length;i++){ if(parts[i].type==='year') y=parts[i].value; if(parts[i].type==='month') m=parts[i].value; if(parts[i].type==='day') d=parts[i].value; }
-      return y+'-'+m+'-'+d;
-    }catch(e){
-      var dt=new Date(Date.now()+12*60*60*1000);
-      return dt.getUTCFullYear()+'-'+String(dt.getUTCMonth()+1).padStart(2,'0')+'-'+String(dt.getUTCDate()).padStart(2,'0');
-    }
+    try{ return new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa', year:'numeric', month:'2-digit', day:'2-digit'}); }
+    catch(e){ return new Date().toISOString().slice(0,10); }
   }
   function fixDate(){
     var ds=document.querySelectorAll('input[type="date"]');
     for(var i=0;i<ds.length;i++){
-      if(!ds[i].value) ds[i].value=kiribatiToday();
-      ds[i].readOnly=true; ds[i].style.background='#ff0'; ds[i].title='Kiribati Date Auto: '+kiribatiToday();
+      var want=kiribatiToday();
+      if(ds[i].value!==want) ds[i].value=want;
+      ds[i].readOnly=true; ds[i].style.background='#ff0';
     }
   }
 
-  // ========== 2. AUTO PRICE - Sell = Last Sell Price, NEVER 2026 ==========
-  function lastSellPrice(itemName){
-    if(!itemName) return 0;
-    var name=itemName.trim().toLowerCase();
-    try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); if(map[name]&&map[name]>0&&map[name]!==2026) return map[name]; }catch(e){}
-    // Search sales tables backwards = last sale first
-    var tables=document.querySelectorAll('table');
-    for(var t=0;t<tables.length;t++){
-      var rows=tables[t].querySelectorAll('tr');
-      for(var i=rows.length-1;i>=0;i--){
-        var c=rows[i].querySelectorAll('td'); if(c.length<3) continue;
-        if(c[0].textContent.trim().toLowerCase()===name){
-          for(var j=c.length-1;j>=0;j--){ var v=num(c[j].textContent); if(v>0&&v!==2026&&v<1000) return v; }
-        }
-      }
-    }
+  // ========== 2. PRICE - NEVER from Stock last column, NEVER 2026 ==========
+  // Price comes ONLY from: 1) Your manual type (saved) 2) Last Sell Map
+  // If no Last Sell, leave BLANK - do NOT guess from Stock/Expiry
+  function lastSellPrice(name){
+    if(!name) return 0;
     try{
-      var arr=window.stock||window.items||[];
-      for(var k=0;k<arr.length;k++){ var it=arr[k]; if(!it) continue; if((it.name||it.item||'').toLowerCase()===name){ var s=num(it.sell||it.sellPrice||it.price||0); if(s>0&&s!==2026) return s; } }
+      var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}');
+      var v=map[name.trim().toLowerCase()];
+      if(v>0 && v!==2026 && v<1000) return v;
     }catch(e){}
     return 0;
   }
-  // When YOU type correct price, save it as Last Sell
+  // Save when YOU type correct price
   document.addEventListener('change', function(e){
     var t=e.target; if(!t||t.tagName!=='INPUT') return;
-    var id=(t.id||'').toLowerCase(); if(id.indexOf('price')===-1) return;
+    var id=(t.id||'').toLowerCase();
+    if(id.indexOf('price')===-1 && id.indexOf('sell')===-1) return;
+    if(num(t.value)===2026 || num(t.value)>=2000){ t.value=''; return; }
     var box=t.closest?t.closest('div[id$="Div"]'):null; if(!box) return;
-    var item=null; var els=box.querySelectorAll('input,select');
-    for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase(); if(s.indexOf('item')!==-1) item=els[i]; }
-    if(item&&item.value&&num(t.value)>0&&num(t.value)!==2026){
+    var item=find(box,['item','product']);
+    if(item&&item.value&&num(t.value)>0){
       try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); map[item.value.trim().toLowerCase()]=num(t.value); localStorage.setItem('lastSellMap', JSON.stringify(map)); t.dataset.manual='1'; }catch(e){}
     }
   });
-  function fixSalePrice(){
-    var boxes=document.querySelectorAll('div[id$="Div"]');
-    for(var i=0;i<boxes.length;i++){
-      var box=boxes[i]; if(box.style.display==='none') continue;
-      if(box.id.toLowerCase().indexOf('sale')===-1) continue;
-      var item=null, qty=null, price=null, total=null;
-      var els=box.querySelectorAll('input,select');
-      for(var j=0;j<els.length;j++){
-        var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase();
-        if(s.indexOf('item')!==-1) item=els[j];
-        if(s.indexOf('qty')!==-1) qty=els[j];
-        if(s.indexOf('price')!==-1) price=els[j];
-        if(s.indexOf('total')!==-1) total=els[j];
-      }
-      if(price && num(price.value)===2026) price.value=''; // Kill 2026 bug
-      if(item&&price&&item.value&&!price.dataset.manual){
-        var last=lastSellPrice(item.value);
-        if(last>0&&last!==2026) price.value=last.toFixed(2);
-      }
-      if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
-    }
-  }
 
-  // ========== 3. CART - MULTI ITEM for 1 CUSTOMER + CHECKOUT WINDOW ==========
-  window._cart = window._cart || [];
-  window._cust = window._cust || '';
-  function getCust(box){
-    var els=box.querySelectorAll('input,select'); for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase(); if(s.indexOf('cust')!==-1) return els[i].value; }
-    return window._cust || 'Walk-in';
+  // ========== 3. CALC - SALE / PURCHASE / COCO G1+G2 ==========
+  var MARKUP=1.30; // Purchase: Sell = Cost x 1.30, change if yours different
+  function calcBox(box){
+    if(!box||box.style.display==='none') return;
+    var id=(box.id||'').toLowerCase();
+    // COCO - G1 + G2 separate
+    if(id.indexOf('coco')!==-1 || id.indexOf('copra')!==-1){
+      var qtys=findAll(box,['qty','pcs','kg','weight']);
+      var prices=findAll(box,['price','cost','rate']);
+      var totals=findAll(box,['total','amount']);
+      for(var t=0;t<totals.length;t++){
+        var q=qtys[t]?num(qtys[t].value):0; var p=prices[t]?num(prices[t].value):0;
+        if(q>0&&p>0) totals[t].value=(q*p).toFixed(2);
+      }
+      var grand=find(box,['grand','final']);
+      if(grand&&totals.length>=2) grand.value=(num(totals[0].value)+num(totals[1].value)).toFixed(2);
+      return;
+    }
+    // PURCHASE - Cost editable, Sell auto but can override
+    if(id.indexOf('pur')!==-1){
+      var cost=find(box,['cost']); var sell=find(box,['sell']);
+      if(cost){ cost.disabled=false; cost.readOnly=false; cost.removeAttribute('readonly'); cost.removeAttribute('disabled'); }
+      if(sell){ sell.disabled=false; sell.readOnly=false; sell.removeAttribute('readonly'); sell.removeAttribute('disabled'); }
+      if(cost&&sell&&num(cost.value)>0&&!sell.dataset.manual){
+        var want=(num(cost.value)*MARKUP).toFixed(2);
+        if(num(sell.value)!==num(want)){ sell.dataset.autoFilling='1'; sell.value=want; delete sell.dataset.autoFilling; }
+      }
+      var pq=find(box,['qty','pcs']); var ptot=find(box,['total']);
+      if(pq&&cost&&ptot){ var pt=num(pq.value)*num(cost.value); if(pt>0) ptot.value=pt.toFixed(2); }
+      return;
+    }
+    // SALE
+    if(id.indexOf('sale')===-1 && id.indexOf('sell')===-1) return;
+    var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price']); var total=find(box,['total']); var pay=find(box,['pay','paid','cash']); var change=find(box,['change','balance','return']);
+    if(price && (num(price.value)===2026 || num(price.value)>=2000)) price.value='';
+    if(item&&price&&item.value&&!price.dataset.manual){
+      var last=lastSellPrice(item.value);
+      if(last>0) price.value=last.toFixed(2);
+    }
+    if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); else if(num(qty.value)>0&&num(price.value)===0) total.value=''; }
+    if(pay&&total&&change&&num(pay.value)>0) change.value=(num(pay.value)-num(total.value)).toFixed(2);
+  }
+  // Override: ONLY when YOU type in Sell/Price, lock it. Auto-fill does NOT lock.
+  document.addEventListener('input', function(e){
+    var t=e.target; if(!t||t.tagName!=='INPUT') return;
+    var id=(t.id||'').toLowerCase();
+    if((id.indexOf('sell')!==-1||id.indexOf('price')!==-1) && !t.dataset.autoFilling) t.dataset.manual='1';
+    if(id.indexOf('sell')!==-1 && t.value==='') delete t.dataset.manual;
+  }, true);
+  document.addEventListener('input', function(e){ var b=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(b) calcBox(b); });
+  document.addEventListener('change', function(e){ var b=e.target.closest?e.target.closest('div[id$="Div"]'):null; if(b) calcBox(b); });
+
+  // ========== 4. NUMBER PAD -> QTY + CART MULTI-ITEM + CHECKOUT WINDOW ==========
+  window._cart=window._cart||[]; window._cust=window._cust||'';
+  function activeBox(){
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') return boxes[i];
+    return null;
   }
   function ensureCartUI(){
     if(document.getElementById('cartBar')) return;
-    // Bottom bar - always visible when cart has items
     var bar=document.createElement('div'); bar.id='cartBar';
     bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;z-index:99999;display:none;border-top:3px solid #0f0;';
-    bar.innerHTML='<div style="font-weight:bold;">🛒 CART - Customer: <span id="cartCust">-</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:100px;overflow:auto;margin:6px 0;"></div><button id="cartOpenBtn" style="width:48%;padding:12px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:12px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
+    bar.innerHTML='<div style="font-weight:bold;">CART - <span id="cartCust">-</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:100px;overflow:auto;margin:6px 0;"></div><button id="cartOpenBtn" style="width:48%;padding:12px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:12px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
     document.body.appendChild(bar);
-    // Checkout window - modal, was never showing before, now forced
     var win=document.createElement('div'); win.id='checkoutWin';
     win.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100000;display:none;align-items:center;justify-content:center;';
-    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3 style="margin:0;">CHECKOUT</h3><div style="font-size:13px;">Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay Amount $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;margin:4px 0;" placeholder="Enter Pay"><div style="font-weight:bold;">Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE SALE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
+    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3>CHECKOUT</h3><div>Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;" placeholder="Enter Pay"><div>Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE SALE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
     document.body.appendChild(win);
     document.getElementById('cartOpenBtn').onclick=function(){ openCheckout(); };
     document.getElementById('cartClearBtn').onclick=function(){ window._cart=[]; updateCart(); };
     document.getElementById('ckClose').onclick=function(){ document.getElementById('checkoutWin').style.display='none'; };
-    document.getElementById('ckPay').addEventListener('input', function(){
-      var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total;
-      document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2);
-    });
+    document.getElementById('ckPay').addEventListener('input', function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2); });
     document.getElementById('ckConfirm').onclick=function(){
       var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total;
       var pay=num(document.getElementById('ckPay').value);
-      if(pay<tot){ alert('Pay is less than Total. Pay $'+tot.toFixed(2)+' or more.'); return; }
+      if(pay<tot){ alert('Pay is less than Total $'+tot.toFixed(2)); return; }
       alert('SALE SAVED\nCustomer: '+window._cust+'\nItems: '+window._cart.length+'\nTotal: $'+tot.toFixed(2)+'\nPay: $'+pay.toFixed(2)+'\nChange: $'+(pay-tot).toFixed(2));
       window._cart=[]; updateCart(); document.getElementById('checkoutWin').style.display='none';
-      // Clear sale popup inputs
-      var boxes=document.querySelectorAll('div[id$="Div"]');
-      for(var b=0;b<boxes.length;b++){ if(boxes[b].id.toLowerCase().indexOf('sale')!==-1){ var ins=boxes[b].querySelectorAll('input'); for(var k=0;k<ins.length;k++){ if(ins[k].type!=='date') ins[k].value=''; } } }
     };
   }
   function updateCart(){
-    ensureCartUI();
-    var bar=document.getElementById('cartBar'); if(!bar) return;
+    ensureCartUI(); var bar=document.getElementById('cartBar'); if(!bar) return;
     if(!window._cart.length){ bar.style.display='none'; return; }
-    bar.style.display='block';
-    var tot=0, html='';
-    for(var i=0;i<window._cart.length;i++){
-      tot+=window._cart[i].total;
-      html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' @ $'+window._cart[i].price.toFixed(2)+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>';
-    }
-    document.getElementById('cartCust').textContent=window._cust||'Walk-in';
-    document.getElementById('cartCount').textContent=window._cart.length;
-    document.getElementById('cartTotal').textContent=tot.toFixed(2);
-    document.getElementById('cartList').innerHTML=html;
-    // Delete buttons in cart
-    var dels=document.querySelectorAll('[data-del]');
-    for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ var idx=parseInt(this.getAttribute('data-del')); window._cart.splice(idx,1); updateCart(); }; }
+    bar.style.display='block'; var tot=0, html='';
+    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>'; }
+    document.getElementById('cartCust').textContent=window._cust||'Walk-in'; document.getElementById('cartCount').textContent=window._cart.length; document.getElementById('cartTotal').textContent=tot.toFixed(2); document.getElementById('cartList').innerHTML=html;
+    var dels=document.querySelectorAll('[data-del]'); for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ window._cart.splice(parseInt(this.getAttribute('data-del')),1); updateCart(); }; }
   }
   function openCheckout(){
-    ensureCartUI();
-    if(!window._cart.length){ alert('Cart is empty. Add 1 item first.'); return; }
-    var tot=0, html='';
-    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
-    document.getElementById('ckCust').textContent=window._cust||'Walk-in';
-    document.getElementById('ckDate').textContent=kiribatiToday();
-    document.getElementById('ckList').innerHTML=html;
-    document.getElementById('ckTotal').textContent=tot.toFixed(2);
-    document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
-    var w=document.getElementById('checkoutWin'); w.style.display='flex';
+    ensureCartUI(); if(!window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
+    var tot=0, html=''; for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
+    document.getElementById('ckCust').textContent=window._cust||'Walk-in'; document.getElementById('ckDate').textContent=kiribatiToday(); document.getElementById('ckList').innerHTML=html; document.getElementById('ckTotal').textContent=tot.toFixed(2); document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
+    document.getElementById('checkoutWin').style.display='flex';
   }
-  window._updCart=updateCart; window._openCheckout=openCheckout;
-
-  // ADD TO CART - must push, not replace, so multi-item works
+  window._updCart=updateCart;
   document.addEventListener('click', function(e){
     var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
-    var txt=btn.textContent.toLowerCase();
-    if(txt.indexOf('add to cart')===-1 && !(txt.indexOf('add')!==-1&&txt.indexOf('cart')!==-1)) return;
-    var box=btn.closest?btn.closest('div[id$="Div"]'):null; if(!box) return;
-    var item=null, qty=null, price=null, total=null;
-    var els=box.querySelectorAll('input,select');
-    for(var i=0;i<els.length;i++){
-      var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase();
-      if(s.indexOf('item')!==-1) item=els[i];
-      if(s.indexOf('qty')!==-1) qty=els[i];
-      if(s.indexOf('price')!==-1) price=els[i];
-      if(s.indexOf('total')!==-1) total=els[i];
+    var txt=btn.textContent.trim();
+    // Number pad -> QTY
+    if(/^[0-9]$/.test(txt)||txt==='00'||txt==='.'||txt==='C'){
+      var ab=activeBox(); if(!ab) return; var q=find(ab,['qty','pcs']); if(!q) return;
+      if(txt==='C') q.value=''; else q.value=(q.value||'')+txt;
+      q.dispatchEvent(new Event('input',{bubbles:true})); calcBox(ab); return;
     }
-    window._cust=getCust(box);
-    if(!item||!item.value){ alert('Pick Item first'); return; }
-    if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
-    if(!price||num(price.value)<=0||num(price.value)===2026){ alert('Price is wrong / 2026. Type correct Price first, e.g. 3.50'); return; }
-    fixSalePrice();
-    var tt=num(total?total.value:0) || (num(qty.value)*num(price.value));
-    // PUSH - not replace, so 2nd item ADDS to 1st
-    window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
-    updateCart();
-    // Clear QTY + Total for next item, KEEP Customer + Date
-    if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
-    alert('Added to Cart: '+item.value+' x '+qty.value+'\nCart now has '+window._cart.length+' items for '+window._cust+'\nAdd another item, or press CHECKOUT in black bar at bottom.');
+    // DELETE in cart / popup - capture handled below, this is for cartBar Delete
+    if(txt.toLowerCase()==='delete'){
+      var row=btn.closest?btn.closest('tr'):null;
+      if(row){ row.remove(); return; }
+      var box=btn.closest?btn.closest('div[id$="Div"]'):null;
+      if(box){ var ins=box.querySelectorAll('input'); for(var k=0;k<ins.length;k++){ var s=(ins[k].id+' '+(ins[k].placeholder||'')).toLowerCase(); if(s.indexOf('qty')!==-1||s.indexOf('total')!==-1) ins[k].value=''; } }
+      return;
+    }
+    // ADD TO CART - PUSH, not replace, multi-item for 1 customer
+    if(txt.toLowerCase().indexOf('add to cart')!==-1){
+      var box2=btn.closest?btn.closest('div[id$="Div"]'):null; if(!box2) return;
+      var item=find(box2,['item','product']); var qty=find(box2,['qty','pcs']); var price=find(box2,['price']); var total=find(box2,['total']); var cust=find(box2,['cust']);
+      window._cust=cust?cust.value:'Walk-in';
+      if(!item||!item.value){ alert('Pick Item first'); return; }
+      if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
+      if(!price||num(price.value)<=0||num(price.value)===2026){ alert('Price wrong / 2026. Type correct Price first, e.g. 3.50'); return; }
+      calcBox(box2);
+      var tt=num(total?total.value:0)||(num(qty.value)*num(price.value));
+      window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
+      updateCart();
+      if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
+      alert('Added: '+item.value+'\nCart now: '+window._cart.length+' items for '+window._cust+'\nAdd another, or press CHECKOUT at bottom.');
+      return;
+    }
   });
-  setInterval(function(){ fixDate(); fixSalePrice(); }, 800);
-  console.log('FULL FIX V7 LOADED - Kiribati Date + Last Sell Price + Multi Cart');
+  setInterval(function(){
+    fixDate();
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++) if(boxes[i].style.display!=='none') calcBox(boxes[i]);
+  }, 800);
+  console.log('CLEAN FIX V9 LOADED - No popup, Date 22, Price never 2026');
 })();
 </script>
 </body>
