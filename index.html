@@ -2523,6 +2523,25 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V26 LOADED - Clear + Owner buttons fixed');
 })();
 </script>
+    <script>
+// V27 - HIDE MERGE - Not used anymore + Hide duplicate CLEAR BOTH
+(function(){
+  function hideMerge(){
+    var btns = document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var t = (btns[i].textContent||'').toUpperCase();
+      // MERGE STAFF FILE - OFFLINE - hide it, we don't use it
+      if(t.indexOf('MERGE')!==-1){
+        btns[i].style.display='none';
+      }
+    }
+  }
+  hideMerge();
+  setInterval(hideMerge, 1000); // keep it hidden even if Backup re-renders
+
+  console.log('V27 LOADED - MERGE hidden');
+})();
+</script>
   <script>
 // V28 - BACKUP BOX PRO - Tidy + Aligned + No MERGE
 (function(){
@@ -2616,6 +2635,143 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   setInterval(tidyBackup, 1200);
 
   console.log('V28 LOADED - BACKUP Pro');
+})();
+</script>
+  <script>
+// V29 - FIX BACKUP STUCK OPEN + REMOVE DUPLICATES
+(function(){
+  // 1. STOP V28 from re-opening it - kill old interval by overriding tidyBackup
+  // We replace the V28 function with a version that does NOT force display
+  window._v28_fixed = true;
+
+  function fixBackup(){
+    var box = document.getElementById('backupDiv');
+    if(!box) return;
+
+    // 2. Remove duplicate buttons - keep only ONE of each
+    var seen = {};
+    var btns = box.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var t = (btns[i].textContent||'').toUpperCase().replace(/[^A-Z]/g,'');
+      // MERGE - always hide
+      if(t.indexOf('MERGE')!==-1){ btns[i].style.display='none'; continue; }
+      // Keep first CLEAR BOTH, hide second one
+      if(t.indexOf('CLEARBOTH')!==-1){
+        if(seen['CLEARBOTH']){ btns[i].style.display='none'; continue; }
+        seen['CLEARBOTH']=1;
+      }
+      if(t.indexOf('BACKUPNOW')!==-1){
+        if(seen['BACKUPNOW']){ btns[i].style.display='none'; continue; }
+        seen['BACKUPNOW']=1;
+      }
+      if(t.indexOf('EXPORTSTOCK')!==-1){
+        if(seen['EXPORTSTOCK']){ btns[i].style.display='none'; continue; }
+        seen['EXPORTSTOCK']=1;
+      }
+      if(t.indexOf('RESTORE')!==-1){
+        if(seen['RESTORE']){ btns[i].style.display='none'; continue; }
+        seen['RESTORE']=1;
+      }
+    }
+
+    // 3. Remove duplicate Choose file inputs - keep only ONE for RESTORE
+    var files = box.querySelectorAll('input[type="file"]');
+    for(var f=1;f<files.length;f++){
+      if(files[f].parentNode) files[f].parentNode.style.display='none';
+    }
+    // Hide the top Choose file that is for CLEAR - we don't need file for CLEAR
+    if(files.length>0 && files[0].parentNode){
+      // If there are 2, hide first one (the one above CLEAR BOTH)
+      if(files.length>1) files[0].parentNode.style.display='none';
+    }
+
+    // 4. FIX CLOSE - Make ALL close buttons actually close + stay closed
+    var allBtns = box.querySelectorAll('button');
+    for(var k=0;k<allBtns.length;k++){
+      var txt=(allBtns[k].textContent||'').toUpperCase();
+      if(txt.indexOf('CLOSE')!==-1 || txt.indexOf('HIDE')!==-1 || txt.indexOf('X')===0){
+        // Remove old onclick that V28 broke, add new one
+        allBtns[k].onclick = function(e){
+          e.preventDefault(); e.stopPropagation();
+          var b=document.getElementById('backupDiv');
+          if(b){ b.style.display='none'; b.dataset.closed='1'; }
+          return false;
+        };
+      }
+    }
+
+    // 5. Click outside box = close (backdrop)
+    box.onclick = function(e){
+      if(e.target===box){
+        box.style.display='none'; box.dataset.closed='1';
+      }
+    };
+  }
+
+  // Run once, NOT every second - so it won't re-open
+  fixBackup();
+  // Run once more after 500ms to catch late render, then STOP
+  setTimeout(fixBackup, 500);
+
+  // 6. Override showWin for backupDiv - so it can open again when you WANT it
+  var _origShowWin = window.showWin;
+  window.showWin = function(id){
+    if(id==='backupDiv'){
+      var el=document.getElementById(id);
+      if(el){ el.dataset.closed='0'; el.style.display='flex'; fixBackup(); }
+      return;
+    }
+    if(typeof _origShowWin==='function') return _origShowWin(id);
+    var el2=document.getElementById(id); if(el2) el2.style.display='flex';
+  };
+
+  // 7. Also fix the floating CLEAR TEST DATA button - move it up so it doesn't cover Daily Notes input
+  var fb = document.querySelector('button');
+  // Find our floating button by text
+  var all=document.querySelectorAll('button');
+  for(var m=0;m<all.length;m++){
+    if((all[m].textContent||'').indexOf('CLEAR TEST DATA')!==-1){
+      all[m].style.bottom='70px'; // move above Daily Notes
+      all[m].style.right='10px';
+    }
+  }
+
+  console.log('V29 LOADED - BACKUP can close now');
+})();
+</script>
+<script>
+// V30 - BRING BACK TOP BOXES - Owner only
+(function(){
+  function showTop(){
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    if(a!=='owner') return; // Staff still hides Owner buttons by design
+
+    // 1. Make sure BACKUP is closed on load - so it doesn't cover top
+    var bk=document.getElementById('backupDiv');
+    if(bk && bk.dataset.closed!=='0'){ bk.style.display='none'; }
+
+    // 2. Force all top menu buttons visible
+    var tops = document.querySelectorAll('.owner-only-btn, .top-btn, .menu-btn, header button, nav button');
+    for(var i=0;i<tops.length;i++){
+      // Don't show MERGE
+      var t=(tops[i].textContent||'').toUpperCase();
+      if(t.indexOf('MERGE')!==-1) continue;
+      tops[i].style.display='inline-block';
+      tops[i].style.visibility='visible';
+      tops[i].style.opacity='1';
+    }
+
+    // 3. Force main top container visible
+    var containers = document.querySelectorAll('#topBar, .topBar, #menu, .menu, #header, header, #navBar');
+    for(var j=0;j<containers.length;j++){
+      containers[j].style.display='flex';
+      containers[j].style.visibility='visible';
+    }
+  }
+  showTop();
+  setTimeout(showTop, 500);
+  setTimeout(showTop, 1500);
+  console.log('V30 LOADED - Top boxes restored');
 })();
 </script>
 </body>
