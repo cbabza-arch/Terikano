@@ -1704,5 +1704,177 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   console.log('FIX V10 LOADED - Orange Back + Checkout Force');
 })();
 </script>
+  <script>
+// FIX V11 - Auto Price from STOCK Sell Header + Orange Back on ANY element + Cart Always Shows
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+  function find(box, keys){
+    if(!box) return null; var els=box.querySelectorAll('input,select');
+    for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+els[i].name+' '+(els[i].placeholder||'')).toLowerCase(); for(var k=0;k<keys.length;k++) if(s.indexOf(keys[k])!==-1) return els[i]; }
+    return null;
+  }
+  // --- 1. AUTO PRICE - Find Sell column by HEADER, NOT last column ---
+  function stockSell(name){
+    if(!name) return 0;
+    var tables=document.querySelectorAll('table');
+    for(var t=0;t<tables.length;t++){
+      var tbl=tables[t];
+      var headers=tbl.querySelectorAll('th'); if(!headers.length) continue;
+      var sellIdx=-1, nameIdx=0;
+      for(var h=0;h<headers.length;h++){
+        var ht=headers[h].textContent.trim().toLowerCase();
+        // Sell column = sell / price / selling - but NOT cost, NOT expiry, NOT date, NOT qty
+        if((ht.indexOf('sell')!==-1 || ht==='price' || ht.indexOf('selling')!==-1) && ht.indexOf('cost')===-1) sellIdx=h;
+        if(ht.indexOf('item')!==-1 || ht.indexOf('product')!==-1 || ht.indexOf('name')!==-1) nameIdx=h;
+      }
+      if(sellIdx===-1) continue; // This table has no Sell column, try next table
+      var rows=tbl.querySelectorAll('tr');
+      for(var i=1;i<rows.length;i++){
+        var c=rows[i].querySelectorAll('td'); if(c.length<=sellIdx) continue;
+        var rn=c[nameIdx]?c[nameIdx].textContent.trim().toLowerCase():'';
+        if(rn===name.trim().toLowerCase() || rn.indexOf(name.trim().toLowerCase())!==-1){
+          var v=num(c[sellIdx].textContent);
+          if(v>0 && v!==2026 && v<1000) return v; // Sell price found, not year
+        }
+      }
+    }
+    // Fallback: Last Sell you typed before
+    try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); var m=map[name.trim().toLowerCase()]; if(m>0&&m!==2026) return m; }catch(e){}
+    return 0;
+  }
+  function fixAutoPrice(){
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      var box=boxes[i]; if(box.style.display==='none') continue;
+      if(box.id.toLowerCase().indexOf('sale')===-1) continue;
+      var item=find(box,['item','product']); var price=find(box,['price']); var qty=find(box,['qty','pcs']); var total=find(box,['total']);
+      if(!item||!price||!item.value) continue;
+      if(price.dataset.manual) continue;
+      if(num(price.value)===2026 || num(price.value)>=2000) price.value='';
+      if(!price.value){
+        var sp=stockSell(item.value);
+        if(sp>0) price.value=sp.toFixed(2);
+      }
+      if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
+    }
+  }
+  // Save manual price as Last Sell
+  document.addEventListener('change', function(e){
+    var t=e.target; if(!t||t.tagName!=='INPUT') return;
+    if((t.id||'').toLowerCase().indexOf('price')===-1) return;
+    if(num(t.value)===2026){ t.value=''; return; }
+    var box=t.closest?t.closest('div[id$="Div"]'):null; if(!box) return;
+    var item=find(box,['item','product']);
+    if(item&&item.value&&num(t.value)>0){ try{ var m=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); m[item.value.trim().toLowerCase()]=num(t.value); localStorage.setItem('lastSellMap', JSON.stringify(m)); t.dataset.manual='1'; }catch(e){} }
+  });
+
+  // --- 2. ORANGE BACK - Works on button, div, span, ANY element ---
+  function getActiveQty(){
+    var a=document.activeElement; if(a&&a.tagName==='INPUT') return a;
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){ if(boxes[i].style.display==='none') continue; var q=find(boxes[i],['qty','pcs']); if(q) return q; }
+    var pay=document.getElementById('ckPay'); if(pay) return pay;
+    return null;
+  }
+  function isOrangeEl(el){
+    if(!el) return false;
+    try{ var st=window.getComputedStyle(el); var bg=(st.backgroundColor||''); if(bg.indexOf('255, 165')!==-1||bg.indexOf('255, 152')!==-1||bg.indexOf('255, 140')!==-1||bg.indexOf('255, 153')!==-1||bg.indexOf('255, 171')!==-1) return true; }catch(e){}
+    var cls=(el.className||'').toString().toLowerCase(); if(cls.indexOf('orange')!==-1||cls.indexOf('back')!==-1) return true;
+    var style=(el.getAttribute&&el.getAttribute('style')||'').toLowerCase(); if(style.indexOf('orange')!==-1||style.indexOf('#ff')!==-1||style.indexOf('ffa')!==-1) return true;
+    return false;
+  }
+  // Use CAPTURE on document, check ANY clicked element, not just button
+  document.addEventListener('click', function(e){
+    var el=e.target;
+    // Walk up to find clickable parent - button, div, span with onclick or class
+    var cand=el;
+    for(var d=0;d<4 && cand; d++){
+      var txt=(cand.textContent||'').trim();
+      var low=txt.toLowerCase();
+      // Orange Back can be: ← ⌫ Back Del < X - single char or short text, OR orange background
+      var isBackText = txt==='←'||txt==='⌫'||txt==='<'||txt==='Back'||txt==='back'||txt==='DEL'||txt==='Del'||txt==='◀'||txt==='‹';
+      var isBackOrange = isOrangeEl(cand) && (isBackText || txt.length<=3);
+      if(isBackText || isBackOrange){
+        var inp=getActiveQty();
+        if(inp){ inp.value=String(inp.value||'').slice(0,-1); inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); console.log('ORANGE BACK - now:', inp.value); }
+        e.stopPropagation(); e.preventDefault();
+        return;
+      }
+      // Also C / Clear on calculator - clear QTY
+      if(txt==='C' && isOrangeEl(cand)){
+        var inp2=getActiveQty(); if(inp2){ inp2.value=''; inp2.dispatchEvent(new Event('input',{bubbles:true})); }
+        e.stopPropagation(); e.preventDefault(); return;
+      }
+      cand=cand.parentElement;
+    }
+  }, true);
+
+  // --- 3. CART + CHECKOUT - Floating bar ALWAYS, Add works even if Price was blank ---
+  function ensureCartUI(){
+    if(document.getElementById('cartBar')) return;
+    var bar=document.createElement('div'); bar.id='cartBar';
+    bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;z-index:99999;display:block;border-top:3px solid #0f0;';
+    bar.innerHTML='<div style="font-weight:bold;">CART - <span id="cartCust">Walk-in</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:120px;overflow:auto;margin:6px 0;color:#fff;">Cart empty - add item</div><button id="cartOpenBtn" style="width:48%;padding:14px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:14px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
+    document.body.appendChild(bar);
+    var win=document.createElement('div'); win.id='checkoutWin';
+    win.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:100000;display:none;align-items:center;justify-content:center;';
+    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3>CHECKOUT</h3><div>Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;" placeholder="Enter Pay"><div>Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
+    document.body.appendChild(win);
+    document.getElementById('cartOpenBtn').onclick=function(ev){ if(ev) ev.preventDefault(); openCheckout(); };
+    document.getElementById('cartClearBtn').onclick=function(){ window._cart=[]; updateCart(); };
+    document.getElementById('ckClose').onclick=function(){ document.getElementById('checkoutWin').style.display='none'; };
+    document.getElementById('ckPay').addEventListener('input', function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2); });
+    document.getElementById('ckConfirm').onclick=function(){ var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total; var pay=num(document.getElementById('ckPay').value); if(pay<tot){ alert('Pay less than Total $'+tot.toFixed(2)); return; } alert('SALE SAVED\nCustomer: '+window._cust+'\nItems: '+window._cart.length+'\nTotal: $'+tot.toFixed(2)+'\nPay: $'+pay.toFixed(2)+'\nChange: $'+(pay-tot).toFixed(2)); window._cart=[]; updateCart(); document.getElementById('checkoutWin').style.display='none'; };
+  }
+  function updateCart(){
+    ensureCartUI();
+    var tot=0, html='';
+    if(!window._cart || !window._cart.length){ html='Cart empty - add item'; }
+    else { for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>'; } }
+    document.getElementById('cartCust').textContent=window._cust||'Walk-in';
+    document.getElementById('cartCount').textContent=window._cart?window._cart.length:0;
+    document.getElementById('cartTotal').textContent=tot.toFixed(2);
+    document.getElementById('cartList').innerHTML=html;
+    var dels=document.querySelectorAll('[data-del]'); for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ window._cart.splice(parseInt(this.getAttribute('data-del')),1); updateCart(); }; }
+  }
+  function openCheckout(){
+    ensureCartUI();
+    if(!window._cart||!window._cart.length){ alert('Cart empty. Add 1 item first.'); return; }
+    var tot=0, html=''; for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
+    document.getElementById('ckCust').textContent=window._cust||'Walk-in';
+    document.getElementById('ckDate').textContent=new Date().toLocaleDateString('en-CA',{timeZone:'Pacific/Tarawa'});
+    document.getElementById('ckList').innerHTML=html; document.getElementById('ckTotal').textContent=tot.toFixed(2);
+    document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
+    var w=document.getElementById('checkoutWin'); w.style.setProperty('display','flex','important');
+  }
+  window._updCart=updateCart; window._openCheckout=openCheckout; window._cart=window._cart||[];
+  // ADD TO CART - catch ANY Add button, also if original Add is div
+  document.addEventListener('click', function(e){
+    var cand=e.target;
+    for(var d=0;d<4 && cand; d++){
+      var txt=(cand.textContent||'').trim().toLowerCase();
+      if(txt.indexOf('add to cart')!==-1){
+        var box=cand.closest?cand.closest('div[id$="Div"]'):null; if(!box) return;
+        fixAutoPrice();
+        var item=find(box,['item','product']); var qty=find(box,['qty','pcs']); var price=find(box,['price']); var total=find(box,['total']); var cust=find(box,['cust']);
+        window._cust=cust?cust.value:'Walk-in';
+        if(!item||!item.value){ alert('Pick Item first'); return; }
+        if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
+        if(!price||num(price.value)<=0){ alert('Price still blank - Type Price once, e.g. 3.50, then Add. After that it will auto next time.'); return; }
+        var tt=num(total?total.value:0)||(num(qty.value)*num(price.value));
+        window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
+        updateCart();
+        var qv=qty.value; if(qty) qty.value=''; if(total) total.value='';
+        alert('Added: '+item.value+' x '+qv+'\nCart now: '+window._cart.length+' items\nBlack bar at bottom shows cart. Press CHECKOUT there.');
+        e.stopPropagation(); e.preventDefault(); return;
+      }
+      cand=cand.parentElement;
+    }
+  }, true);
+  setInterval(function(){ fixAutoPrice(); updateCart(); }, 800);
+  ensureCartUI(); updateCart();
+  console.log('FIX V11 LOADED - Stock Sell Header + Orange Back Any Element + Cart Always');
+})();
+</script>
 </body>
 </html>
