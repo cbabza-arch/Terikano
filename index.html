@@ -1741,5 +1741,13 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   console.log('DELETE + OVERRIDE FIX V4 LOADED - Append only, no delete of old code');
 })();
 </script>
+  <script>
+// TEST - If this works you will see a popup
+alert('FIX LOADED - If you see this, insertion works');
+document.addEventListener('DOMContentLoaded', function(){
+  var ds = document.querySelectorAll('input[type="date"]');
+  for(var i=0;i<ds.length;i++){ ds[i].value='2026-11-23'; ds[i].style.background='yellow'; }
+});
+</script>
 </body>
 </html>
