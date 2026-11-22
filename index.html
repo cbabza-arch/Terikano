@@ -2101,5 +2101,86 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V21 LOADED - ALL IN CLOUD');
 })();
 </script>
+  <script>
+// V22 - PW SYNC FIX - One PW = Everywhere - Owner + Staff
+(function(){
+  // 1. Make ALL PW keys the same - always
+  function setAllPw(newPw, type){
+    if(type==='staff'){
+      localStorage.setItem('terikano_staff_custom_pw', newPw);
+      try{ db.ref('terikano_config/passwords/staffPw').set(newPw); }catch(e){}
+      try{ db.ref('shop/staffPw').set(newPw); }catch(e){}
+    } else {
+      // OWNER - set EVERY key login could check
+      localStorage.setItem('terikano_owner_pw', newPw);
+      localStorage.setItem('TERI_PW', newPw);
+      localStorage.setItem('terikano_pw', newPw);
+      try{ db.ref('terikano_config/passwords/ownerPw').set(newPw); }catch(e){}
+      try{ db.ref('shop/ownerPw').set(newPw); }catch(e){}
+      var lbl = document.getElementById('curPwLabel');
+      if(lbl) lbl.innerText = newPw;
+    }
+    // Force Cloud save of whole account NOW
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+  }
+
+  // 2. OVERRIDE your changePw() - the one in Settings
+  window.changePw = function(){
+    var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
+    if(!newP){ alert('Enter New PW'); return; }
+    setAllPw(newP, 'owner');
+    // Clear inputs
+    var o=document.getElementById('old_pw'); if(o) o.value='';
+    var n=document.getElementById('new_pw'); if(n) n.value='';
+    alert('✅ OWNER PW CHANGED & SYNCED TO CLOUD: ' + newP + '\nNow use NEW PW on Tablet too.');
+  };
+
+  // 3. OVERRIDE setStaffPw()
+  window.setStaffPw = function(){
+    var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
+    if(!np){ alert('Enter new Staff PW'); return; }
+    setAllPw(np, 'staff');
+    var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText=np;
+    var inp=document.getElementById('new_staff_pw'); if(inp) inp.value='';
+    alert('Staff PW Changed & Synced Online: ' + np);
+  };
+
+  // 4. OVERRIDE removeStaffPw()
+  window.removeStaffPw = function(){
+    if(!confirm('Remove Staff PW?')) return;
+    localStorage.removeItem('terikano_staff_custom_pw');
+    try{ db.ref('terikano_config/passwords/staffPw').remove(); }catch(e){}
+    var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText='Terikano_2005';
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    alert('Staff PW Removed');
+  };
+
+  // 5. OVERRIDE getOwnerPw() - login will now check the NEW key first
+  window.getOwnerPw = function(){
+    return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234';
+  };
+
+  // 6. LISTEN to Cloud PW - if Phone changes PW, Tablet auto-updates in 2 sec, no refresh needed
+  try{
+    db.ref('terikano_config/passwords/ownerPw').on('value', function(snap){
+      var cloudPw = snap.val();
+      if(cloudPw){
+        localStorage.setItem('terikano_owner_pw', cloudPw);
+        localStorage.setItem('TERI_PW', cloudPw);
+        var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=cloudPw;
+      }
+    });
+    db.ref('terikano_config/passwords/staffPw').on('value', function(snap){
+      var cloudPw = snap.val();
+      if(cloudPw){
+        localStorage.setItem('terikano_staff_custom_pw', cloudPw);
+        var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText=cloudPw;
+      }
+    });
+  }catch(e){}
+
+  console.log('V22 LOADED - PW SYNC FIX');
+})();
+</script>
 </body>
 </html>
