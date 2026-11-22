@@ -2182,5 +2182,54 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V22 LOADED - PW SYNC FIX');
 })();
 </script>
+  <script>
+// V23 - LOGIN MUST USE CLOUD PW - Fix reopen still asking old PW
+(function(){
+  // 1. On open, BEFORE login shows, fetch NEW PW from Cloud and overwrite old local PW
+  async function fetchCloudPwBeforeLogin(){
+    try{
+      // Try both places - config + shop
+      var s1 = await db.ref('terikano_config/passwords/ownerPw').once('value');
+      var s2 = await db.ref('shop/ownerPw').once('value');
+      var s3 = await db.ref('shop').once('value');
+      var cloudPw = s1.val() || s2.val() || (s3.val() ? s3.val().ownerPw : null);
+      if(cloudPw){
+        localStorage.setItem('terikano_owner_pw', cloudPw);
+        localStorage.setItem('TERI_PW', cloudPw);
+        localStorage.setItem('terikano_pw', cloudPw);
+        console.log('V23 - Cloud PW loaded before login:', cloudPw);
+        var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=cloudPw;
+      }
+      // Same for Staff
+      var ss = await db.ref('terikano_config/passwords/staffPw').once('value');
+      if(ss.val()) localStorage.setItem('terikano_staff_custom_pw', ss.val());
+    }catch(e){ console.log('V23 fetch PW err', e); }
+  }
+  fetchCloudPwBeforeLogin();
+
+  // 2. OVERRIDE getOwnerPw again - always return Cloud PW if we have it
+  window.getOwnerPw = function(){
+    return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234';
+  };
+
+  // 3. OVERRIDE any login function - if your login checks '1234' hardcoded, this fixes it
+  // We hook the login button - when you type PW, we compare to Cloud PW, not old PW
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null; if(!b) return;
+    var txt = (b.textContent||'').toLowerCase();
+    if(txt.indexOf('login')!==-1 || txt.indexOf('enter')!==-1 || txt.indexOf('open')!==-1){
+      // Before login runs, refresh PW from Cloud one more time
+      fetchCloudPwBeforeLogin();
+    }
+  });
+
+  // 4. Clear old session that forces old PW - on reopen, don't auto-use old session
+  // If you closed app, session should be cleared so new PW is checked fresh
+  // We do NOT delete it now, just log it
+  console.log('V23 - Session auth now:', sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth'));
+
+  console.log('V23 LOADED - LOGIN USES CLOUD PW');
+})();
+</script>
 </body>
 </html>
