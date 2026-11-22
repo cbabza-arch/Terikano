@@ -1,4 +1,4 @@
-<html><head>
+  <html><head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1397,5 +1397,80 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   width:98% !important;
 }
 </style>
+<script>
+// AUTO CALC FIX V1 - Delegation, survives rebuild()
+(function(){
+  function findInput(box, keys){
+    if(!box) return null;
+    var inputs = box.querySelectorAll('input, select');
+    for(var i=0;i<inputs.length;i++){
+      var s = (inputs[i].id + ' ' + inputs[i].name + ' ' + (inputs[i].placeholder||'') + ' ' + (inputs[i].getAttribute('data-label')||'')).toLowerCase();
+      for(var k=0;k<keys.length;k++){ if(s.indexOf(keys[k])!==-1) return inputs[i]; }
+    }
+    return null;
+  }
+  function num(v){ var n = parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+  function getPriceFromStock(itemName){
+    if(!itemName) return 0;
+    var tbl = document.getElementById('stockTbl') || document.getElementById('mainTbl');
+    if(!tbl) return 0;
+    var rows = tbl.querySelectorAll('tr');
+    for(var i=1;i<rows.length;i++){
+      var cells = rows[i].querySelectorAll('td');
+      if(!cells.length) continue;
+      var name = cells[0].textContent.trim().toLowerCase();
+      if(name === itemName.trim().toLowerCase() || name.indexOf(itemName.trim().toLowerCase())!==-1){
+        // Try last columns - Sell is usually 2nd last or 3rd last
+        for(var c=cells.length-1;c>=0;c--){
+          var v = num(cells[c].textContent);
+          if(v>0) return v;
+        }
+      }
+    }
+    return 0;
+  }
+  function calcBox(box){
+    if(!box) return;
+    var item = findInput(box, ['item','product','name']);
+    var qty = findInput(box, ['qty','quantity','pcs','pc']);
+    var price = findInput(box, ['price','sell','cost','rate','amount']);
+    var total = findInput(box, ['total','sum']);
+    var pay = findInput(box, ['pay','paid','cash']);
+    var change = findInput(box, ['change','balance','return']);
+    // 1. Item -> Auto Price from STOCK
+    if(item && price && item.value && !price.dataset.manual){
+      var p = getPriceFromStock(item.value);
+      if(p>0 && num(price.value)!==p){ price.value = p.toFixed(2); }
+    }
+    // 2. Qty x Price = Total
+    if(qty && price && total){
+      var t = num(qty.value) * num(price.value);
+      if(t>0) total.value = t.toFixed(2);
+    }
+    // 3. Pay - Total = Change
+    if(pay && total && change){
+      var ch = num(pay.value) - num(total.value);
+      if(num(pay.value)>0) change.value = ch.toFixed(2);
+    }
+  }
+  // Listen ONCE on document - works even after rebuild, works on Tab / Type
+  document.addEventListener('input', function(e){
+    var box = e.target.closest ? e.target.closest('div[id$="Div"]') : null;
+    if(box) calcBox(box);
+  });
+  document.addEventListener('change', function(e){
+    var box = e.target.closest ? e.target.closest('div[id$="Div"]') : null;
+    if(box) calcBox(box);
+  });
+  // Also calc every 800ms in case user tabs and value is already there
+  setInterval(function(){
+    var boxes = document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      if(boxes[i].style.display !== 'none') calcBox(boxes[i]);
+    }
+  }, 800);
+  console.log('AUTO CALC FIX LOADED');
+})();
+</script>
 </body>
 </html>
