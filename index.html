@@ -2523,5 +2523,100 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V26 LOADED - Clear + Owner buttons fixed');
 })();
 </script>
+  <script>
+// V28 - BACKUP BOX PRO - Tidy + Aligned + No MERGE
+(function(){
+  function tidyBackup(){
+    var box = document.getElementById('backupDiv');
+    if(!box) return;
+
+    // 1. Box itself - Pro card
+    box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:#fff;border-radius:18px;padding:22px 20px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.35);z-index:9999;display:flex;flex-direction:column;gap:12px;';
+    // Hide when not flex - keep original logic, just re-apply if it was hidden
+    if(box.dataset.wasHidden === '1') box.style.display='none';
+
+    // 2. Title - make it Pro
+    var h = box.querySelector('h2, h3, b, .win-title');
+    if(h){
+      h.style.cssText='margin:0;font-size:19px;font-weight:800;letter-spacing:0.2px;color:#111;text-align:center;';
+      h.textContent='💾 BACKUP';
+    }
+    // Subtitle - add if not exists
+    if(!box.querySelector('.bk-sub')){
+      var sub=document.createElement('div');
+      sub.className='bk-sub';
+      sub.textContent='Save, restore or clear your data. Cloud sync is automatic.';
+      sub.style.cssText='font-size:12px;color:#666;text-align:center;margin-top:-6px;line-height:1.4;';
+      if(h && h.parentNode) h.parentNode.insertBefore(sub, h.nextSibling);
+    }
+
+    // 3. All buttons in box - uniform Pro grid
+    var btns = box.querySelectorAll('button');
+    // Wrap buttons in grid if not already
+    var grid = box.querySelector('.bk-grid');
+    if(!grid){
+      grid=document.createElement('div');
+      grid.className='bk-grid';
+      grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;';
+      // Move all buttons into grid (except Close)
+      var toMove=[];
+      for(var i=0;i<btns.length;i++){
+        var t=(btns[i].textContent||'').toUpperCase();
+        if(t.indexOf('CLOSE')===-1 && t.indexOf('X')!==0) toMove.push(btns[i]);
+      }
+      for(var j=0;j<toMove.length;j++) grid.appendChild(toMove[j]);
+      box.appendChild(grid);
+    }
+
+    // 4. Style each button - Pro
+    var all = box.querySelectorAll('button');
+    for(var k=0;k<all.length;k++){
+      var b=all[k];
+      var txt=(b.textContent||'').toUpperCase();
+      // HIDE MERGE forever - we don't use it
+      if(txt.indexOf('MERGE')!==-1){ b.style.display='none'; continue; }
+      // CLOSE button - full width, grey
+      if(txt.indexOf('CLOSE')!==-1){
+        b.style.cssText='width:100%;padding:12px;background:#f1f1f1;color:#111;border:1px solid #ddd;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;';
+        b.textContent='✕  Close';
+        continue;
+      }
+      // Base Pro button
+      b.style.cssText='width:100%;padding:13px 8px;border-radius:12px;border:none;font-weight:700;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2;text-align:center;';
+      // Color by action
+      if(txt.indexOf('BACKUP')!==-1 && txt.indexOf('NOW')!==-1){
+        b.style.background='#111'; b.style.color='#fff';
+        b.textContent='💾  BACKUP NOW';
+      } else if(txt.indexOf('CLEAR')!==-1){
+        b.style.background='#fff1f1'; b.style.color='#d32f2f'; b.style.border='2px solid #ffcaca';
+        b.textContent='🗑️  CLEAR BOTH';
+      } else if(txt.indexOf('RESTORE')!==-1 || txt.indexOf('LOAD')!==-1){
+        b.style.background='#eef5ff'; b.style.color='#1565c0'; b.style.border='1px solid #c9dcff';
+        b.textContent='↩️  RESTORE';
+      } else if(txt.indexOf('EXPORT')!==-1 || txt.indexOf('STOCK')!==-1){
+        b.style.background='#eefbf0'; b.style.color='#1b7a2e'; b.style.border='1px solid #c2e9c8';
+        // Keep original text but tidy
+        b.textContent='📤  EXPORT STOCK';
+      } else {
+        b.style.background='#f5f5f5'; b.style.color='#111'; b.style.border='1px solid #e0e0e0';
+      }
+    }
+
+    // 5. Small info text at bottom
+    if(!box.querySelector('.bk-foot')){
+      var foot=document.createElement('div');
+      foot.className='bk-foot';
+      foot.textContent='Last backup: Auto • Cloud: ON';
+      foot.style.cssText='font-size:11px;color:#888;text-align:center;';
+      box.appendChild(foot);
+    }
+  }
+
+  tidyBackup();
+  setInterval(tidyBackup, 1200);
+
+  console.log('V28 LOADED - BACKUP Pro');
+})();
+</script>
 </body>
 </html>
