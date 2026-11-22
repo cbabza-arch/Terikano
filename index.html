@@ -1740,5 +1740,129 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V18 LOADED - AUD ROUND UP 1c+->5c, 6c+->10c');
 })();
 </script>
+  <script>
+// V19 - CLOUD ONLY - Fix saveToCloud to save ALL data - No more localStorage for shop data
+(function(){
+  // 1. Build FULL data object - same fields as your save()
+  function fullData(){
+    return {
+      purchases: window.purchases||[],
+      sales: window.sales||[],
+      capitals: window.capitals||[],
+      banks: window.banks||[],
+      expenses: window.expenses||[],
+      collects: window.collects||[],
+      ownerTakes: window.ownerTakes||[],
+      tips: window.tips||[],
+      waste: window.waste||[],
+      clearance: window.clearance||[],
+      dailyTarget: window.dailyTarget||100,
+      cocoRateG1: window.cocoRateG1||0,
+      cocoRateG2: window.cocoRateG2||0,
+      businessName: window.businessName||'TERIKANO',
+      cocoBuys: window.cocoBuys||[],
+      cocoMills: window.cocoMills||[],
+      millRatePerKg: window.millRatePerKg||4,
+      millWeightPerCoco: window.millWeightPerCoco||0,
+      badDebts: window.badDebts||[],
+      priceHistory: window.priceHistory||[],
+      terikanoSet: window.terikanoSet||{},
+      wholesalerDebts: window.wholesalerDebts||[],
+      markup: window.globalMarkup||15,
+      lastSellMap: window.PRICE_MAP||{},
+      time: new Date().toISOString()
+    };
+  }
+  function applyCloud(d){
+    if(!d) return;
+    if(d.purchases) window.purchases=d.purchases;
+    if(d.sales) window.sales=d.sales;
+    if(d.capitals) window.capitals=d.capitals;
+    if(d.banks) window.banks=d.banks;
+    if(d.expenses) window.expenses=d.expenses;
+    if(d.collects) window.collects=d.collects;
+    if(d.ownerTakes) window.ownerTakes=d.ownerTakes;
+    if(d.tips) window.tips=d.tips;
+    if(d.waste) window.waste=d.waste;
+    if(d.clearance) window.clearance=d.clearance;
+    if(d.dailyTarget) window.dailyTarget=d.dailyTarget;
+    if(d.cocoRateG1!==undefined) window.cocoRateG1=d.cocoRateG1;
+    if(d.cocoRateG2!==undefined) window.cocoRateG2=d.cocoRateG2;
+    if(d.businessName) window.businessName=d.businessName;
+    if(d.cocoBuys) window.cocoBuys=d.cocoBuys;
+    if(d.cocoMills) window.cocoMills=d.cocoMills;
+    if(d.millRatePerKg) window.millRatePerKg=d.millRatePerKg;
+    if(d.millWeightPerCoco) window.millWeightPerCoco=d.millWeightPerCoco;
+    if(d.badDebts) window.badDebts=d.badDebts;
+    if(d.priceHistory) window.priceHistory=d.priceHistory;
+    if(d.terikanoSet) window.terikanoSet=d.terikanoSet;
+    if(d.wholesalerDebts) window.wholesalerDebts=d.wholesalerDebts;
+    if(d.markup) window.globalMarkup=d.markup;
+    if(d.lastSellMap) window.PRICE_MAP=d.lastSellMap;
+  }
+
+  // 2. OVERRIDE saveToCloud - now saves FULL data, not just 3 fields
+  window.saveToCloud = async function(){
+    try{ await db.ref('shop').set(fullData()); console.log('V19 SAVED TO CLOUD - FULL'); }catch(e){ console.log('Cloud save err', e); }
+  };
+
+  // 3. OVERRIDE save() - Cloud FIRST, localStorage only as backup (not main)
+  window.save = function(){
+    try{
+      var d = fullData();
+      // Backup only - if Cloud fails, phone still has copy. But Cloud is main.
+      try{ localStorage.setItem('Terikano_storage_data', JSON.stringify(d)); }catch(e){}
+      if(window.db) window.saveToCloud();
+    }catch(e){ console.log('Save err', e); }
+  };
+
+  // 4. OVERRIDE load() - Cloud FIRST, localStorage only if Cloud empty (one-time migrate)
+  window.load = async function(){
+    try{
+      var snap = await db.ref('shop').once('value');
+      var cloud = snap.val();
+      if(cloud && (cloud.purchases || cloud.sales)){
+        applyCloud(cloud);
+        console.log('V19 LOADED FROM CLOUD');
+      } else {
+        // Cloud empty - migrate your old phone data ONCE to Cloud
+        var local = null;
+        try{ local = JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}'); }catch(e){}
+        if(local && (local.purchases||local.sales)){
+          if(confirm('Cloud empty. Move your phone data to CLOUD now? Click OK - after this all phones will see same data.')){
+            applyCloud(local);
+            await window.saveToCloud();
+            alert('Migrated to CLOUD! Now open on other phone - same data.');
+          }
+        }
+      }
+      if(typeof renderAll==='function') renderAll();
+      if(typeof populateDatalist==='function') populateDatalist();
+    }catch(e){ console.log('Cloud load err', e); }
+  };
+
+  // 5. LIVE SYNC - If other phone saves, this phone updates automatically
+  try{
+    db.ref('shop').on('value', function(s){
+      var d = s.val(); if(!d) return;
+      // Don't overwrite while you are typing a sale - only update if cart empty
+      if(window.cart && window.cart.length>0) return;
+      applyCloud(d);
+      if(typeof renderAll==='function') renderAll();
+    });
+  }catch(e){}
+
+  // 6. PRICE_MAP - Save price change to Cloud too (not localStorage only)
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id==='s_price'){
+      setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    }
+  });
+
+  // 7. Load from Cloud on start - replaces old local load
+  setTimeout(function(){ if(typeof load==='function') load(); }, 800);
+  console.log('V19 LOADED - CLOUD ONLY - terikano-3d137');
+})();
+</script>
 </body>
 </html>
