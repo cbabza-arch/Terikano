@@ -1490,5 +1490,142 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V15 LOADED - Date + Auto Price + Add Cart + Checkout');
 })();
 </script>
+  <script>
+// V16 - REAL PRICES + CHECKOUT ON TOP - Append after V15
+(function(){
+  // ===== 1. EDIT YOUR REAL PRICES HERE - ONLY PLACE TO EDIT =====
+  // Change numbers to YOUR real Sell price per item. Lowercase name = price.
+  // If item not in list, it will use last typed price, else 2.00
+  var PRICE_MAP = {
+    'flour': 3.50,
+    'rice': 4.00,
+    'sugar': 3.00,
+    'oil': 6.00,
+    'tin fish': 3.50,
+    'noodles': 1.50,
+    'tea': 2.50,
+    'coffee': 5.00,
+    'salt': 1.00,
+    'biscuit': 2.00,
+    'soap': 2.50,
+    'coco': 3.00
+  };
+  window.PRICE_MAP = PRICE_MAP;
+
+  // Override getLastSell to use PRICE_MAP FIRST
+  var _origGLS = window.getLastSell;
+  window.getLastSell = function(item){
+    if(!item) return 2;
+    var key = String(item).trim().toLowerCase();
+    // 1) Your PRICE_MAP - highest priority
+    if(PRICE_MAP[key] && PRICE_MAP[key]>0 && PRICE_MAP[key]!==2026) return PRICE_MAP[key];
+    // 2) Last typed price you saved in SALE (lastSellMap in localStorage)
+    try{
+      var m = JSON.parse(localStorage.getItem('lastSellMap')||'{}');
+      if(m[key] && m[key]>0 && m[key]!==2026 && m[key]<1000) return m[key];
+    }catch(e){}
+    // 3) Original purchase last sell
+    var v = _origGLS ? _origGLS(item) : 2;
+    v = parseFloat(v)||0;
+    if(v===2026 || v>=1000 || v<=0) return 2;
+    return v;
+  };
+
+  // When you type a NEW price in SALE, save it to PRICE_MAP + lastSellMap for future
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id==='s_price'){
+      var qty = parseFloat(document.getElementById('s_qty').value)||0;
+      var total = parseFloat(e.target.value)||0;
+      if(qty>0 && total>0 && total!==2026){
+        var unit = total/qty;
+        var item = document.getElementById('s_item').value;
+        if(item){
+          PRICE_MAP[item.trim().toLowerCase()] = unit;
+          try{
+            var m = JSON.parse(localStorage.getItem('lastSellMap')||'{}');
+            m[item.trim().toLowerCase()] = unit;
+            localStorage.setItem('lastSellMap', JSON.stringify(m));
+          }catch(err){}
+        }
+      }
+    }
+  });
+
+  // ===== 2. CHECKOUT ON TOP - Sales window behind, Checkout front =====
+  function bringCheckoutFront(){
+    // Sales window goes back
+    var sale = document.getElementById('saleDiv');
+    if(sale){ sale.style.zIndex = '9000'; }
+    // Find ANY checkout window / cartDiv / big change and bring to front
+    var ids = ['checkoutWin','checkoutDiv','ckWin','payDiv','checkout','cartDiv','bigChangeDisplay','payLaterLine'];
+    for(var i=0;i<ids.length;i++){
+      var el = document.getElementById(ids[i]);
+      if(el){
+        el.style.setProperty('z-index','200000','important');
+        el.style.setProperty('position','fixed','important');
+        if(el.style.display==='none' || el.id==='cartDiv'){ /* cartDiv keep as is */ }
+      }
+    }
+    // Any div with CHECKOUT in text / id containing checkout - force front
+    var all = document.querySelectorAll('div[id*="heck"], div[id*="pay"], div[id*="cart"]');
+    for(var j=0;j<all.length;j++){
+      if(all[j].id !== 'saleDiv'){
+        all[j].style.zIndex = '200000';
+      }
+    }
+  }
+
+  // Hook YOUR checkout - after it runs, bring checkout front + hide saleDiv if checkout is modal
+  var _origCheckoutV16 = window.checkoutCartWithConfirm;
+  window.checkoutCartWithConfirm = function(){
+    var r;
+    if(typeof _origCheckoutV16==='function'){ try{ r = _origCheckoutV16(); }catch(e){} }
+    setTimeout(function(){
+      bringCheckoutFront();
+      // If checkout window is open (any checkout div visible), hide saleDiv behind so you can see checkout
+      var win = document.getElementById('checkoutWin') || document.getElementById('checkoutDiv');
+      if(win && win.style.display!=='none'){
+        var sale = document.getElementById('saleDiv');
+        if(sale) sale.style.display='none';
+        // When checkout closes, show saleDiv again - watch close button
+        var closeBtn = document.getElementById('ckClose');
+        if(closeBtn && !closeBtn.dataset.v16){
+          closeBtn.dataset.v16='1';
+          closeBtn.onclick = function(){
+            win.style.display='none';
+            if(sale) sale.style.display='flex';
+          };
+        }
+      }
+    }, 100);
+    return r;
+  };
+
+  // Also when ANY Checkout button clicked, bring front after 100ms
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    var txt = (b.textContent||'').trim().toLowerCase();
+    if(txt.indexOf('checkout')!==-1 || txt.indexOf('check out')!==-1 || txt.indexOf('confirm')!==-1){
+      setTimeout(bringCheckoutFront, 150);
+    }
+    // Close / Back from checkout -> show saleDiv again
+    if(txt==='close' || txt==='back' || txt==='x'){
+      setTimeout(function(){
+        var sale = document.getElementById('saleDiv');
+        var win = document.getElementById('checkoutWin');
+        if(win && win.style.display==='none' && sale && sale.style.display==='none') sale.style.display='flex';
+      }, 150);
+    }
+  });
+
+  // Force CSS - Sales window lower, Checkout higher - even if rebuild() runs
+  var st = document.createElement('style');
+  st.textContent = '#saleDiv{ z-index:9000 !important; } #cartDiv{ z-index:9500 !important; position:relative !important; } #checkoutWin, #checkoutDiv, #payDiv, #bigChangeDisplay{ z-index:200000 !important; position:fixed !important; }';
+  document.head.appendChild(st);
+
+  console.log('V16 LOADED - PRICE_MAP + Checkout on top');
+})();
+</script>
 </body>
 </html>
