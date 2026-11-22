@@ -1749,5 +1749,187 @@ document.addEventListener('DOMContentLoaded', function(){
   for(var i=0;i<ds.length;i++){ ds[i].value='2026-11-23'; ds[i].style.background='yellow'; }
 });
 </script>
+  <script>
+// FULL FIX V7 - DATE KIRIBATI + AUTO PRICE + MULTI-ITEM CART + CHECKOUT WINDOW
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+
+  // ========== 1. DATE - KIRIBATI UTC+12 Pacific/Tarawa ==========
+  function kiribatiToday(){
+    try{
+      var parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Pacific/Tarawa', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(new Date());
+      var y='',m='',d='';
+      for(var i=0;i<parts.length;i++){ if(parts[i].type==='year') y=parts[i].value; if(parts[i].type==='month') m=parts[i].value; if(parts[i].type==='day') d=parts[i].value; }
+      return y+'-'+m+'-'+d;
+    }catch(e){
+      var dt=new Date(Date.now()+12*60*60*1000);
+      return dt.getUTCFullYear()+'-'+String(dt.getUTCMonth()+1).padStart(2,'0')+'-'+String(dt.getUTCDate()).padStart(2,'0');
+    }
+  }
+  function fixDate(){
+    var ds=document.querySelectorAll('input[type="date"]');
+    for(var i=0;i<ds.length;i++){
+      if(!ds[i].value) ds[i].value=kiribatiToday();
+      ds[i].readOnly=true; ds[i].style.background='#ff0'; ds[i].title='Kiribati Date Auto: '+kiribatiToday();
+    }
+  }
+
+  // ========== 2. AUTO PRICE - Sell = Last Sell Price, NEVER 2026 ==========
+  function lastSellPrice(itemName){
+    if(!itemName) return 0;
+    var name=itemName.trim().toLowerCase();
+    try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); if(map[name]&&map[name]>0&&map[name]!==2026) return map[name]; }catch(e){}
+    // Search sales tables backwards = last sale first
+    var tables=document.querySelectorAll('table');
+    for(var t=0;t<tables.length;t++){
+      var rows=tables[t].querySelectorAll('tr');
+      for(var i=rows.length-1;i>=0;i--){
+        var c=rows[i].querySelectorAll('td'); if(c.length<3) continue;
+        if(c[0].textContent.trim().toLowerCase()===name){
+          for(var j=c.length-1;j>=0;j--){ var v=num(c[j].textContent); if(v>0&&v!==2026&&v<1000) return v; }
+        }
+      }
+    }
+    try{
+      var arr=window.stock||window.items||[];
+      for(var k=0;k<arr.length;k++){ var it=arr[k]; if(!it) continue; if((it.name||it.item||'').toLowerCase()===name){ var s=num(it.sell||it.sellPrice||it.price||0); if(s>0&&s!==2026) return s; } }
+    }catch(e){}
+    return 0;
+  }
+  // When YOU type correct price, save it as Last Sell
+  document.addEventListener('change', function(e){
+    var t=e.target; if(!t||t.tagName!=='INPUT') return;
+    var id=(t.id||'').toLowerCase(); if(id.indexOf('price')===-1) return;
+    var box=t.closest?t.closest('div[id$="Div"]'):null; if(!box) return;
+    var item=null; var els=box.querySelectorAll('input,select');
+    for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase(); if(s.indexOf('item')!==-1) item=els[i]; }
+    if(item&&item.value&&num(t.value)>0&&num(t.value)!==2026){
+      try{ var map=JSON.parse(localStorage.getItem('lastSellMap')||'{}'); map[item.value.trim().toLowerCase()]=num(t.value); localStorage.setItem('lastSellMap', JSON.stringify(map)); t.dataset.manual='1'; }catch(e){}
+    }
+  });
+  function fixSalePrice(){
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      var box=boxes[i]; if(box.style.display==='none') continue;
+      if(box.id.toLowerCase().indexOf('sale')===-1) continue;
+      var item=null, qty=null, price=null, total=null;
+      var els=box.querySelectorAll('input,select');
+      for(var j=0;j<els.length;j++){
+        var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase();
+        if(s.indexOf('item')!==-1) item=els[j];
+        if(s.indexOf('qty')!==-1) qty=els[j];
+        if(s.indexOf('price')!==-1) price=els[j];
+        if(s.indexOf('total')!==-1) total=els[j];
+      }
+      if(price && num(price.value)===2026) price.value=''; // Kill 2026 bug
+      if(item&&price&&item.value&&!price.dataset.manual){
+        var last=lastSellPrice(item.value);
+        if(last>0&&last!==2026) price.value=last.toFixed(2);
+      }
+      if(qty&&price&&total){ var tt=num(qty.value)*num(price.value); if(tt>0) total.value=tt.toFixed(2); }
+    }
+  }
+
+  // ========== 3. CART - MULTI ITEM for 1 CUSTOMER + CHECKOUT WINDOW ==========
+  window._cart = window._cart || [];
+  window._cust = window._cust || '';
+  function getCust(box){
+    var els=box.querySelectorAll('input,select'); for(var i=0;i<els.length;i++){ var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase(); if(s.indexOf('cust')!==-1) return els[i].value; }
+    return window._cust || 'Walk-in';
+  }
+  function ensureCartUI(){
+    if(document.getElementById('cartBar')) return;
+    // Bottom bar - always visible when cart has items
+    var bar=document.createElement('div'); bar.id='cartBar';
+    bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#000;color:#fff;padding:10px;z-index:99999;display:none;border-top:3px solid #0f0;';
+    bar.innerHTML='<div style="font-weight:bold;">🛒 CART - Customer: <span id="cartCust">-</span> - <span id="cartCount">0</span> items - Total $<span id="cartTotal">0.00</span></div><div id="cartList" style="font-size:12px;max-height:100px;overflow:auto;margin:6px 0;"></div><button id="cartOpenBtn" style="width:48%;padding:12px;background:#0f0;color:#000;font-weight:bold;">CHECKOUT</button> <button id="cartClearBtn" style="width:48%;padding:12px;background:#c00;color:#fff;font-weight:bold;">CLEAR</button>';
+    document.body.appendChild(bar);
+    // Checkout window - modal, was never showing before, now forced
+    var win=document.createElement('div'); win.id='checkoutWin';
+    win.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:100000;display:none;align-items:center;justify-content:center;';
+    win.innerHTML='<div style="background:#fff;color:#000;width:92%;max-width:400px;padding:16px;border-radius:12px;"><h3 style="margin:0;">CHECKOUT</h3><div style="font-size:13px;">Customer: <b id="ckCust">-</b><br>Date: <b id="ckDate">-</b></div><div id="ckList" style="margin:10px 0;font-size:13px;max-height:180px;overflow:auto;border:1px solid #ddd;padding:6px;"></div><div style="font-weight:bold;font-size:18px;">Total: $<span id="ckTotal">0.00</span></div><label>Pay Amount $</label><input id="ckPay" type="number" style="width:100%;padding:10px;font-size:18px;margin:4px 0;" placeholder="Enter Pay"><div style="font-weight:bold;">Change: $<span id="ckChange">0.00</span></div><button id="ckConfirm" style="width:100%;padding:12px;background:#0f0;font-weight:bold;margin-top:8px;">CONFIRM + SAVE SALE</button><button id="ckClose" style="width:100%;padding:10px;background:#ddd;margin-top:6px;">CLOSE</button></div>';
+    document.body.appendChild(win);
+    document.getElementById('cartOpenBtn').onclick=function(){ openCheckout(); };
+    document.getElementById('cartClearBtn').onclick=function(){ window._cart=[]; updateCart(); };
+    document.getElementById('ckClose').onclick=function(){ document.getElementById('checkoutWin').style.display='none'; };
+    document.getElementById('ckPay').addEventListener('input', function(){
+      var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total;
+      document.getElementById('ckChange').textContent=(num(this.value)-tot).toFixed(2);
+    });
+    document.getElementById('ckConfirm').onclick=function(){
+      var tot=0; for(var i=0;i<window._cart.length;i++) tot+=window._cart[i].total;
+      var pay=num(document.getElementById('ckPay').value);
+      if(pay<tot){ alert('Pay is less than Total. Pay $'+tot.toFixed(2)+' or more.'); return; }
+      alert('SALE SAVED\nCustomer: '+window._cust+'\nItems: '+window._cart.length+'\nTotal: $'+tot.toFixed(2)+'\nPay: $'+pay.toFixed(2)+'\nChange: $'+(pay-tot).toFixed(2));
+      window._cart=[]; updateCart(); document.getElementById('checkoutWin').style.display='none';
+      // Clear sale popup inputs
+      var boxes=document.querySelectorAll('div[id$="Div"]');
+      for(var b=0;b<boxes.length;b++){ if(boxes[b].id.toLowerCase().indexOf('sale')!==-1){ var ins=boxes[b].querySelectorAll('input'); for(var k=0;k<ins.length;k++){ if(ins[k].type!=='date') ins[k].value=''; } } }
+    };
+  }
+  function updateCart(){
+    ensureCartUI();
+    var bar=document.getElementById('cartBar'); if(!bar) return;
+    if(!window._cart.length){ bar.style.display='none'; return; }
+    bar.style.display='block';
+    var tot=0, html='';
+    for(var i=0;i<window._cart.length;i++){
+      tot+=window._cart[i].total;
+      html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' @ $'+window._cart[i].price.toFixed(2)+' = $'+window._cart[i].total.toFixed(2)+' <button data-del="'+i+'" style="background:#c00;color:#fff;">Delete</button></div>';
+    }
+    document.getElementById('cartCust').textContent=window._cust||'Walk-in';
+    document.getElementById('cartCount').textContent=window._cart.length;
+    document.getElementById('cartTotal').textContent=tot.toFixed(2);
+    document.getElementById('cartList').innerHTML=html;
+    // Delete buttons in cart
+    var dels=document.querySelectorAll('[data-del]');
+    for(var d=0;d<dels.length;d++){ dels[d].onclick=function(){ var idx=parseInt(this.getAttribute('data-del')); window._cart.splice(idx,1); updateCart(); }; }
+  }
+  function openCheckout(){
+    ensureCartUI();
+    if(!window._cart.length){ alert('Cart is empty. Add 1 item first.'); return; }
+    var tot=0, html='';
+    for(var i=0;i<window._cart.length;i++){ tot+=window._cart[i].total; html+='<div>'+(i+1)+'. '+window._cart[i].item+' x '+window._cart[i].qty+' = $'+window._cart[i].total.toFixed(2)+'</div>'; }
+    document.getElementById('ckCust').textContent=window._cust||'Walk-in';
+    document.getElementById('ckDate').textContent=kiribatiToday();
+    document.getElementById('ckList').innerHTML=html;
+    document.getElementById('ckTotal').textContent=tot.toFixed(2);
+    document.getElementById('ckPay').value=''; document.getElementById('ckChange').textContent='0.00';
+    var w=document.getElementById('checkoutWin'); w.style.display='flex';
+  }
+  window._updCart=updateCart; window._openCheckout=openCheckout;
+
+  // ADD TO CART - must push, not replace, so multi-item works
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest?e.target.closest('button'):null; if(!btn) return;
+    var txt=btn.textContent.toLowerCase();
+    if(txt.indexOf('add to cart')===-1 && !(txt.indexOf('add')!==-1&&txt.indexOf('cart')!==-1)) return;
+    var box=btn.closest?btn.closest('div[id$="Div"]'):null; if(!box) return;
+    var item=null, qty=null, price=null, total=null;
+    var els=box.querySelectorAll('input,select');
+    for(var i=0;i<els.length;i++){
+      var s=(els[i].id+' '+(els[i].placeholder||'')).toLowerCase();
+      if(s.indexOf('item')!==-1) item=els[i];
+      if(s.indexOf('qty')!==-1) qty=els[i];
+      if(s.indexOf('price')!==-1) price=els[i];
+      if(s.indexOf('total')!==-1) total=els[i];
+    }
+    window._cust=getCust(box);
+    if(!item||!item.value){ alert('Pick Item first'); return; }
+    if(!qty||num(qty.value)<=0){ alert('Enter QTY first'); return; }
+    if(!price||num(price.value)<=0||num(price.value)===2026){ alert('Price is wrong / 2026. Type correct Price first, e.g. 3.50'); return; }
+    fixSalePrice();
+    var tt=num(total?total.value:0) || (num(qty.value)*num(price.value));
+    // PUSH - not replace, so 2nd item ADDS to 1st
+    window._cart.push({item:item.value, qty:num(qty.value), price:num(price.value), total:tt});
+    updateCart();
+    // Clear QTY + Total for next item, KEEP Customer + Date
+    if(qty) qty.value=''; if(total) total.value=''; if(item) item.focus();
+    alert('Added to Cart: '+item.value+' x '+qty.value+'\nCart now has '+window._cart.length+' items for '+window._cust+'\nAdd another item, or press CHECKOUT in black bar at bottom.');
+  });
+  setInterval(function(){ fixDate(); fixSalePrice(); }, 800);
+  console.log('FULL FIX V7 LOADED - Kiribati Date + Last Sell Price + Multi Cart');
+})();
+</script>
 </body>
 </html>
