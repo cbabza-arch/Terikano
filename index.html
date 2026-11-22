@@ -1374,98 +1374,28 @@ th:first-child, td:first-child{ min-width:60px !important; max-width:90px !impor
 })();
 </script>
   <style>
-/* UNIVERSAL COMPACT - ALL FORMS - 2 per row, less scroll */
-/* Every popup / window */
-div[id$="Div"], .owner-only-div, .window, .modal{
-  padding:8px 10px !important;
-}
-/* Kill <br> that forces 1 per line - in ALL forms */
-div[id$="Div"] br, .owner-only-div br{ display:none !important; }
-/* ALL labels - small, 2 per row */
-div[id$="Div"] label, .owner-only-div label{
-  display:inline-block !important; width:48% !important;
-  font-size:11px !important; font-weight:bold !important;
-  margin:4px 1% 1px 0 !important; vertical-align:top !important;
-}
-/* ALL inputs / selects / textarea - 2 per row, compact */
-div[id$="Div"] input, div[id$="Div"] select, div[id$="Div"] textarea,
-.owner-only-div input, .owner-only-div select, .owner-only-div textarea{
+/* INSIDE ONLY - Fields inside popups 2 per row, Main window untouched */
+/* Only inputs INSIDE a popup - not main, not buttons, not popup box itself */
+div[id$="Div"] input, div[id$="Div"] select{
   display:inline-block !important;
   width:48% !important;
-  padding:6px 6px !important;
-  font-size:13px !important;
   margin:0 1% 6px 0 !important;
+  padding:6px !important;
   height:32px !important;
+  font-size:13px !important;
   vertical-align:top !important;
 }
-div[id$="Div"] textarea{ height:52px !important; }
-/* Pay / Supplier / Customer / Notes - full width, they need it */
-div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"],
-div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"],
-div[id$="Div"] input[placeholder*="Supplier"], div[id$="Div"] input[placeholder*="supplier"],
-div[id$="Div"] input[placeholder*="Customer"], div[id$="Div"] input[placeholder*="customer"],
-div[id$="Div"] textarea{
-  width:98% !important;
-}
-/* Buttons - 2 per row too, not 1 giant per line */
-div[id$="Div"] button, .owner-only-div button{
+div[id$="Div"] label{
   display:inline-block !important;
   width:48% !important;
-  padding:8px 4px !important;
-  font-size:12px !important;
-  margin:3px 1% 3px 0 !important;
-  vertical-align:top !important;
+  font-size:11px !important;
+  margin:4px 1% 1px 0 !important;
 }
-/* Hide / Close / Add buttons full width so you don't miss them */
-div[id$="Div"] button[onclick*="hideWin"], div[id$="Div"] button[onclick*="Add"],
-div[id$="Div"] button[id*="Add"], div[id$="Div"] button[id*="Save"]{
+/* Pay / Customer stay full - they need full line */
+div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"],
+div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   width:98% !important;
-}
-/* Headers + tables compact in ALL */
-div[id$="Div"] .window-header, .owner-only-div .window-header{
-  padding:6px !important; font-size:13px !important; margin-bottom:6px !important;
-}
-div[id$="Div"] table th, div[id$="Div"] table td{
-  padding:3px 2px !important; font-size:10px !important;
-}
-/* Main home buttons - also 2 per row, less scroll on home */
-.pro-btn{ display:inline-block !important; width:48% !important; margin:3px 1% !important; padding:8px 4px !important; font-size:12px !important; }
-/* Dashboard cards - 2 per row */
-.dashboard > div, #cashBoxIsolated > div{
-  display:inline-block !important; width:48% !important; margin:3px 1% !important; vertical-align:top !important;
-}
-/* On big screen / tablet - 3 per row, even less scroll */
-@media (min-width:700px){
-  div[id$="Div"] input, div[id$="Div"] select{ width:31% !important; }
-  div[id$="Div"] button{ width:31% !important; }
-  .pro-btn{ width:31% !important; }
 }
 </style>
-<script>
-// Apply to ALL popups, even ones rebuild() creates later
-(function(){
-  function compactAll(){
-    var boxes = document.querySelectorAll('div[id$="Div"], .owner-only-div');
-    for(var b=0;b<boxes.length;b++){
-      var inputs = boxes[b].querySelectorAll('input, select');
-      for(var i=0;i<inputs.length;i++){
-        // Don't touch Pay / Customer - they stay full width via CSS
-        if(inputs[i].id && inputs[i].id.toLowerCase().indexOf('pay')!==-1) continue;
-        if(inputs[i].id && inputs[i].id.toLowerCase().indexOf('cust')!==-1) continue;
-        inputs[i].style.display = 'inline-block';
-        inputs[i].style.width = '48%';
-      }
-    }
-  }
-  compactAll();
-  setInterval(compactAll, 1000);
-  if(window.MutationObserver){
-    var obs = new MutationObserver(function(){ compactAll(); });
-    obs.observe(document.body, {childList:true, subtree:true});
-  }
-})();
-</script>
-</body>
-</html>
 </body>
 </html>
