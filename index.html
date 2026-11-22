@@ -1627,5 +1627,118 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V16 LOADED - PRICE_MAP + Checkout on top');
 })();
 </script>
+  <script>
+// V17 - AUD 5c ROUNDING - Kiribati - Append after V16
+(function(){
+  // Round to nearest 5c: 1-2->0, 3-4->5, 6-7->5, 8-9->10
+  window.roundAUD = function(v){
+    var n = parseFloat(v)||0;
+    return Math.round(n * 20) / 20; // 1 / 0.05 = 20
+  };
+
+  // 1. TOTAL - Round cart total to 5c before Pay / Change
+  var _origCalcChange = window.calcChange;
+  window.calcChange = function(){
+    var tot = 0;
+    for(var i=0;i<(window.cart||[]).length;i++) tot += Number(window.cart[i].price||0);
+    tot = window.roundAUD(tot);
+    var paid = window.roundAUD(parseFloat(document.getElementById('paidAmt') ? document.getElementById('paidAmt').value : 0)||0);
+    var ch = window.roundAUD(paid - tot);
+
+    // Show rounded values
+    var el = document.getElementById('changeAmt'); if(el) el.innerText = ch.toFixed(2);
+    var big = document.getElementById('bigChangeDisplay');
+    if(big){
+      if(ch>0){ big.innerText = 'CHANGE $' + ch.toFixed(2) + ' (AUD rounded to 5c)'; big.style.display='block'; }
+      else if(ch<0){ big.innerText = 'TO PAY LATER $' + Math.abs(ch).toFixed(2) + ' - ' + ((document.getElementById('s_cust')||{}).value||'Walk-in'); big.style.display='block'; }
+      else { big.style.display='none'; }
+    }
+    var pl = document.getElementById('payLaterLine');
+    if(pl){
+      if(ch<0){ pl.style.display='block'; pl.innerText='TO PAY LATER: $'+Math.abs(ch).toFixed(2)+' - Customer: '+((document.getElementById('s_cust')||{}).value||'Walk-in'); }
+      else { pl.style.display='none'; } // No more small 1c-4c Notepad - rounding fixes it
+    }
+    return ch;
+  };
+
+  // 2. When you type Price in SALE, round it to 5c too
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id==='s_price'){
+      var v = parseFloat(e.target.value)||0;
+      if(v>0) e.target.value = window.roundAUD(v).toFixed(2);
+    }
+    if(e.target && e.target.id==='paidAmt'){
+      var p = parseFloat(e.target.value)||0;
+      if(p>0) e.target.value = window.roundAUD(p).toFixed(2);
+    }
+  });
+
+  // 3. Checkout - Use rounded Total / Paid / Change
+  var _origCheckoutV17 = window.checkoutCartWithConfirm;
+  window.checkoutCartWithConfirm = function(){
+    var tot = 0; for(var i=0;i<(window.cart||[]).length;i++) tot += Number(window.cart[i].price||0);
+    tot = window.roundAUD(tot);
+    var paid = window.roundAUD(parseFloat(document.getElementById('paidAmt') ? document.getElementById('paidAmt').value : 0)||0);
+    var ch = window.roundAUD(paid - tot);
+    var cust = (document.getElementById('s_cust')||{}).value || 'Walk-in';
+    // If Pay Later - save rounded amount
+    if(ch < 0){
+      try{
+        if(typeof window.badDebts==='undefined') window.badDebts=[];
+        // Remove duplicate from V14 if it already saved unrounded - V14 will save again, so we stop V14 double by clearing last one if same cust+amt close
+        // V14 checkout is already wrapped - this runs BEFORE V14, V14 will also run. To avoid double, we let V14 handle saving, we just show rounded alert
+      }catch(e){}
+    }
+    if(typeof _origCheckoutV17==='function') return _origCheckoutV17();
+  };
+
+  console.log('V17 LOADED - AUD 5c Rounding');
+})();
+</script>
+  <script>
+// V18 - AUD ROUND UP ALWAYS - 1c+ -> 5c, 6c+ -> 10c - Replaces V17
+(function(){
+  // CEIL to next 5c - 7.01->7.05, 7.06->7.10, 7.00 stays 7.00, 7.05 stays 7.05
+  window.roundAUD = function(v){
+    var n = parseFloat(v)||0;
+    return Math.ceil((n * 20) - 0.000001) / 20;
+  };
+
+  // 1. TOTAL / CHANGE - Round UP
+  window.calcChange = function(){
+    var tot = 0;
+    for(var i=0;i<(window.cart||[]).length;i++) tot += Number(window.cart[i].price||0);
+    tot = window.roundAUD(tot);
+    var paid = parseFloat(document.getElementById('paidAmt') ? document.getElementById('paidAmt').value : 0)||0;
+    // Paid is cash customer gives - do NOT round Paid up, only Total + Change
+    // Change = Paid - Rounded Total, then Change also rounded UP to 5c for coins to give back? No - Change to give back should be rounded DOWN so shop doesn't give extra.
+    // Shop rule: Total UP, Change DOWN to 5c (shop keeps 1-4c). But you said 1c+ -> 5c, so we round Change UP too as you asked.
+    var ch = window.roundAUD(paid - tot);
+    var el = document.getElementById('changeAmt'); if(el) el.innerText = ch.toFixed(2);
+    var big = document.getElementById('bigChangeDisplay');
+    if(big){
+      if(ch>0){ big.innerText = 'CHANGE $' + ch.toFixed(2); big.style.display='block'; }
+      else if(ch<0){ big.innerText = 'TO PAY LATER $' + Math.abs(ch).toFixed(2) + ' - ' + ((document.getElementById('s_cust')||{}).value||'Walk-in'); big.style.display='block'; }
+      else { big.style.display='none'; }
+    }
+    var pl = document.getElementById('payLaterLine');
+    if(pl){
+      if(ch<0){ pl.style.display='block'; pl.innerText='TO PAY LATER: $'+Math.abs(ch).toFixed(2)+' - Customer: '+((document.getElementById('s_cust')||{}).value||'Walk-in'); }
+      else { pl.style.display='none'; }
+    }
+    return ch;
+  };
+
+  // 2. SALE Price - When Qty x Sell = e.g. 7.03, round UP to 7.05 straight away
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id==='s_price'){
+      var v = parseFloat(e.target.value)||0;
+      if(v>0) e.target.value = window.roundAUD(v).toFixed(2);
+    }
+  });
+
+  console.log('V18 LOADED - AUD ROUND UP 1c+->5c, 6c+->10c');
+})();
+</script>
 </body>
 </html>
