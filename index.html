@@ -1634,5 +1634,112 @@ div[id$="Div"] input[id*="Cust"], div[id$="Div"] input[id*="cust"]{
   console.log('ALL CALC + CART + PW FIX V2 LOADED');
 })();
 </script>
+  <script>
+// DELETE + OVERRIDE FIX V4 - Append only, overrides V3
+(function(){
+  function num(v){ var n=parseFloat(String(v||'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+  var MARKUP = 1.30; // Cost 2.00 = Sell 2.60 - change if your formula different
+
+  // --- OVERRIDE FIX: Only Sell field typed by YOU = manual ---
+  // Auto-fill must NOT mark as manual
+  document.addEventListener('input', function(e){
+    var t=e.target;
+    if(!t || t.tagName!=='INPUT') return;
+    var id=(t.id||'').toLowerCase();
+    var ph=(t.placeholder||'').toLowerCase();
+    var isSell = id.indexOf('sell')!==-1 || id.indexOf('sale')!==-1 && id.indexOf('item')===-1 || ph.indexOf('sell')!==-1;
+    // Only when YOU type in Sell box, lock it
+    if(isSell && !t.dataset.autoFilling){
+      t.dataset.manual='1';
+      console.log('SELL OVERRIDE by user:', t.value);
+    }
+  }, true); // capture = runs before V3
+
+  // Re-do Sell auto, respecting override
+  function fixSell(){
+    var boxes=document.querySelectorAll('div[id$="Div"]');
+    for(var i=0;i<boxes.length;i++){
+      var box=boxes[i]; if(box.style.display==='none') continue;
+      if(box.id.toLowerCase().indexOf('pur')===-1 && box.id.toLowerCase().indexOf('purchase')===-1) continue;
+      var cost=null, sell=null;
+      var els=box.querySelectorAll('input');
+      for(var j=0;j<els.length;j++){
+        var s=(els[j].id+' '+(els[j].placeholder||'')).toLowerCase();
+        if(s.indexOf('cost')!==-1) cost=els[j];
+        if(s.indexOf('sell')!==-1) sell=els[j];
+      }
+      if(cost && sell && num(cost.value)>0 && !sell.dataset.manual){
+        var want=(num(cost.value)*MARKUP).toFixed(2);
+        if(num(sell.value)!==num(want)){
+          sell.dataset.autoFilling='1';
+          sell.value=want;
+          delete sell.dataset.autoFilling;
+        }
+      }
+      // Cost must be editable - force unlock every second
+      if(cost){ cost.disabled=false; cost.readOnly=false; cost.removeAttribute('readonly'); cost.removeAttribute('disabled'); }
+      if(sell){ sell.disabled=false; sell.readOnly=false; sell.removeAttribute('readonly'); sell.removeAttribute('disabled'); }
+    }
+  }
+  setInterval(fixSell, 500);
+
+  // Reset override: If you clear Sell box, auto starts again
+  document.addEventListener('input', function(e){
+    var t=e.target; if(!t || t.tagName!=='INPUT') return;
+    var id=(t.id||'').toLowerCase();
+    if(id.indexOf('sell')!==-1 && t.value===''){ delete t.dataset.manual; console.log('SELL override cleared - auto back on'); }
+  });
+
+  // --- DELETE FIX: Delete works everywhere - cart row, sale row, qty ---
+  // Use capture, so it runs before other handlers
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest?e.target.closest('button'):null;
+    if(!btn) return;
+    var txt=btn.textContent.trim().toLowerCase();
+    if(txt!=='delete' && txt.indexOf('delete')===-1 && txt!=='x' && txt!=='✕' && txt!=='🗑') return;
+
+    // 1. If Delete is in a table row (cart / sale list) - delete THAT row
+    var row=btn.closest?btn.closest('tr'):null;
+    if(row){
+      // If it's a cart row with data-index, also remove from _cart
+      var idx=btn.getAttribute('data-index') || row.getAttribute('data-index');
+      if(idx!==null && window._cart && window._cart[idx]!==undefined){
+        window._cart.splice(parseInt(idx),1);
+        if(window._updCart) window._updCart();
+      }
+      row.remove();
+      console.log('DELETE row removed');
+      e.stopPropagation(); e.preventDefault();
+      return;
+    }
+    // 2. If Delete is in popup - clear QTY + Total in that popup
+    var box=btn.closest?btn.closest('div[id$="Div"]'):null;
+    if(box){
+      var inputs=box.querySelectorAll('input');
+      for(var k=0;k<inputs.length;k++){
+        var s=(inputs[k].id+' '+(inputs[k].placeholder||'')).toLowerCase();
+        if(s.indexOf('qty')!==-1 || s.indexOf('total')!==-1) inputs[k].value='';
+      }
+      console.log('DELETE cleared QTY in popup');
+      e.stopPropagation(); e.preventDefault();
+      return;
+    }
+  }, true);
+
+  // Keyboard Delete also works - in QTY, Delete clears QTY
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Delete') return;
+    var t=e.target; if(t && t.tagName==='INPUT'){
+      // Let normal Delete delete 1 char inside input - don't block it
+      return;
+    }
+    // If focus is on a row / button, Delete that row
+    var row=document.activeElement && document.activeElement.closest?document.activeElement.closest('tr'):null;
+    if(row){ row.remove(); }
+  });
+
+  console.log('DELETE + OVERRIDE FIX V4 LOADED - Append only, no delete of old code');
+})();
+</script>
 </body>
 </html>
