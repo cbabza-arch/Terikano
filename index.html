@@ -2231,5 +2231,114 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V23 LOADED - LOGIN USES CLOUD PW');
 })();
 </script>
+  <script>
+// V24 - FIX doLogin HARDCODED 9999 - Login now uses YOUR changed PW from Cloud
+(function(){
+  // Get current PW - Cloud first, then local, then default 9999 / 1234 for first time
+  function getOwnerLoginPw(){
+    return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+  }
+  function getStaffLoginPw(){
+    return localStorage.getItem('terikano_staff_custom_pw') || '1234';
+  }
+  window.getOwnerLoginPw = getOwnerLoginPw;
+  window.getStaffLoginPw = getStaffLoginPw;
+
+  // 1. Fetch NEW PW from Cloud BEFORE login - so Tablet gets Phone's new PW
+  async function fetchPw(){
+    try{
+      var s1 = await db.ref('terikano_config/passwords/ownerPw').once('value');
+      if(s1.val()){
+        localStorage.setItem('terikano_owner_pw', s1.val());
+        localStorage.setItem('TERI_PW', s1.val());
+      }
+      var s2 = await db.ref('terikano_config/passwords/staffPw').once('value');
+      if(s2.val()) localStorage.setItem('terikano_staff_custom_pw', s2.val());
+      // Also from shop node (V21)
+      var s3 = await db.ref('shop/ownerPw').once('value');
+      if(s3.val()){
+        localStorage.setItem('terikano_owner_pw', s3.val());
+        localStorage.setItem('TERI_PW', s3.val());
+      }
+      // Update label if on Settings page
+      var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=getOwnerLoginPw();
+    }catch(e){}
+  }
+  fetchPw();
+
+  // 2. OVERRIDE doLogin - THE FIX
+  window.doLogin = function(){
+    var u = document.getElementById('loginUser').value.trim().toLowerCase();
+    var p = document.getElementById('loginPass').value.trim();
+    var msg = document.getElementById('loginMsg');
+    var role = null;
+
+    var ownerPw = getOwnerLoginPw(); // NOT 9999 hardcoded anymore
+    var staffPw = getStaffLoginPw(); // NOT 1234 hardcoded anymore
+
+    if(u === 'owner' && p === ownerPw) role = 'Owner';
+    if(u === 'staff' && p === staffPw) role = 'Staff';
+
+    // First time fallback - if no PW ever set, allow old defaults
+    if(!role && u==='owner' && p==='9999' && !localStorage.getItem('terikano_owner_pw')) role='Owner';
+    if(!role && u==='staff' && p==='1234' && !localStorage.getItem('terikano_staff_custom_pw')) role='Staff';
+
+    if(!role){
+      if(msg) msg.textContent = 'Wrong username or password - Owner PW is: ' + ownerPw + ' (use this on Tablet too)';
+      document.getElementById('loginPass').value = '';
+      return;
+    }
+    // Login OK - same as before
+    window.AUTH = role;
+    sessionStorage.setItem('terikano_session_auth', role);
+    var box = document.getElementById('loginBox');
+    if(box) box.classList.add('hideBox');
+    if(msg) msg.textContent = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginUser').value = '';
+    if(typeof showPage === 'function') showPage('home');
+    setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300);
+  };
+
+  // 3. Re-attach login button to NEW doLogin
+  var lb = document.getElementById('loginBtn');
+  if(lb) lb.onclick = window.doLogin;
+  var lp = document.getElementById('loginPass');
+  if(lp){
+    // Remove old Enter listener is hard, but add new one - both will run, new one will win because it checks Cloud PW
+    lp.addEventListener('keydown', function(e){ if(e.key==='Enter') window.doLogin(); });
+  }
+
+  // 4. OVERRIDE changePw - Now it ALSO updates doLogin PW + Cloud
+  window.changePw = function(){
+    var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
+    if(!newP){ alert('Enter New PW'); return; }
+    localStorage.setItem('terikano_owner_pw', newP);
+    localStorage.setItem('TERI_PW', newP);
+    try{ db.ref('terikano_config/passwords/ownerPw').set(newP); }catch(e){}
+    try{ db.ref('shop/ownerPw').set(newP); }catch(e){}
+    var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=newP;
+    var o=document.getElementById('old_pw'); if(o) o.value='';
+    var n=document.getElementById('new_pw'); if(n) n.value='';
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    alert('✅ OWNER PW CHANGED TO: ' + newP + '\nClose app, reopen, login with ' + newP + ' - it will work now on Phone + Tablet.');
+  };
+
+  // 5. OVERRIDE setStaffPw - Same fix for Staff
+  window.setStaffPw = function(){
+    var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
+    if(!np){ alert('Enter new Staff PW'); return; }
+    localStorage.setItem('terikano_staff_custom_pw', np);
+    try{ db.ref('terikano_config/passwords/staffPw').set(np); }catch(e){}
+    try{ db.ref('shop/staffPw').set(np); }catch(e){}
+    var lbl=document.getElementById('curStaffPwLabel'); if(lbl) lbl.innerText=np;
+    var inp=document.getElementById('new_staff_pw'); if(inp) inp.value='';
+    setTimeout(function(){ if(typeof save==='function') save(); }, 300);
+    alert('Staff PW Changed & Synced: ' + np);
+  };
+
+  console.log('V24 LOADED - doLogin now uses Cloud PW, not 9999 hardcoded. Owner PW now:', getOwnerLoginPw());
+})();
+</script>
 </body>
 </html>
