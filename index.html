@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MY SHOP - PHASE 2 FIXED</title>
+<title>MY SHOP - PHASE 2 AUTO COCO</title>
 <style>
 *{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:#111;color:#fff;padding:10px}
@@ -12,7 +12,7 @@ h1{text-align:center;color:gold;margin:5px;font-size:22px}
 label{font-size:13px;color:#ccc}
 input,select{width:100%;padding:12px;margin:5px 0 10px 0;border-radius:8px;border:1px solid #555;background:#fff;color:#000;font-size:16px}
 button{width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin:5px 0}
-.btn-gold{background:gold;color:#000}.btn-green{background:#00c853;color:#fff}.btn-blue{background:#2196f3;color:#fff}.btn-brown{background:#8d6e63;color:#fff}.btn-red{background:#ff3b30;color:#fff}.btn-purple{background:#9c27b0;color:#fff}
+.btn-gold{background:gold;color:#000}.btn-green{background:#00c853;color:#fff}.btn-blue{background:#2196f3;color:#fff}.btn-brown{background:#8d6e63;color:#fff}.btn-red{background:#ff3b30;color:#fff}
 .row{display:flex;gap:8px}.row>div{flex:1}
 table{width:100%;border-collapse:collapse;background:#fff;color:#000;font-size:13px}
 th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left}
@@ -26,47 +26,41 @@ th{background:gold;color:#000}
 </style>
 </head>
 <body>
+<h1>💰 MY SHOP - AUTO COCO - AUD $</h1>
 
-<h1>💰 MY SHOP - PHASE 2 FIXED - AUD $</h1>
-
-<!-- CAPITAL + WALLETS -->
 <div class="box">
 <h3 style="color:gold;margin:0">🏦 CAPITAL + MONEY WALLETS</h3>
-<div class="row"><div><label>First Capital $ (Start Business)</label><input id="capitalInput" type="number" step="0.01" placeholder="e.g. 1000"></div><div><label>Put Capital To</label><select id="capitalTo"><option value="cash">Cash</option><option value="bank">Bank</option></select></div></div>
+<div class="row"><div><label>First Capital $</label><input id="capitalInput" type="number" step="0.01" placeholder="e.g. 1000"></div><div><label>Put Capital To</label><select id="capitalTo"><option value="cash">Cash</option><option value="bank">Bank</option></select></div></div>
 <button class="btn-gold" onclick="setCapital()">💰 SET CAPITAL</button>
 <div class="wallet" style="margin-top:8px">
-<div class="wcard">Cash<br><b id="cashBal">$0.00</b><br><span>Cash in Hand</span></div>
-<div class="wcard">Bank<br><b id="bankBal">$0.00</b><br><span>Bank / IB</span></div>
-<div class="wcard">Coco Wallet<br><b id="cocoBal">0 coco</b><br><span id="cocoKg">0.00 kg = $0.00 to Mills</span></div>
-<div class="wcard">Credit (Customers Owe You)<br><b id="creditBal" style="color:#ff8a80">$0.00</b><br><span>Collect later</span></div>
+<div class="wcard">Cash<br><b id="cashBal">$0.00</b></div>
+<div class="wcard">Bank<br><b id="bankBal">$0.00</b></div>
+<div class="wcard">Coco Wallet<br><b id="cocoBal">0 coco</b><br><span id="cocoKg">0.00 kg = $0.00</span></div>
+<div class="wcard">Credit Owe You<br><b id="creditBal" style="color:#ff8a80">$0.00</b></div>
 </div>
 <div class="row" style="margin-top:8px"><div><label>Move Amount $</label><input id="moveAmt" type="number" step="0.01"></div><div><label>&nbsp;</label><button class="btn-blue" onclick="moveCashToBank()">🏦 Cash → Bank</button></div></div>
-<button class="btn-green" onclick="moveBankToCash()">💵 Bank → Cash (Withdraw)</button>
-<div class="small">Formula: Sell = Cost x 1.15 (15%) ROUND UP to $0.05 | If $0.05 already, NO rounding</div>
+<button class="btn-green" onclick="moveBankToCash()">💵 Bank → Cash</button>
+<div class="small">Sell = Cost x 1.15 ROUND UP to $0.05</div>
 <div style="text-align:center">Markup: <input id="myMarkupInput" type="number" value="15" style="width:70px;display:inline-block;padding:6px"> %</div>
 </div>
 
-<!-- COCO SELL TO MILLS - CASH ONLY -->
 <div class="box" style="border-color:#8d6e63">
-<h3 style="color:#d7ccc8;margin:0">🥥 COCO → SELL TO MILLS $4.00/kg</h3>
+<h3 style="color:#d7ccc8;margin:0">🥥 COCO → MILLS $4.00/kg</h3>
 <div class="total" id="millsInfo">No Coco yet</div>
 <label>Mills Pay To</label><input value="CASH ONLY - Mills pays Cash" disabled style="background:#d7ccc8;font-weight:bold">
 <button class="btn-brown" onclick="sellToMills()">🥥 SELL ALL COCO TO MILLS → CASH</button>
-<div class="small">Mills don't care Grade. Total KG = (G1+G2) x 0.1532 | Mills $ = KG x $4.00 | Goes to CASH for buying goods</div>
+<div class="small">Total KG = (G1+G2) x 0.1532 | Mills $ = KG x $4.00</div>
 </div>
 
-<!-- PURCHASE -->
 <div class="box">
 <h3 style="color:gold;margin:0">📦 PURCHASE - Add Stock</h3>
-<label>Item Name</label><input id="p_name" placeholder="e.g. Rice, Noodle...">
+<label>Item Name</label><input id="p_name" placeholder="e.g. Rice">
 <div class="row"><div><label>Cost Price $</label><input id="p_cost" type="number" step="0.01"></div><div><label>Sell Price (Auto)</label><input id="p_sell" type="number" step="0.05"></div></div>
 <label>Qty</label><input id="p_qty" type="number" value="1">
-<label>Pay For Purchase With</label><select id="p_pay"><option value="cash">Cash</option><option value="bank">Banking</option></select>
+<label>Pay With</label><select id="p_pay"><option value="cash">Cash</option><option value="bank">Banking</option></select>
 <button class="btn-gold" onclick="addPurchase()">➕ ADD TO STOCK</button>
-<div class="small">Cost $2.80 → Sell $3.25 | Cost $1.00 → Sell $1.15 stays</div>
 </div>
 
-<!-- SALE -->
 <div class="box">
 <h3 style="color:#00e676;margin:0">🛒 SALE - Customer Pays With</h3>
 <label>Select Item</label><select id="s_item" onchange="fillSale()"></select>
@@ -75,29 +69,29 @@ th{background:gold;color:#000}
 <label>Customer Pays With</label><select id="s_pay" onchange="showPayBox()"><option value="cash">Cash</option><option value="bank">Banking IB</option><option value="coco">Coco</option><option value="credit">Credit (Pay Later)</option></select>
 
 <div id="cocoPayBox" class="hidden" style="background:#3e2723;padding:10px;border-radius:8px">
-<label>🥥 Grade 1 Coco Count (3 coco = $1)</label><input id="cocoG1" type="number" value="0">
-<label>🥥 Grade 2 Coco Count (4 coco = $1)</label><input id="cocoG2" type="number" value="0">
+<div class="total" id="autoCocoHint" style="font-size:13px">Auto Coco will show here</div>
+<div class="row"><div><button class="btn-brown" onclick="autoCocoG1()" style="padding:10px">AUTO: G1 ONLY</button></div><div><button class="btn-brown" onclick="autoCocoG2()" style="padding:10px">AUTO: G2 ONLY</button></div></div>
+<label>🥥 Grade 1 Coco Count (3 coco = $1) - YOU CAN OVERRIDE</label><input id="cocoG1" type="number" value="0">
+<label>🥥 Grade 2 Coco Count (4 coco = $1) - YOU CAN OVERRIDE</label><input id="cocoG2" type="number" value="0">
 <div class="total" id="cocoValueInfo">Coco Value: $0.00</div>
+<div class="small" style="color:#ffcc80">Example: Total $1.00, G1 need 3 coco. Total $0.70, G1 need 2.1 → ROUND UP to 3 coco. Always whole number, always UP!</div>
 </div>
 <div id="creditBox" class="hidden"><label>Customer Name (Credit)</label><input id="creditName" placeholder="Who owes?"></div>
-
 <button class="btn-green" onclick="doSale()">✅ SELL NOW</button>
 </div>
 
-<!-- STOCK -->
 <div class="box">
 <h3 style="color:gold;margin:0">📋 STOCK & PROFIT</h3>
 <div class="total" id="totals"></div>
 <table><thead><tr><th>Item</th><th>Cost</th><th>Sell</th><th>Qty</th><th>Profit</th><th></th></tr></thead><tbody id="stockBody"></tbody></table>
 </div>
 
-<!-- CREDIT LIST -->
 <div class="box">
-<h3 style="margin:0">📒 CREDIT LIST - Who Owes You</h3>
+<h3 style="margin:0">📒 CREDIT LIST</h3>
 <table><thead><tr><th>Customer</th><th>Item</th><th>Amount</th><th></th></tr></thead><tbody id="creditBody"></tbody></table>
 </div>
 
-<button class="btn-red" onclick="if(confirm('Clear ALL? Capital + Stock + Money?')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL - START OVER</button>
+<button class="btn-red" onclick="if(confirm('Clear ALL?')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL</button>
 
 <script>
 let stock = JSON.parse(localStorage.getItem('myshop_stock')||'[]');
@@ -112,104 +106,30 @@ function updateWallet(){
   document.getElementById('cashBal').innerText='$'+wallet.cash.toFixed(2);
   document.getElementById('bankBal').innerText='$'+wallet.bank.toFixed(2);
   document.getElementById('cocoBal').innerText=wallet.g1+' G1 + '+wallet.g2+' G2 = '+(wallet.g1+wallet.g2)+' coco';
-  document.getElementById('cocoKg').innerText=cocoKg().toFixed(4)+' kg = $'+millsVal().toFixed(2)+' to Mills';
+  document.getElementById('cocoKg').innerText=cocoKg().toFixed(4)+' kg = $'+millsVal().toFixed(2);
   document.getElementById('millsInfo').innerText='G1: '+wallet.g1+' | G2: '+wallet.g2+' | Total: '+(wallet.g1+wallet.g2)+' coco = '+cocoKg().toFixed(4)+' kg x $4 = $'+millsVal().toFixed(2);
-  let totCred=0; credits.forEach(c=>totCred+=c.amount); wallet.credit=totCred;
-  document.getElementById('creditBal').innerText='$'+totCred.toFixed(2);
+  let totCred=0; credits.forEach(c=>totCred+=c.amount); document.getElementById('creditBal').innerText='$'+totCred.toFixed(2);
 }
-function setCapital(){
-  let amt=parseFloat(document.getElementById('capitalInput').value)||0;
-  if(amt<=0){alert('Enter Capital bro');return;}
-  let to=document.getElementById('capitalTo').value;
-  wallet[to]+=amt; save(); updateWallet(); alert('Capital $'+amt.toFixed(2)+' added to '+to);
-}
-function moveCashToBank(){
-  let amt=parseFloat(document.getElementById('moveAmt').value)||0;
-  if(amt<=0||amt>wallet.cash){alert('Not enough Cash, have $'+wallet.cash.toFixed(2));return;}
-  wallet.cash-=amt; wallet.bank+=amt; save(); updateWallet(); document.getElementById('moveAmt').value='';
-  alert('Moved $'+amt.toFixed(2)+' Cash → Bank');
-}
-function moveBankToCash(){
-  let amt=parseFloat(document.getElementById('moveAmt').value)||0;
-  if(amt<=0||amt>wallet.bank){alert('Not enough Bank, have $'+wallet.bank.toFixed(2));return;}
-  wallet.bank-=amt; wallet.cash+=amt; save(); updateWallet(); document.getElementById('moveAmt').value='';
-  alert('Moved $'+amt.toFixed(2)+' Bank → Cash');
-}
-function sellToMills(){
-  let kg=cocoKg(); let val=millsVal();
-  if(kg<=0){alert('No Coco bro');return;}
-  // Mills ALWAYS pays CASH bro - for buying more goods
-  wallet.cash+=val; wallet.g1=0; wallet.g2=0; save(); updateWallet();
-  alert('Sold '+kg.toFixed(4)+' kg to Mills for $'+val.toFixed(2)+' to CASH');
-}
-document.getElementById('p_cost').addEventListener('input',function(){
-  let s=document.getElementById('p_sell');
-  if(s.dataset.overridden!=='1'){ let c=parseFloat(this.value)||0; if(c>0) s.value=calcMySell(c); }
-});
+function setCapital(){ let amt=parseFloat(document.getElementById('capitalInput').value)||0; if(amt<=0){alert('Enter Capital bro');return;} let to=document.getElementById('capitalTo').value; wallet[to]+=amt; save(); updateWallet(); alert('Capital $'+amt.toFixed(2)+' added to '+to); }
+function moveCashToBank(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.cash){alert('Not enough Cash, have $'+wallet.cash.toFixed(2));return;} wallet.cash-=amt; wallet.bank+=amt; save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Cash → Bank'); }
+function moveBankToCash(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.bank){alert('Not enough Bank, have $'+wallet.bank.toFixed(2));return;} wallet.bank-=amt; wallet.cash+=amt; save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Bank → Cash'); }
+function sellToMills(){ let kg=cocoKg(); let val=millsVal(); if(kg<=0){alert('No Coco bro');return;} wallet.cash+=val; wallet.g1=0; wallet.g2=0; save(); updateWallet(); alert('Sold '+kg.toFixed(4)+' kg to Mills for $'+val.toFixed(2)+' to CASH'); }
+document.getElementById('p_cost').addEventListener('input',function(){ let s=document.getElementById('p_sell'); if(s.dataset.overridden!=='1'){ let c=parseFloat(this.value)||0; if(c>0) s.value=calcMySell(c); } });
 document.getElementById('p_sell').addEventListener('input',function(){this.dataset.overridden='1';});
 document.getElementById('myMarkupInput').addEventListener('input',function(){ let c=parseFloat(document.getElementById('p_cost').value)||0; if(c>0){document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_sell').value=calcMySell(c);} });
-function addPurchase(){
-  let name=document.getElementById('p_name').value.trim();
-  let cost=parseFloat(document.getElementById('p_cost').value)||0;
-  let sell=parseFloat(document.getElementById('p_sell').value)||0;
-  let qty=parseInt(document.getElementById('p_qty').value)||0;
-  let pay=document.getElementById('p_pay').value;
-  if(!name||cost<=0||sell<=0||qty<=0){alert('Fill all bro');return;}
-  let total=cost*qty;
-  if(wallet[pay]<total){alert('Not enough '+pay+' bro. Have $'+wallet[pay].toFixed(2)+' need $'+total.toFixed(2));return;}
-  wallet[pay]-=total;
-  let f=stock.find(x=>x.name.toLowerCase()===name.toLowerCase());
-  if(f){f.cost=cost;f.sell=sell;f.qty+=qty;} else stock.push({name,cost,sell,qty});
-  save(); render(); updateWallet();
-  document.getElementById('p_name').value=''; document.getElementById('p_cost').value=''; document.getElementById('p_sell').value=''; document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_qty').value='1';
-  alert(name+' added. Paid $'+total.toFixed(2)+' from '+pay);
-}
+function addPurchase(){ let name=document.getElementById('p_name').value.trim(); let cost=parseFloat(document.getElementById('p_cost').value)||0; let sell=parseFloat(document.getElementById('p_sell').value)||0; let qty=parseInt(document.getElementById('p_qty').value)||0; let pay=document.getElementById('p_pay').value; if(!name||cost<=0||sell<=0||qty<=0){alert('Fill all bro');return;} let total=cost*qty; if(wallet[pay]<total){alert('Not enough '+pay+' have $'+wallet[pay].toFixed(2)+' need $'+total.toFixed(2));return;} wallet[pay]-=total; let f=stock.find(x=>x.name.toLowerCase()===name.toLowerCase()); if(f){f.cost=cost;f.sell=sell;f.qty+=qty;} else stock.push({name,cost,sell,qty}); save(); render(); updateWallet(); document.getElementById('p_name').value=''; document.getElementById('p_cost').value=''; document.getElementById('p_sell').value=''; document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_qty').value='1'; alert(name+' added. Paid $'+total.toFixed(2)+' from '+pay); }
 function fillSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(it) document.getElementById('s_price').value=it.sell.toFixed(2); updateSaleTotal(); }
-function updateSaleTotal(){ let p=parseFloat(document.getElementById('s_price').value)||0; let q=parseInt(document.getElementById('s_qty').value)||0; document.getElementById('saleTotal').innerText='Total: $'+(p*q).toFixed(2); }
+function getSaleTotal(){ let p=parseFloat(document.getElementById('s_price').value)||0; let q=parseInt(document.getElementById('s_qty').value)||0; return p*q; }
+function updateSaleTotal(){ let total=getSaleTotal(); document.getElementById('saleTotal').innerText='Total: $'+total.toFixed(2); if(document.getElementById('s_pay').value==='coco'){ autoCocoG1(); } }
 document.getElementById('s_price').addEventListener('input',updateSaleTotal); document.getElementById('s_qty').addEventListener('input',updateSaleTotal);
-function showPayBox(){
-  let v=document.getElementById('s_pay').value;
-  document.getElementById('cocoPayBox').classList.toggle('hidden',v!=='coco');
-  document.getElementById('creditBox').classList.toggle('hidden',v!=='credit');
-  updateCocoInfo();
-}
-function updateCocoInfo(){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; document.getElementById('cocoValueInfo').innerText='Coco Value: $'+val.toFixed(2)+' | KG if dried: '+((g1+g2)*0.1532).toFixed(4)+' kg | Mills $'+roundUpAUD((g1+g2)*0.1532*4).toFixed(2); }
+function showPayBox(){ let v=document.getElementById('s_pay').value; document.getElementById('cocoPayBox').classList.toggle('hidden',v!=='coco'); document.getElementById('creditBox').classList.toggle('hidden',v!=='credit'); if(v==='coco') autoCocoG1(); else updateCocoInfo(); }
+function autoCocoG1(){ let total=getSaleTotal(); let need=Math.ceil(total*3); document.getElementById('cocoG1').value=need; document.getElementById('cocoG2').value=0; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G1 need '+need+' coco ( '+total.toFixed(2)+' x 3 = '+(total*3).toFixed(2)+' → UP to '+need+' ) - You can override below!'; updateCocoInfo(); }
+function autoCocoG2(){ let total=getSaleTotal(); let need=Math.ceil(total*4); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=need; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G2 need '+need+' coco ( '+total.toFixed(2)+' x 4 = '+(total*4).toFixed(2)+' → UP to '+need+' ) - You can override below!'; updateCocoInfo(); }
+function updateCocoInfo(){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; let total=getSaleTotal(); document.getElementById('cocoValueInfo').innerText='Coco Value: $'+val.toFixed(2)+' | Need: $'+total.toFixed(2)+' | '+(val>=total?'✅ ENOUGH':'❌ NOT ENOUGH')+' | KG: '+((g1+g2)*0.1532).toFixed(4)+' kg | Mills $'+roundUpAUD((g1+g2)*0.1532*4).toFixed(2); }
 document.getElementById('cocoG1').addEventListener('input',updateCocoInfo); document.getElementById('cocoG2').addEventListener('input',updateCocoInfo);
-function doSale(){
-  let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value);
-  if(!it){alert('No stock');return;}
-  let qty=parseInt(document.getElementById('s_qty').value)||0; let price=parseFloat(document.getElementById('s_price').value)||0;
-  if(qty<=0||qty>it.qty){alert('Qty not enough, have '+it.qty);return;}
-  let total=price*qty; let pay=document.getElementById('s_pay').value;
-  if(pay==='cash'){ wallet.cash+=total; }
-  else if(pay==='bank'){ wallet.bank+=total; }
-  else if(pay==='coco'){
-    let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4;
-    if(val+0.001 < total){ alert('Coco not enough bro! Coco value $'+val.toFixed(2)+' need $'+total.toFixed(2)+' | Need more coco'); return; }
-    wallet.g1+=g1; wallet.g2+=g2;
-    if(val>total) alert('Coco overpaid $'+(val-total).toFixed(2)+' - kept as extra coco bro');
-    document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=0;
-  }
-  else if(pay==='credit'){
-    let cname=document.getElementById('creditName').value.trim()||'Unknown';
-    credits.push({name:cname,item:it.name,amount:total});
-  }
-  it.qty-=qty; if(it.qty===0) stock=stock.filter(x=>x!==it);
-  save(); render(); updateWallet(); updateSaleTotal();
-  alert('Sold '+qty+' x '+it.name+' for $'+total.toFixed(2)+' paid by '+pay.toUpperCase());
-}
+function doSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(!it){alert('No stock');return;} let qty=parseInt(document.getElementById('s_qty').value)||0; let price=parseFloat(document.getElementById('s_price').value)||0; if(qty<=0||qty>it.qty){alert('Qty not enough, have '+it.qty);return;} let total=price*qty; let pay=document.getElementById('s_pay').value; if(pay==='cash'){ wallet.cash+=total; } else if(pay==='bank'){ wallet.bank+=total; } else if(pay==='coco'){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; if(val+0.001 < total){ alert('Coco not enough bro! Coco value $'+val.toFixed(2)+' need $'+total.toFixed(2)); return; } wallet.g1+=g1; wallet.g2+=g2; if(val>total) alert('Coco overpaid $'+(val-total).toFixed(2)+' - kept as extra coco bro'); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=0; } else if(pay==='credit'){ let cname=document.getElementById('creditName').value.trim()||'Unknown'; credits.push({name:cname,item:it.name,amount:total}); } it.qty-=qty; if(it.qty===0) stock=stock.filter(x=>x!==it); save(); render(); updateWallet(); updateSaleTotal(); alert('Sold '+qty+' x '+it.name+' for $'+total.toFixed(2)+' paid by '+pay.toUpperCase()); }
 function payCredit(i){ let c=credits[i]; wallet.cash+=c.amount; credits.splice(i,1); save(); render(); updateWallet(); alert(c.name+' paid $'+c.amount.toFixed(2)+' in Cash'); }
-function render(){
-  let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML='';
-  let tp=0, sv=0;
-  stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty;
-    body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="stock.splice(${i},1);save();render()" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`;
-    sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; });
-  document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`;
-  let cb=document.getElementById('creditBody'); cb.innerHTML='';
-  credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td>${c.name}</td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; });
-  if(stock.length>0) fillSale();
-}
+function render(){ let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML=''; let tp=0, sv=0; stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty; body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="stock.splice(${i},1);save();render()" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`; sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; }); document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`; let cb=document.getElementById('creditBody'); cb.innerHTML=''; credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td>${c.name}</td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; }); if(stock.length>0) fillSale(); }
 updateWallet(); render(); showPayBox();
 </script>
 </body>
