@@ -2524,5 +2524,35 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V35 LOADED - HIDE added to WHOLESALER');
 })();
 </script>
+  <script>
+// V36 - DASHBOARD ONLY - On top of V34+V35 - Does NOT touch tables/windows
+(function(){
+  function showDash(){
+    var dash=null;
+    document.querySelectorAll('div, section').forEach(function(el){
+      var txt=(el.textContent||'').toUpperCase();
+      if(txt.indexOf('DASHBOARD OWNER ONLY')!==-1 && txt.indexOf('SALES')!==-1 && el.textContent.length<5000) dash=el;
+    });
+    if(!dash){ console.log('V36 - Dashboard not found'); return; }
+    dash.style.display='block';
+    dash.style.visibility='visible';
+    dash.style.opacity='1';
+    dash.querySelectorAll('div').forEach(function(b){
+      var t=(b.textContent||'').toUpperCase();
+      if(t.indexOf('SALES')!==-1||t.indexOf('CASH')!==-1||t.indexOf('BANK')!==-1||t.indexOf('STOCK')!==-1||t.indexOf('COCO')!==-1||t.indexOf('PROFIT')!==-1||t.indexOf('CREDITORS')!==-1||t.indexOf('EXPENSE')!==-1||t.indexOf('DRAWING')!==-1){
+        b.style.visibility='visible';
+        b.style.opacity='1';
+        if(b.style.display==='none') b.style.display='';
+      }
+    });
+  }
+  var _orig=window.renderAll;
+  window.renderAll=function(){ if(typeof _orig==='function') _orig(); setTimeout(showDash,150); };
+  showDash();
+  setTimeout(showDash,500);
+  setTimeout(showDash,1200);
+  console.log('V36 LOADED - Dashboard only');
+})();
+</script>
 </body>
 </html>
