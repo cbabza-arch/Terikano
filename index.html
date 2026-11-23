@@ -1,4 +1,4 @@
-  <html><head>
+q  <html><head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -2698,6 +2698,100 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   };
   window.clearBothData = window.clearAllTestData;
   console.log('V-FINAL-3 LOADED - stock + top box fix');
+})();
+</script>
+  <script>
+// V-FINAL-4 - Kill V21 ALL_LOCAL resurrect + bring top box back
+(function(){
+  // 1. Kill V21 save - NEVER save ALL_LOCAL or old terikano_data again
+  window.saveToCloud = async function(){
+    if(window.__CLEARING) return;
+    try{
+      await db.ref('shop').set({
+        ownerPw: localStorage.getItem('terikano_owner_pw')||'9999',
+        staffPw: localStorage.getItem('terikano_staff_custom_pw')||'1234',
+        terikano_name: localStorage.getItem('terikano_name')||'TERIKANO',
+        purchases: window.purchases||[], sales: window.sales||[], capitals: window.capitals||[],
+        banks: window.banks||[], expenses: window.expenses||[], collects: window.collects||[],
+        ownerTakes: window.ownerTakes||[], tips: window.tips||[], waste: window.waste||[],
+        clearance: window.clearance||[], cocoBuys: window.cocoBuys||[], cocoMills: window.cocoMills||[],
+        badDebts: window.badDebts||[], priceHistory: window.priceHistory||[], wholesalerDebts: window.wholesalerDebts||[],
+        dailyTarget: window.dailyTarget||100,
+        terikano_data: {store:[]}, terikano_years: {}, terikano_last_closed_year: '',
+        ALL_LOCAL: {}, // EMPTY forever - V21 resurrect killed
+        clearedAt: localStorage.getItem('terikano_clearedAt')||'',
+        time: new Date().toISOString()
+      });
+    }catch(e){}
+  };
+  window.save = function(){
+    if(window.__CLEARING) return;
+    // Don't save local backup - Cloud only
+    if(window.db) window.saveToCloud();
+  };
+
+  // 2. Fix load - always apply Cloud + always render + always show top box
+  window.load = async function(){
+    try{
+      var snap = await db.ref('shop').once('value');
+      var cloud = snap.val() || {};
+      if(cloud.clearedAt){
+        // Cleared - force empty everywhere, including stock
+        purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; collects=[]; ownerTakes=[]; tips=[]; waste=[]; clearance=[]; cart=[]; cocoBuys=[]; cocoMills=[]; badDebts=[]; priceHistory=[]; wholesalerDebts=[];
+        window.purchases=[]; window.sales=[]; window.capitals=[]; window.banks=[]; window.expenses=[];
+        try{
+          localStorage.removeItem('Terikano_storage_data');
+          localStorage.setItem('terikano_data', JSON.stringify({store:[]}));
+          localStorage.setItem('terikano_years', JSON.stringify({}));
+        }catch(e){}
+      } else if(cloud.purchases){
+        window.purchases=cloud.purchases||[]; window.sales=cloud.sales||[]; window.capitals=cloud.capitals||[]; window.banks=cloud.banks||[]; window.expenses=cloud.expenses||[];
+        purchases=window.purchases; sales=window.sales; capitals=window.capitals; banks=window.banks; expenses=window.expenses;
+      }
+      if(typeof renderAll==='function') renderAll();
+      if(typeof populateDatalist==='function') populateDatalist();
+      // Bring top box back - force dashboard visible
+      setTimeout(function(){
+        var els = document.querySelectorAll('div');
+        for(var i=0;i<els.length;i++){
+          var t=(els[i].textContent||'').toUpperCase();
+          if(t.indexOf('DASHBOARD OWNER ONLY')!==-1 && els[i].textContent.length<5000){
+            els[i].style.display='block'; els[i].style.visibility='visible'; els[i].style.opacity='1';
+          }
+        }
+      }, 300);
+    }catch(e){ if(typeof renderAll==='function') renderAll(); }
+  };
+
+  // 3. Fix clear - must also clear stock + kill ALL_LOCAL
+  window.clearAllTestData = async function(){
+    if(!confirm('⚠️ CLEAR ALL CLOUD + STOCK?')) return;
+    if(!confirm('Are you SURE? Cannot undo.')) return;
+    window.__CLEARING = true;
+    try{ db.ref().off(); }catch(e){}
+    var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+    var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+    var biz = localStorage.getItem('terikano_name') || 'TERIKANO';
+    var clearedAt = new Date(Date.now() + 60000).toISOString();
+    localStorage.setItem('terikano_clearedAt', clearedAt);
+    try{
+      purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; collects=[]; ownerTakes=[]; tips=[]; waste=[]; clearance=[]; cart=[]; cocoBuys=[]; cocoMills=[]; badDebts=[]; priceHistory=[]; wholesalerDebts=[];
+      window.purchases=[]; window.sales=[];
+    }catch(e){}
+    try{
+      localStorage.removeItem('Terikano_storage_data');
+      localStorage.setItem('terikano_data', JSON.stringify({store:[]}));
+      localStorage.setItem('terikano_years', JSON.stringify({}));
+    }catch(e){}
+    try{
+      await db.ref('shop').remove();
+      await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], wholesalerDebts:[], dailyTarget:100, terikano_data:{store:[]}, terikano_years:{}, ALL_LOCAL:{}, clearedAt:clearedAt, time:clearedAt});
+    }catch(e){ alert('Cloud error: '+e.message); window.__CLEARING=false; return; }
+    alert('✅ CLOUD + STOCK CLEARED - V21 resurrect killed.');
+    setTimeout(function(){ location.reload(); }, 500);
+  };
+  window.clearBothData = window.clearAllTestData;
+  console.log('V-FINAL-4 LOADED - V21 ALL_LOCAL killed, top box fixed');
 })();
 </script>
 </body>
