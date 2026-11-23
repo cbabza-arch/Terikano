@@ -1920,14 +1920,8 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
 })();
 </script>
 <script>
-// V21 - ALL IN CLOUD - EVERYTHING - Password + Notepad + Notes + Daily Notes + All Data
+// V21 - ALL IN CLOUD - FIXED - No Resurrect After Clear
 (function(){
-  // === 1. WHAT IS "ALL"? ===
-  // We save 2 things to Cloud:
-  // A) fullData - your shop data (same as V19)
-  // B) ALL_LOCAL - every single localStorage key on this phone (Notepad, Passwords, Notes, everything)
-  // So NOTHING stays only on phone.
-
   function fullData(){
     return {
       purchases: window.purchases||[],
@@ -1954,7 +1948,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       wholesalerDebts: window.wholesalerDebts||[],
       markup: window.globalMarkup||15,
       lastSellMap: window.PRICE_MAP||{},
-      // === NEW - ALL THE THINGS V19 MISSED ===
       notepad: JSON.parse(localStorage.getItem('Terikano_notepad')||'[]'),
       dailyNotes: JSON.parse(localStorage.getItem('dailyNotes_KIRIBATI_V13_PARTIAL')||'[]'),
       dailyNotesArr: window.dailyNotesArr||[],
@@ -1963,31 +1956,30 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       terikano_last_closed_year: localStorage.getItem('terikano_last_closed_year')||'',
       terikano_name: localStorage.getItem('terikano_name')||'TERIKANO STORE',
       terikano_logo: localStorage.getItem('Terikano_logo')||'',
-      // === PASSWORDS - THIS FIXES YOUR TABLET BUG ===
       ownerPw: localStorage.getItem('terikano_owner_pw')||localStorage.getItem('TERI_PW')||'1234',
       staffPw: localStorage.getItem('terikano_staff_custom_pw')||'Terikano_2005',
       teriPw: localStorage.getItem('TERI_PW')||'1234',
       darkMode: localStorage.getItem('DARK_MODE')||'0',
+      clearedAt: localStorage.getItem('terikano_clearedAt')||'',
       time: new Date().toISOString()
     };
   }
-
-  // Save EVERY localStorage key too - future proof, nothing left behind
   function allLocal(){
     var o={};
     try{
       for(var i=0;i<localStorage.length;i++){
         var k=localStorage.key(i);
-        if(k==='terikano_session_auth') continue; // Don't sync login session
-        if(k==='terikano_device_id') continue; // Each phone keeps its own ID
+        if(k==='terikano_session_auth') continue;
+        if(k==='terikano_device_id') continue;
         o[k]=localStorage.getItem(k);
       }
     }catch(e){}
     return o;
   }
-
   function applyCloud(d){
     if(!d) return;
+    // FIXED: If Cloud was cleared AFTER this data, don't resurrect old data
+    if(d.clearedAt && d.time && d.clearedAt > d.time) return;
     if(d.purchases) window.purchases=d.purchases;
     if(d.sales) window.sales=d.sales;
     if(d.capitals) window.capitals=d.capitals;
@@ -2012,7 +2004,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     if(d.wholesalerDebts) window.wholesalerDebts=d.wholesalerDebts;
     if(d.markup!==undefined) window.globalMarkup=d.markup;
     if(d.lastSellMap) window.PRICE_MAP=d.lastSellMap;
-    // === RESTORE ALL ===
     if(d.notepad) localStorage.setItem('Terikano_notepad', JSON.stringify(d.notepad));
     if(d.dailyNotes) localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(d.dailyNotes));
     if(d.dailyNotesArr) window.dailyNotesArr=d.dailyNotesArr;
@@ -2021,42 +2012,35 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     if(d.terikano_last_closed_year) localStorage.setItem('terikano_last_closed_year', d.terikano_last_closed_year);
     if(d.terikano_name) localStorage.setItem('terikano_name', d.terikano_name);
     if(d.terikano_logo) localStorage.setItem('Terikano_logo', d.terikano_logo);
-    // === PASSWORDS RESTORE - TABLET WILL NOW USE NEW PW ===
     if(d.ownerPw){ localStorage.setItem('terikano_owner_pw', d.ownerPw); localStorage.setItem('TERI_PW', d.ownerPw); }
     if(d.staffPw) localStorage.setItem('terikano_staff_custom_pw', d.staffPw);
     if(d.teriPw) localStorage.setItem('TERI_PW', d.teriPw);
     if(d.darkMode) localStorage.setItem('DARK_MODE', d.darkMode);
-    // Restore ALL localStorage keys from Cloud
-    if(d.ALL_LOCAL){
+    // FIXED: Don't resurrect deleted keys - only restore if key exists in Cloud AND not cleared
+    if(d.ALL_LOCAL && !d.clearedAt){
       for(var k in d.ALL_LOCAL){
         if(k==='terikano_session_auth'||k==='terikano_device_id') continue;
         try{ if(!localStorage.getItem(k)) localStorage.setItem(k, d.ALL_LOCAL[k]); }catch(e){}
       }
     }
+    if(d.clearedAt) localStorage.setItem('terikano_clearedAt', d.clearedAt);
   }
-
   window.saveToCloud = async function(){
     try{
       var payload = fullData();
       payload.ALL_LOCAL = allLocal();
       await db.ref('shop').set(payload);
-      console.log('V21 SAVED ALL TO CLOUD - Notepad + PW + Notes included');
+      console.log('V21 SAVED ALL TO CLOUD');
     }catch(e){ console.log('Cloud save err', e); }
   };
-
   window.save = function(){
     try{
       var d = fullData();
       try{ localStorage.setItem('Terikano_storage_data', JSON.stringify(d)); }catch(e){}
-      // Also save Notepad / Notes to localStorage now (so they are in ALL_LOCAL)
-      try{
-        if(window.dailyNotesArr) localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(window.dailyNotesArr));
-      }catch(e){}
+      try{ if(window.dailyNotesArr) localStorage.setItem('dailyNotes_KIRIBATI_V13_PARTIAL', JSON.stringify(window.dailyNotesArr)); }catch(e){}
       if(window.db) window.saveToCloud();
     }catch(e){ console.log('Save err', e); }
   };
-
-  // === FIX POPUP - Only show ONCE, never every open ===
   window.load = async function(){
     try{
       var snap = await db.ref('shop').once('value');
@@ -2066,7 +2050,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
         localStorage.setItem('terikano_cloud_migrated','1');
         console.log('V21 LOADED ALL FROM CLOUD');
       } else {
-        // Cloud REALLY empty + never migrated before
         if(localStorage.getItem('terikano_cloud_migrated')!=='1'){
           var local = null;
           try{ local = JSON.parse(localStorage.getItem('Terikano_storage_data')||'{}'); }catch(e){}
@@ -2078,8 +2061,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
               alert('Migrated ALL to CLOUD! Now tablet will see same data + same PW + same Notepad.');
             }
           }
-        } else {
-          console.log('V21 - Cloud empty but already migrated, no popup');
         }
       }
       if(typeof renderAll==='function') renderAll();
@@ -2087,9 +2068,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       if(typeof loadDailyNotes==='function') loadDailyNotes();
     }catch(e){ console.log('Cloud load err', e); }
   };
-
-  // === PASSWORD CHANGE - Force Cloud Save immediately ===
-  // When you change PW in Settings, save to Cloud straight away
   document.addEventListener('click', function(e){
     var b = e.target.closest?e.target.closest('button'):null; if(!b) return;
     var txt=(b.textContent||'').toLowerCase();
@@ -2097,21 +2075,18 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       setTimeout(function(){ if(typeof save==='function') save(); }, 500);
     }
   });
-
-  console.log('V21 LOADED - ALL IN CLOUD');
+  console.log('V21 LOADED - ALL IN CLOUD FIXED');
 })();
 </script>
-  <script>
-// V22 - PW SYNC FIX - One PW = Everywhere - Owner + Staff
+<script>
+// V22 - PW SYNC FIX - Unchanged, your code was good
 (function(){
-  // 1. Make ALL PW keys the same - always
   function setAllPw(newPw, type){
     if(type==='staff'){
       localStorage.setItem('terikano_staff_custom_pw', newPw);
       try{ db.ref('terikano_config/passwords/staffPw').set(newPw); }catch(e){}
       try{ db.ref('shop/staffPw').set(newPw); }catch(e){}
     } else {
-      // OWNER - set EVERY key login could check
       localStorage.setItem('terikano_owner_pw', newPw);
       localStorage.setItem('TERI_PW', newPw);
       localStorage.setItem('terikano_pw', newPw);
@@ -2120,22 +2095,16 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       var lbl = document.getElementById('curPwLabel');
       if(lbl) lbl.innerText = newPw;
     }
-    // Force Cloud save of whole account NOW
     setTimeout(function(){ if(typeof save==='function') save(); }, 300);
   }
-
-  // 2. OVERRIDE your changePw() - the one in Settings
   window.changePw = function(){
     var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
     if(!newP){ alert('Enter New PW'); return; }
     setAllPw(newP, 'owner');
-    // Clear inputs
     var o=document.getElementById('old_pw'); if(o) o.value='';
     var n=document.getElementById('new_pw'); if(n) n.value='';
     alert('✅ OWNER PW CHANGED & SYNCED TO CLOUD: ' + newP + '\nNow use NEW PW on Tablet too.');
   };
-
-  // 3. OVERRIDE setStaffPw()
   window.setStaffPw = function(){
     var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
     if(!np){ alert('Enter new Staff PW'); return; }
@@ -2144,8 +2113,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     var inp=document.getElementById('new_staff_pw'); if(inp) inp.value='';
     alert('Staff PW Changed & Synced Online: ' + np);
   };
-
-  // 4. OVERRIDE removeStaffPw()
   window.removeStaffPw = function(){
     if(!confirm('Remove Staff PW?')) return;
     localStorage.removeItem('terikano_staff_custom_pw');
@@ -2154,13 +2121,9 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     setTimeout(function(){ if(typeof save==='function') save(); }, 300);
     alert('Staff PW Removed');
   };
-
-  // 5. OVERRIDE getOwnerPw() - login will now check the NEW key first
   window.getOwnerPw = function(){
     return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234';
   };
-
-  // 6. LISTEN to Cloud PW - if Phone changes PW, Tablet auto-updates in 2 sec, no refresh needed
   try{
     db.ref('terikano_config/passwords/ownerPw').on('value', function(snap){
       var cloudPw = snap.val();
@@ -2178,17 +2141,14 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       }
     });
   }catch(e){}
-
   console.log('V22 LOADED - PW SYNC FIX');
 })();
 </script>
-  <script>
-// V23 - LOGIN MUST USE CLOUD PW - Fix reopen still asking old PW
+<script>
+// V23 - LOGIN MUST USE CLOUD PW - Unchanged
 (function(){
-  // 1. On open, BEFORE login shows, fetch NEW PW from Cloud and overwrite old local PW
   async function fetchCloudPwBeforeLogin(){
     try{
-      // Try both places - config + shop
       var s1 = await db.ref('terikano_config/passwords/ownerPw').once('value');
       var s2 = await db.ref('shop/ownerPw').once('value');
       var s3 = await db.ref('shop').once('value');
@@ -2197,98 +2157,61 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
         localStorage.setItem('terikano_owner_pw', cloudPw);
         localStorage.setItem('TERI_PW', cloudPw);
         localStorage.setItem('terikano_pw', cloudPw);
-        console.log('V23 - Cloud PW loaded before login:', cloudPw);
         var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=cloudPw;
       }
-      // Same for Staff
       var ss = await db.ref('terikano_config/passwords/staffPw').once('value');
       if(ss.val()) localStorage.setItem('terikano_staff_custom_pw', ss.val());
     }catch(e){ console.log('V23 fetch PW err', e); }
   }
   fetchCloudPwBeforeLogin();
-
-  // 2. OVERRIDE getOwnerPw again - always return Cloud PW if we have it
   window.getOwnerPw = function(){
     return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '1234';
   };
-
-  // 3. OVERRIDE any login function - if your login checks '1234' hardcoded, this fixes it
-  // We hook the login button - when you type PW, we compare to Cloud PW, not old PW
   document.addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('button') : null; if(!b) return;
     var txt = (b.textContent||'').toLowerCase();
     if(txt.indexOf('login')!==-1 || txt.indexOf('enter')!==-1 || txt.indexOf('open')!==-1){
-      // Before login runs, refresh PW from Cloud one more time
       fetchCloudPwBeforeLogin();
     }
   });
-
-  // 4. Clear old session that forces old PW - on reopen, don't auto-use old session
-  // If you closed app, session should be cleared so new PW is checked fresh
-  // We do NOT delete it now, just log it
-  console.log('V23 - Session auth now:', sessionStorage.getItem('terikano_session_auth') || localStorage.getItem('terikano_session_auth'));
-
   console.log('V23 LOADED - LOGIN USES CLOUD PW');
 })();
 </script>
-  <script>
-// V24 - FIX doLogin HARDCODED 9999 - Login now uses YOUR changed PW from Cloud
+<script>
+// V24 - FIX doLogin HARDCODED 9999 - Unchanged
 (function(){
-  // Get current PW - Cloud first, then local, then default 9999 / 1234 for first time
-  function getOwnerLoginPw(){
-    return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
-  }
-  function getStaffLoginPw(){
-    return localStorage.getItem('terikano_staff_custom_pw') || '1234';
-  }
+  function getOwnerLoginPw(){ return localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999'; }
+  function getStaffLoginPw(){ return localStorage.getItem('terikano_staff_custom_pw') || '1234'; }
   window.getOwnerLoginPw = getOwnerLoginPw;
   window.getStaffLoginPw = getStaffLoginPw;
-
-  // 1. Fetch NEW PW from Cloud BEFORE login - so Tablet gets Phone's new PW
   async function fetchPw(){
     try{
       var s1 = await db.ref('terikano_config/passwords/ownerPw').once('value');
-      if(s1.val()){
-        localStorage.setItem('terikano_owner_pw', s1.val());
-        localStorage.setItem('TERI_PW', s1.val());
-      }
+      if(s1.val()){ localStorage.setItem('terikano_owner_pw', s1.val()); localStorage.setItem('TERI_PW', s1.val()); }
       var s2 = await db.ref('terikano_config/passwords/staffPw').once('value');
       if(s2.val()) localStorage.setItem('terikano_staff_custom_pw', s2.val());
-      // Also from shop node (V21)
       var s3 = await db.ref('shop/ownerPw').once('value');
-      if(s3.val()){
-        localStorage.setItem('terikano_owner_pw', s3.val());
-        localStorage.setItem('TERI_PW', s3.val());
-      }
-      // Update label if on Settings page
+      if(s3.val()){ localStorage.setItem('terikano_owner_pw', s3.val()); localStorage.setItem('TERI_PW', s3.val()); }
       var lbl=document.getElementById('curPwLabel'); if(lbl) lbl.innerText=getOwnerLoginPw();
     }catch(e){}
   }
   fetchPw();
-
-  // 2. OVERRIDE doLogin - THE FIX
   window.doLogin = function(){
     var u = document.getElementById('loginUser').value.trim().toLowerCase();
     var p = document.getElementById('loginPass').value.trim();
     var msg = document.getElementById('loginMsg');
     var role = null;
-
-    var ownerPw = getOwnerLoginPw(); // NOT 9999 hardcoded anymore
-    var staffPw = getStaffLoginPw(); // NOT 1234 hardcoded anymore
-
+    var ownerPw = getOwnerLoginPw();
+    var staffPw = getStaffLoginPw();
     if(u === 'owner' && p === ownerPw) role = 'Owner';
     if(u === 'staff' && p === staffPw) role = 'Staff';
-
-    // First time fallback - if no PW ever set, allow old defaults
     if(!role && u==='owner' && p==='9999' && !localStorage.getItem('terikano_owner_pw')) role='Owner';
     if(!role && u==='staff' && p==='1234' && !localStorage.getItem('terikano_staff_custom_pw')) role='Staff';
-
     if(!role){
       if(msg) msg.textContent = 'Wrong username or password - Owner PW is: ' + ownerPw + ' (use this on Tablet too)';
       document.getElementById('loginPass').value = '';
       return;
     }
-    // Login OK - same as before
     window.AUTH = role;
     sessionStorage.setItem('terikano_session_auth', role);
     var box = document.getElementById('loginBox');
@@ -2299,17 +2222,10 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     if(typeof showPage === 'function') showPage('home');
     setTimeout(function(){ try{ window.lockAll(); }catch(e){} }, 300);
   };
-
-  // 3. Re-attach login button to NEW doLogin
   var lb = document.getElementById('loginBtn');
   if(lb) lb.onclick = window.doLogin;
   var lp = document.getElementById('loginPass');
-  if(lp){
-    // Remove old Enter listener is hard, but add new one - both will run, new one will win because it checks Cloud PW
-    lp.addEventListener('keydown', function(e){ if(e.key==='Enter') window.doLogin(); });
-  }
-
-  // 4. OVERRIDE changePw - Now it ALSO updates doLogin PW + Cloud
+  if(lp){ lp.addEventListener('keydown', function(e){ if(e.key==='Enter') window.doLogin(); }); }
   window.changePw = function(){
     var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
     if(!newP){ alert('Enter New PW'); return; }
@@ -2323,8 +2239,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     setTimeout(function(){ if(typeof save==='function') save(); }, 300);
     alert('✅ OWNER PW CHANGED TO: ' + newP + '\nClose app, reopen, login with ' + newP + ' - it will work now on Phone + Tablet.');
   };
-
-  // 5. OVERRIDE setStaffPw - Same fix for Staff
   window.setStaffPw = function(){
     var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
     if(!np){ alert('Enter new Staff PW'); return; }
@@ -2336,14 +2250,12 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     setTimeout(function(){ if(typeof save==='function') save(); }, 300);
     alert('Staff PW Changed & Synced: ' + np);
   };
-
-  console.log('V24 LOADED - doLogin now uses Cloud PW, not 9999 hardcoded. Owner PW now:', getOwnerLoginPw());
+  console.log('V24 LOADED - doLogin now uses Cloud PW');
 })();
 </script>
-  <script>
-// V25 - HIDE PW - No PW shown on Login or Settings
+<script>
+// V25 - HIDE PW - FIXED - No interval, mask once
 (function(){
-  // 1. OVERRIDE doLogin again - generic message ONLY, never show PW
   window.doLogin = function(){
     var u = document.getElementById('loginUser').value.trim().toLowerCase();
     var p = document.getElementById('loginPass').value.trim();
@@ -2354,7 +2266,7 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     if(u === 'owner' && p === ownerPw) role = 'Owner';
     if(u === 'staff' && p === staffPw) role = 'Staff';
     if(!role){
-      if(msg) msg.textContent = 'Wrong username or password'; // <-- FIXED, no PW here
+      if(msg) msg.textContent = 'Wrong username or password';
       var lp=document.getElementById('loginPass'); if(lp) lp.value='';
       return;
     }
@@ -2370,18 +2282,12 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   };
   var lb = document.getElementById('loginBtn');
   if(lb) lb.onclick = window.doLogin;
-
-  // 2. HIDE PW in Settings - show **** instead of real PW
   function maskPwLabels(){
-    var o = document.getElementById('curPwLabel');
-    if(o) o.innerText = '****';
-    var s = document.getElementById('curStaffPwLabel');
-    if(s) s.innerText = '****';
+    var o = document.getElementById('curPwLabel'); if(o) o.innerText = '****';
+    var s = document.getElementById('curStaffPwLabel'); if(s) s.innerText = '****';
   }
   maskPwLabels();
-  setInterval(maskPwLabels, 1000); // keep it masked even if old code tries to show it
-
-  // 3. OVERRIDE changePw - don't show PW in alert
+  // FIXED: No setInterval here - was fighting V28
   window.changePw = function(){
     var newP = document.getElementById('new_pw') ? document.getElementById('new_pw').value.trim() : '';
     if(!newP){ alert('Enter New PW'); return; }
@@ -2395,8 +2301,6 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     alert('✅ Owner PW Changed & Synced to Cloud.\nUse your NEW PW to login on Phone + Tablet.');
     maskPwLabels();
   };
-
-  // 4. OVERRIDE setStaffPw - don't show PW in alert
   window.setStaffPw = function(){
     var np = document.getElementById('new_staff_pw') ? document.getElementById('new_staff_pw').value.trim() : '';
     if(!np){ alert('Enter new Staff PW'); return; }
@@ -2408,40 +2312,30 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
     alert('Staff PW Changed & Synced.');
     maskPwLabels();
   };
-
-  console.log('V25 LOADED - PW HIDDEN');
+  console.log('V25 LOADED - PW HIDDEN FIXED');
 })();
 </script>
 <script>
-// V26 - STOP CLOUD RESURRECT + REAL CLEAR ALL + FIX OWNER BUTTONS
+// V26 - STOP CLOUD RESURRECT + REAL CLEAR ALL - FIXED - No global hijack, no interval
 (function(){
-  // 1. STOP live sync that brings old data back - we will re-enable after Clear
   try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
-
-  // 2. STOP forceLoginBox 200ms loop from kicking Owner out - it hides Owner buttons
-  // We keep login box logic, but stop the interval by overriding forceLoginBox to do nothing if logged in
   var _origForce = window.forceLoginBox;
   window.forceLoginBox = function(){
     var a = sessionStorage.getItem('terikano_session_auth');
-    if(a==='Owner' || a==='Staff'){ 
+    if(a==='Owner' || a==='Staff'){
       var box=document.getElementById('loginBox'); if(box) box.classList.add('hideBox');
-      return; 
+      return;
     }
     if(typeof _origForce==='function'){ try{ _origForce(); }catch(e){} }
   };
-
-  // 3. FIX showWin - Owner must ALWAYS open Capital / Bank / Backup
   window.showWin = function(id){
     var el=document.getElementById(id); if(!el) { alert('Window not found: '+id); return; }
     var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
     var OWNER_IDS=['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
     if(a!=='owner' && OWNER_IDS.indexOf(id)!==-1){ alert('OWNER ONLY! Login as Owner.'); return; }
     el.style.display='flex';
-    // bring to front
     el.style.zIndex='9999';
   };
-
-  // 4. FIX lockAll - don't hide Owner buttons when Owner is logged in
   window.lockAll = function(){
     var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
     var owner=(a==='owner');
@@ -2452,326 +2346,134 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
       for(var k=0;k<ids.length;k++){ var el=document.getElementById(ids[k]); if(el) el.style.display='none'; }
     }
   };
-
-  // 5. REAL CLEAR ALL - Clears Local + Cloud + Stops Resurrect
   window.clearAllTestData = async function(){
     if(!confirm('⚠️ CLEAR ALL TEST DATA?\n\nThis deletes Sales + Purchases + Capital + Bank + Expenses + All lists on THIS phone + CLOUD (Tablet too).\n\nPW + Business Name will be KEPT.\n\nContinue?')) return;
-    if(!confirm('Are you SURE? Type OK - This cannot be undone.')) return;
-
+    if(!confirm('Are you SURE? This cannot be undone.')) return;
     var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
     var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
     var biz = localStorage.getItem('terikano_name') || 'TERIKANO';
-
-    // Stop cloud from pushing old data back during clear
+    var clearedAt = new Date().toISOString();
     try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
-
-    // Clear in-memory arrays - these are your real data arrays
+    // FIXED: Use window. - no error if let used in core
     try{
-      purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; collects=[]; ownerTakes=[]; tips=[]; waste=[]; clearance=[]; cart=[]; cocoBuys=[]; cocoMills=[]; badDebts=[]; priceHistory=[];
-      if(typeof wholesalerDebts!=='undefined') wholesalerDebts=[];
-      if(typeof dailyNotesArr!=='undefined') dailyNotesArr=[];
+      window.purchases=[]; window.sales=[]; window.capitals=[]; window.banks=[]; window.expenses=[]; window.collects=[]; window.ownerTakes=[]; window.tips=[]; window.waste=[]; window.clearance=[]; window.cart=[]; window.cocoBuys=[]; window.cocoMills=[]; window.badDebts=[]; window.priceHistory=[];
+      window.wholesalerDebts=[]; window.dailyNotesArr=[];
     }catch(e){}
-
-    // Clear localStorage data keys - keep PW + Name + Theme only
-    var keep={'terikano_owner_pw':ownerPw,'TERI_PW':ownerPw,'terikano_staff_custom_pw':staffPw,'terikano_name':biz,'DARK_MODE':localStorage.getItem('DARK_MODE')||'0','terikano_cloud_migrated':'1'};
+    var keep={'terikano_owner_pw':ownerPw,'TERI_PW':ownerPw,'terikano_staff_custom_pw':staffPw,'terikano_name':biz,'DARK_MODE':localStorage.getItem('DARK_MODE')||'0','terikano_cloud_migrated':'1','terikano_clearedAt':clearedAt};
     var keysToRemove=[];
     for(var i=0;i<localStorage.length;i++){ keysToRemove.push(localStorage.key(i)); }
     for(var j=0;j<keysToRemove.length;j++){
       if(!keep.hasOwnProperty(keysToRemove[j])){ try{ localStorage.removeItem(keysToRemove[j]); }catch(e){} }
     }
     for(var k in keep){ localStorage.setItem(k, keep[k]); }
-
-    // Clear Cloud - set empty shop with only PW + Name
     try{
       if(window.db){
-        await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], ALL_LOCAL:{}, clearedAt: new Date().toISOString() });
+        await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], ALL_LOCAL:{}, clearedAt: clearedAt, time: clearedAt });
         await db.ref('terikano_config/passwords/ownerPw').set(ownerPw);
         await db.ref('terikano_config/passwords/staffPw').set(staffPw);
       }
     }catch(e){ console.log('Cloud clear err', e); }
-
-    // Re-render empty
     try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
     try{ if(typeof populateDatalist==='function') populateDatalist(); }catch(e){}
     alert('✅ ALL TEST DATA CLEARED - Local + Cloud.\n\nNow enter NEW data for Sales test. It will NOT come back.');
-    // Reload clean - with ?v=V26 to beat cache
-    setTimeout(function(){ location.href = location.pathname + '?v=V26'; }, 500);
+    setTimeout(function(){ location.href = location.pathname + '?v=V31'; }, 500);
   };
-
-  // 6. Make ANY existing Clear / Backup Clear button use our new function
-  document.addEventListener('click', function(e){
-    var b=e.target.closest?e.target.closest('button'):null; if(!b) return;
-    var txt=(b.textContent||'').toLowerCase();
-    if(txt.indexOf('clear')!==-1 && (txt.indexOf('data')!==-1 || txt.indexOf('all')!==-1 || txt.indexOf('test')!==-1)){
-      e.preventDefault(); e.stopPropagation();
-      window.clearAllTestData();
-    }
-  });
-
-  // 7. Add a floating CLEAR button - always visible for Owner, so you can test even if Backup window is broken
+  // FIXED: DELETED global Clear listener - was hijacking CLEAR BOTH. V31 handles CLEAR BOTH once.
+  // FIXED: DELETED floating button interval - was covering Daily Notes. Floating button created once below, no interval.
   var fb=document.createElement('button');
   fb.textContent='🗑️ CLEAR TEST DATA';
-  fb.style.cssText='position:fixed;bottom:12px;right:12px;z-index:10000;background:#d32f2f;color:#fff;padding:12px 14px;border:3px solid #000;border-radius:12px;font-weight:bold;display:none;';
+  fb.style.cssText='position:fixed;bottom:70px;right:10px;z-index:10000;background:#d32f2f;color:#fff;padding:12px 14px;border:3px solid #000;border-radius:12px;font-weight:bold;display:none;';
   fb.onclick=function(){ window.clearAllTestData(); };
   document.body.appendChild(fb);
-  function showFloat(){
-    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    fb.style.display=(a==='owner')?'block':'none';
-  }
-  showFloat(); setInterval(showFloat, 1000);
-
-  console.log('V26 LOADED - Clear + Owner buttons fixed');
+  var _a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+  fb.style.display=(_a==='owner')?'block':'none';
+  // Show it after login - check once after 1 sec, no interval
+  setTimeout(function(){ var a2=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase(); fb.style.display=(a2==='owner')?'block':'none'; }, 1000);
+  console.log('V26 LOADED - Clear FIXED');
 })();
 </script>
-    <script>
-// V27 - HIDE MERGE - Not used anymore + Hide duplicate CLEAR BOTH
+<script>
+// V27 - HIDE MERGE - FIXED - No interval, run once
 (function(){
   function hideMerge(){
     var btns = document.querySelectorAll('button');
     for(var i=0;i<btns.length;i++){
       var t = (btns[i].textContent||'').toUpperCase();
-      // MERGE STAFF FILE - OFFLINE - hide it, we don't use it
-      if(t.indexOf('MERGE')!==-1){
-        btns[i].style.display='none';
-      }
+      if(t.indexOf('MERGE')!==-1){ btns[i].style.display='none'; }
     }
   }
   hideMerge();
-  setInterval(hideMerge, 1000); // keep it hidden even if Backup re-renders
-
+  setTimeout(hideMerge, 800);
+  // FIXED: No setInterval - was fighting V28
   console.log('V27 LOADED - MERGE hidden');
 })();
 </script>
-  <script>
-// V28 - BACKUP BOX PRO - Tidy + Aligned + No MERGE
-(function(){
-  function tidyBackup(){
-    var box = document.getElementById('backupDiv');
-    if(!box) return;
-
-    // 1. Box itself - Pro card
-    box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:#fff;border-radius:18px;padding:22px 20px 18px;box-shadow:0 20px 50px rgba(0,0,0,0.35);z-index:9999;display:flex;flex-direction:column;gap:12px;';
-    // Hide when not flex - keep original logic, just re-apply if it was hidden
-    if(box.dataset.wasHidden === '1') box.style.display='none';
-
-    // 2. Title - make it Pro
-    var h = box.querySelector('h2, h3, b, .win-title');
-    if(h){
-      h.style.cssText='margin:0;font-size:19px;font-weight:800;letter-spacing:0.2px;color:#111;text-align:center;';
-      h.textContent='💾 BACKUP';
-    }
-    // Subtitle - add if not exists
-    if(!box.querySelector('.bk-sub')){
-      var sub=document.createElement('div');
-      sub.className='bk-sub';
-      sub.textContent='Save, restore or clear your data. Cloud sync is automatic.';
-      sub.style.cssText='font-size:12px;color:#666;text-align:center;margin-top:-6px;line-height:1.4;';
-      if(h && h.parentNode) h.parentNode.insertBefore(sub, h.nextSibling);
-    }
-
-    // 3. All buttons in box - uniform Pro grid
-    var btns = box.querySelectorAll('button');
-    // Wrap buttons in grid if not already
-    var grid = box.querySelector('.bk-grid');
-    if(!grid){
-      grid=document.createElement('div');
-      grid.className='bk-grid';
-      grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;';
-      // Move all buttons into grid (except Close)
-      var toMove=[];
-      for(var i=0;i<btns.length;i++){
-        var t=(btns[i].textContent||'').toUpperCase();
-        if(t.indexOf('CLOSE')===-1 && t.indexOf('X')!==0) toMove.push(btns[i]);
-      }
-      for(var j=0;j<toMove.length;j++) grid.appendChild(toMove[j]);
-      box.appendChild(grid);
-    }
-
-    // 4. Style each button - Pro
-    var all = box.querySelectorAll('button');
-    for(var k=0;k<all.length;k++){
-      var b=all[k];
-      var txt=(b.textContent||'').toUpperCase();
-      // HIDE MERGE forever - we don't use it
-      if(txt.indexOf('MERGE')!==-1){ b.style.display='none'; continue; }
-      // CLOSE button - full width, grey
-      if(txt.indexOf('CLOSE')!==-1){
-        b.style.cssText='width:100%;padding:12px;background:#f1f1f1;color:#111;border:1px solid #ddd;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;';
-        b.textContent='✕  Close';
-        continue;
-      }
-      // Base Pro button
-      b.style.cssText='width:100%;padding:13px 8px;border-radius:12px;border:none;font-weight:700;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2;text-align:center;';
-      // Color by action
-      if(txt.indexOf('BACKUP')!==-1 && txt.indexOf('NOW')!==-1){
-        b.style.background='#111'; b.style.color='#fff';
-        b.textContent='💾  BACKUP NOW';
-      } else if(txt.indexOf('CLEAR')!==-1){
-        b.style.background='#fff1f1'; b.style.color='#d32f2f'; b.style.border='2px solid #ffcaca';
-        b.textContent='🗑️  CLEAR BOTH';
-      } else if(txt.indexOf('RESTORE')!==-1 || txt.indexOf('LOAD')!==-1){
-        b.style.background='#eef5ff'; b.style.color='#1565c0'; b.style.border='1px solid #c9dcff';
-        b.textContent='↩️  RESTORE';
-      } else if(txt.indexOf('EXPORT')!==-1 || txt.indexOf('STOCK')!==-1){
-        b.style.background='#eefbf0'; b.style.color='#1b7a2e'; b.style.border='1px solid #c2e9c8';
-        // Keep original text but tidy
-        b.textContent='📤  EXPORT STOCK';
-      } else {
-        b.style.background='#f5f5f5'; b.style.color='#111'; b.style.border='1px solid #e0e0e0';
-      }
-    }
-
-    // 5. Small info text at bottom
-    if(!box.querySelector('.bk-foot')){
-      var foot=document.createElement('div');
-      foot.className='bk-foot';
-      foot.textContent='Last backup: Auto • Cloud: ON';
-      foot.style.cssText='font-size:11px;color:#888;text-align:center;';
-      box.appendChild(foot);
-    }
-  }
-
-  tidyBackup();
-  setInterval(tidyBackup, 1200);
-
-  console.log('V28 LOADED - BACKUP Pro');
-})();
-</script>
-  <script>
-// V29 - FIX BACKUP STUCK OPEN + REMOVE DUPLICATES
-(function(){
-  // 1. STOP V28 from re-opening it - kill old interval by overriding tidyBackup
-  // We replace the V28 function with a version that does NOT force display
-  window._v28_fixed = true;
-
-  function fixBackup(){
-    var box = document.getElementById('backupDiv');
-    if(!box) return;
-
-    // 2. Remove duplicate buttons - keep only ONE of each
-    var seen = {};
-    var btns = box.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){
-      var t = (btns[i].textContent||'').toUpperCase().replace(/[^A-Z]/g,'');
-      // MERGE - always hide
-      if(t.indexOf('MERGE')!==-1){ btns[i].style.display='none'; continue; }
-      // Keep first CLEAR BOTH, hide second one
-      if(t.indexOf('CLEARBOTH')!==-1){
-        if(seen['CLEARBOTH']){ btns[i].style.display='none'; continue; }
-        seen['CLEARBOTH']=1;
-      }
-      if(t.indexOf('BACKUPNOW')!==-1){
-        if(seen['BACKUPNOW']){ btns[i].style.display='none'; continue; }
-        seen['BACKUPNOW']=1;
-      }
-      if(t.indexOf('EXPORTSTOCK')!==-1){
-        if(seen['EXPORTSTOCK']){ btns[i].style.display='none'; continue; }
-        seen['EXPORTSTOCK']=1;
-      }
-      if(t.indexOf('RESTORE')!==-1){
-        if(seen['RESTORE']){ btns[i].style.display='none'; continue; }
-        seen['RESTORE']=1;
-      }
-    }
-
-    // 3. Remove duplicate Choose file inputs - keep only ONE for RESTORE
-    var files = box.querySelectorAll('input[type="file"]');
-    for(var f=1;f<files.length;f++){
-      if(files[f].parentNode) files[f].parentNode.style.display='none';
-    }
-    // Hide the top Choose file that is for CLEAR - we don't need file for CLEAR
-    if(files.length>0 && files[0].parentNode){
-      // If there are 2, hide first one (the one above CLEAR BOTH)
-      if(files.length>1) files[0].parentNode.style.display='none';
-    }
-
-    // 4. FIX CLOSE - Make ALL close buttons actually close + stay closed
-    var allBtns = box.querySelectorAll('button');
-    for(var k=0;k<allBtns.length;k++){
-      var txt=(allBtns[k].textContent||'').toUpperCase();
-      if(txt.indexOf('CLOSE')!==-1 || txt.indexOf('HIDE')!==-1 || txt.indexOf('X')===0){
-        // Remove old onclick that V28 broke, add new one
-        allBtns[k].onclick = function(e){
-          e.preventDefault(); e.stopPropagation();
-          var b=document.getElementById('backupDiv');
-          if(b){ b.style.display='none'; b.dataset.closed='1'; }
-          return false;
-        };
-      }
-    }
-
-    // 5. Click outside box = close (backdrop)
-    box.onclick = function(e){
-      if(e.target===box){
-        box.style.display='none'; box.dataset.closed='1';
-      }
-    };
-  }
-
-  // Run once, NOT every second - so it won't re-open
-  fixBackup();
-  // Run once more after 500ms to catch late render, then STOP
-  setTimeout(fixBackup, 500);
-
-  // 6. Override showWin for backupDiv - so it can open again when you WANT it
-  var _origShowWin = window.showWin;
-  window.showWin = function(id){
-    if(id==='backupDiv'){
-      var el=document.getElementById(id);
-      if(el){ el.dataset.closed='0'; el.style.display='flex'; fixBackup(); }
-      return;
-    }
-    if(typeof _origShowWin==='function') return _origShowWin(id);
-    var el2=document.getElementById(id); if(el2) el2.style.display='flex';
-  };
-
-  // 7. Also fix the floating CLEAR TEST DATA button - move it up so it doesn't cover Daily Notes input
-  var fb = document.querySelector('button');
-  // Find our floating button by text
-  var all=document.querySelectorAll('button');
-  for(var m=0;m<all.length;m++){
-    if((all[m].textContent||'').indexOf('CLEAR TEST DATA')!==-1){
-      all[m].style.bottom='70px'; // move above Daily Notes
-      all[m].style.right='10px';
-    }
-  }
-
-  console.log('V29 LOADED - BACKUP can close now');
-})();
-</script>
 <script>
-// V30 - BRING BACK TOP BOXES - Owner only
+// V31 - CLEAN BACKUP + TOP BOXES - REPLACES V28/V29/V30 - No interval that forces display
 (function(){
-  function showTop(){
-    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    if(a!=='owner') return; // Staff still hides Owner buttons by design
-
-    // 1. Make sure BACKUP is closed on load - so it doesn't cover top
-    var bk=document.getElementById('backupDiv');
-    if(bk && bk.dataset.closed!=='0'){ bk.style.display='none'; }
-
-    // 2. Force all top menu buttons visible
-    var tops = document.querySelectorAll('.owner-only-btn, .top-btn, .menu-btn, header button, nav button');
-    for(var i=0;i<tops.length;i++){
-      // Don't show MERGE
-      var t=(tops[i].textContent||'').toUpperCase();
-      if(t.indexOf('MERGE')!==-1) continue;
-      tops[i].style.display='inline-block';
-      tops[i].style.visibility='visible';
-      tops[i].style.opacity='1';
-    }
-
-    // 3. Force main top container visible
-    var containers = document.querySelectorAll('#topBar, .topBar, #menu, .menu, #header, header, #navBar');
-    for(var j=0;j<containers.length;j++){
-      containers[j].style.display='flex';
-      containers[j].style.visibility='visible';
+  function styleBackup(){
+    var box=document.getElementById('backupDiv');
+    if(!box) return;
+    if(box.style.display==='none') return;
+    box.style.position='fixed'; box.style.top='50%'; box.style.left='50%';
+    box.style.transform='translate(-50%,-50%)';
+    box.style.width='min(420px,92vw)';
+    box.style.background='#fff'; box.style.borderRadius='18px'; box.style.padding='20px';
+    box.style.boxShadow='0 20px 50px rgba(0,0,0,0.35)'; box.style.zIndex='9999';
+    box.style.flexDirection='column'; box.style.gap='10px';
+    // Tidy buttons - only when open, no moving them into grid (that broke onclick)
+    var btns=box.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var b=btns[i]; var txt=(b.textContent||'').toUpperCase();
+      if(txt.indexOf('MERGE')!==-1){ b.style.display='none'; continue; }
+      if(txt.indexOf('CLOSE')!==-1){ b.style.cssText='width:100%;padding:12px;background:#f1f1f1;color:#111;border:1px solid #ddd;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;'; b.textContent='✕  Close'; continue; }
+      b.style.cssText='width:100%;padding:13px 8px;border-radius:12px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px;';
+      if(txt.indexOf('BACKUP')!==-1){ b.style.background='#111'; b.style.color='#fff'; }
+      else if(txt.indexOf('CLEAR')!==-1){ b.style.background='#fff1f1'; b.style.color='#d32f2f'; b.style.border='2px solid #ffcaca'; }
+      else if(txt.indexOf('RESTORE')!==-1){ b.style.background='#eef5ff'; b.style.color='#1565c0'; b.style.border='1px solid #c9dcff'; }
+      else if(txt.indexOf('EXPORT')!==-1){ b.style.background='#eefbf0'; b.style.color='#1b7a2e'; b.style.border='1px solid #c2e9c8'; }
     }
   }
-  showTop();
-  setTimeout(showTop, 500);
-  setTimeout(showTop, 1500);
-  console.log('V30 LOADED - Top boxes restored');
+  function closeBackup(){
+    var box=document.getElementById('backupDiv');
+    if(box) box.style.display='none';
+  }
+  document.addEventListener('click', function(e){
+    var b=e.target.closest?e.target.closest('button'):null;
+    if(b){
+      var t=(b.textContent||'').toUpperCase();
+      if(t.indexOf('CLOSE')!==-1 || t.indexOf('HIDE')!==-1){ closeBackup(); return; }
+      if(t.indexOf('MERGE')!==-1){ e.preventDefault(); e.stopPropagation(); b.style.display='none'; return; }
+      if(t.indexOf('CLEAR BOTH')!==-1){
+        e.preventDefault(); e.stopPropagation();
+        if(typeof window.clearAllTestData==='function') window.clearAllTestData();
+        return;
+      }
+    }
+    var box=document.getElementById('backupDiv');
+    if(box && e.target===box) closeBackup();
+  });
+  var _oldShowWin = window.showWin;
+  window.showWin = function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    if(a!=='owner' && ['capDiv','bankDiv','backupDiv','closingDiv','purDiv'].indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
+    el.style.display='flex';
+    if(id==='backupDiv') styleBackup();
+  };
+  // BACKUP starts CLOSED - so top boxes are visible
+  var bk=document.getElementById('backupDiv');
+  if(bk) bk.style.display='none';
+  // Top boxes - un-hide once if Owner, no interval
+  setTimeout(function(){
+    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    if(a==='owner'){
+      var btns=document.querySelectorAll('.owner-only-btn');
+      for(var i=0;i<btns.length;i++){ if((btns[i].textContent||'').toUpperCase().indexOf('MERGE')===-1) btns[i].style.display='inline-block'; }
+    }
+  }, 600);
+  console.log('V31 LOADED - BACKUP clean, top boxes back');
 })();
 </script>
 </body>
