@@ -2393,159 +2393,75 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
 })();
 </script>
 <script>
-// V27 - HIDE MERGE - FIXED - No interval, run once
+// V34 - REPLACES V27+V31+V32 - Hide MERGE + Close BACKUP + Fix tables - NO forcing all divs
 (function(){
-  function hideMerge(){
-    var btns = document.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){
-      var t = (btns[i].textContent||'').toUpperCase();
-      if(t.indexOf('MERGE')!==-1){ btns[i].style.display='none'; }
+  // 1. HIDE MERGE - once, no interval
+  var allBtns = document.querySelectorAll('button');
+  for(var i=0;i<allBtns.length;i++){
+    if((allBtns[i].textContent||'').toUpperCase().indexOf('MERGE')!==-1){
+      allBtns[i].style.display='none';
     }
   }
-  hideMerge();
-  setTimeout(hideMerge, 800);
-  // FIXED: No setInterval - was fighting V28
-  console.log('V27 LOADED - MERGE hidden');
-})();
-</script>
-<script>
-// V31 - CLEAN BACKUP + TOP BOXES - REPLACES V28/V29/V30 - No interval that forces display
-(function(){
-  function styleBackup(){
-    var box=document.getElementById('backupDiv');
-    if(!box) return;
-    if(box.style.display==='none') return;
-    box.style.position='fixed'; box.style.top='50%'; box.style.left='50%';
-    box.style.transform='translate(-50%,-50%)';
-    box.style.width='min(420px,92vw)';
-    box.style.background='#fff'; box.style.borderRadius='18px'; box.style.padding='20px';
-    box.style.boxShadow='0 20px 50px rgba(0,0,0,0.35)'; box.style.zIndex='9999';
-    box.style.flexDirection='column'; box.style.gap='10px';
-    // Tidy buttons - only when open, no moving them into grid (that broke onclick)
-    var btns=box.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){
-      var b=btns[i]; var txt=(b.textContent||'').toUpperCase();
-      if(txt.indexOf('MERGE')!==-1){ b.style.display='none'; continue; }
-      if(txt.indexOf('CLOSE')!==-1){ b.style.cssText='width:100%;padding:12px;background:#f1f1f1;color:#111;border:1px solid #ddd;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;'; b.textContent='✕  Close'; continue; }
-      b.style.cssText='width:100%;padding:13px 8px;border-radius:12px;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:6px;';
-      if(txt.indexOf('BACKUP')!==-1){ b.style.background='#111'; b.style.color='#fff'; }
-      else if(txt.indexOf('CLEAR')!==-1){ b.style.background='#fff1f1'; b.style.color='#d32f2f'; b.style.border='2px solid #ffcaca'; }
-      else if(txt.indexOf('RESTORE')!==-1){ b.style.background='#eef5ff'; b.style.color='#1565c0'; b.style.border='1px solid #c9dcff'; }
-      else if(txt.indexOf('EXPORT')!==-1){ b.style.background='#eefbf0'; b.style.color='#1b7a2e'; b.style.border='1px solid #c2e9c8'; }
+
+  // 2. FIX TABLES - Undo V32 damage - V32 forced tables to block/flex
+  var tables = document.querySelectorAll('table');
+  for(var t=0;t<tables.length;t++){
+    tables[t].style.display='table';
+    tables[t].style.width='100%';
+    tables[t].style.borderCollapse='collapse';
+  }
+  var trs = document.querySelectorAll('tr');
+  for(var r=0;r<trs.length;r++){ trs[r].style.display='table-row'; }
+  var cells = document.querySelectorAll('td, th');
+  for(var c=0;c<cells.length;c++){ cells[c].style.display='table-cell'; }
+
+  // 3. FIX WINDOWS - Remove V31/V32 forced flex/grid from windows
+  var wins = document.querySelectorAll('[id$="Div"]');
+  for(var w=0;w<wins.length;w++){
+    wins[w].style.removeProperty('flex-direction');
+    wins[w].style.removeProperty('gap');
+    wins[w].style.removeProperty('grid-template-columns');
+    wins[w].style.removeProperty('transform');
+    // Remove V32 forced width on inputs inside windows
+    var ins = wins[w].querySelectorAll('input');
+    for(var k=0;k<ins.length;k++){
+      ins[k].style.removeProperty('flex');
+      if(ins[k].style.width==='90px' || ins[k].style.width==='130px') ins[k].style.width='';
+    }
+    // Remove V31 forced width:100% on buttons - that made black boxes
+    var bs = wins[w].querySelectorAll('button');
+    for(var b=0;b<bs.length;b++){
+      if(bs[b].style.width==='100%') bs[b].style.width='';
     }
   }
-  function closeBackup(){
-    var box=document.getElementById('backupDiv');
-    if(box) box.style.display='none';
-  }
-  document.addEventListener('click', function(e){
-    var b=e.target.closest?e.target.closest('button'):null;
-    if(b){
-      var t=(b.textContent||'').toUpperCase();
-      if(t.indexOf('CLOSE')!==-1 || t.indexOf('HIDE')!==-1){ closeBackup(); return; }
-      if(t.indexOf('MERGE')!==-1){ e.preventDefault(); e.stopPropagation(); b.style.display='none'; return; }
-      if(t.indexOf('CLEAR BOTH')!==-1){
-        e.preventDefault(); e.stopPropagation();
-        if(typeof window.clearAllTestData==='function') window.clearAllTestData();
-        return;
-      }
-    }
-    var box=document.getElementById('backupDiv');
-    if(box && e.target===box) closeBackup();
-  });
-  var _oldShowWin = window.showWin;
+
+  // 4. SIMPLE showWin - NO styling, just show - let your ORIGINAL CSS do layout
   window.showWin = function(id){
-    var el=document.getElementById(id);
+    var el = document.getElementById(id);
     if(!el) return;
-    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    if(a!=='owner' && ['capDiv','bankDiv','backupDiv','closingDiv','purDiv'].indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
-    el.style.display='flex';
-    if(id==='backupDiv') styleBackup();
+    var a = (sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
+    var OWNER_IDS = ['closingDiv','purDiv','cocoMillDiv','expiryDiv','clearanceDiv','wasteDiv','expenseDiv','bankDiv','drawingDiv','capDiv','targetDiv','analyticDiv','pwDiv','cocoSetDiv','backupDiv','renameDiv'];
+    if(a!=='owner' && OWNER_IDS.indexOf(id)!==-1){ alert('OWNER ONLY!'); return; }
+    el.style.display = '';
+    if(getComputedStyle(el).display==='none'){ el.style.display='flex'; }
   };
-  // BACKUP starts CLOSED - so top boxes are visible
-  var bk=document.getElementById('backupDiv');
+
+  // 5. SIMPLE Close - Close / HIDE / X closes its window
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('button') : null;
+    if(!btn) return;
+    var txt = (btn.textContent||'').toUpperCase();
+    if(txt.indexOf('CLOSE')!==-1 || txt.indexOf('HIDE')!==-1){
+      var win = btn.closest('[id$="Div"]');
+      if(win) win.style.display='none';
+    }
+  });
+
+  // 6. BACKUP starts CLOSED
+  var bk = document.getElementById('backupDiv');
   if(bk) bk.style.display='none';
-  // Top boxes - un-hide once if Owner, no interval
-  setTimeout(function(){
-    var a=(sessionStorage.getItem('terikano_session_auth')||'').toLowerCase();
-    if(a==='owner'){
-      var btns=document.querySelectorAll('.owner-only-btn');
-      for(var i=0;i<btns.length;i++){ if((btns[i].textContent||'').toUpperCase().indexOf('MERGE')===-1) btns[i].style.display='inline-block'; }
-    }
-  }, 600);
-  console.log('V31 LOADED - BACKUP clean, top boxes back');
-})();
-</script>
-  <script>
-// V32 - SHOW CASH / BANK / COCO / CREDIT BOXES EVEN WHEN $0
-(function(){
-  function showSummaryBoxes(){
-    // 1. Find all dashboard boxes by text - CASH, BANK, COCO, CREDIT, DEBT, etc
-    var all = document.querySelectorAll('div, section, article, span');
-    var keywords = ['CASH','BANK','COCO','CREDIT','DEBT','PROFIT','SALES','KAKORO','NIKIRA','TARGET','LOW STOCK','TOTAL'];
-    for(var i=0;i<all.length;i++){
-      var el = all[i];
-      // Only check direct boxes, not huge containers - skip body, MENU, header
-      if(el.id==='menu' || el.className==='menu' || el.tagName==='BODY') continue;
-      var txt = (el.textContent||'').toUpperCase();
-      // Must be a small box - less than 200 chars, contains keyword + $ or number
-      if(el.children.length <= 5 && txt.length < 200){
-        for(var k=0;k<keywords.length;k++){
-          if(txt.indexOf(keywords[k])!==-1 && (txt.indexOf('$')!==-1 || txt.indexOf('0')!==-1)){
-            el.style.display='block';
-            el.style.visibility='visible';
-            el.style.opacity='1';
-            // If its parent was hidden, show parent too
-            if(el.parentNode && el.parentNode.style) {
-              el.parentNode.style.display='flex';
-              el.parentNode.style.visibility='visible';
-            }
-            break;
-          }
-        }
-      }
-    }
 
-    // 2. Force known dashboard IDs if they exist - show them
-    var ids = ['cashBox','bankBox','cocoBox','creditBox','debtBox','summaryBox','dashBox','topBoxes','dashboard','summary','cashDiv','bankSummary','cocoSummary','totalBox','profitBox','salesBox'];
-    for(var j=0;j<ids.length;j++){
-      var b=document.getElementById(ids[j]);
-      if(b){ b.style.display='flex'; b.style.visibility='visible'; b.style.opacity='1'; }
-    }
-
-    // 3. Force any .summary, .dash, .card, .box at top to show
-    var cards = document.querySelectorAll('.summary, .dash-card, .stat-box, .top-box, .summary-box, .card');
-    for(var c=0;c<cards.length;c++){
-      cards[c].style.display='block';
-      cards[c].style.visibility='visible';
-    }
-  }
-
-  // 4. Override renderAll - after it hides $0 boxes, we show them again
-  var _origRender = window.renderAll;
-  window.renderAll = function(){
-    if(typeof _origRender==='function') _origRender();
-    setTimeout(showSummaryBoxes, 100);
-  };
-
-  showSummaryBoxes();
-  setTimeout(showSummaryBoxes, 500);
-  setTimeout(showSummaryBoxes, 1500);
-
-  // 5. Rebuild CASH / BANK / COCO values from data - even if $0, show $0.00
-  function rebuildTotals(){
-    var cap = window.capitals||[];
-    var bank = window.banks||[];
-    var coco = window.cocoBuys||[];
-    var cashTotal = 0, bankTotal = 0, cocoTotal = 0;
-    for(var i=0;i<cap.length;i++) cashTotal += Number(cap[i].amount||cap[i].total||0);
-    for(var j=0;j<bank.length;j++) bankTotal += Number(bank[j].amount||bank[j].total||0);
-    for(var k=0;k<coco.length;k++) cocoTotal += Number(coco[k].total||coco[k].amount||0);
-    console.log('V32 - CASH:', cashTotal, 'BANK:', bankTotal, 'COCO:', cocoTotal);
-  }
-  rebuildTotals();
-
-  console.log('V32 LOADED - CASH/BANK/COCO boxes forced visible');
+  console.log('V34 LOADED - Replaces V27+V31+V32, tables fixed');
 })();
 </script>
 </body>
