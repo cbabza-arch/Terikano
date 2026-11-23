@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MY SHOP - LEDGER</title>
+<title>MY SHOP - PHASE 5 BACKUP</title>
 <style>
 *{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:#111;color:#fff;padding:10px}
@@ -27,10 +27,22 @@ th{background:gold;color:#000}
 .tabbtn.active{background:gold;color:#000}
 .ledbtn{flex:1;padding:10px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;font-weight:bold;font-size:13px}
 .ledbtn.active{background:#009688;color:#fff}
+.editbox{background:#333;padding:10px;border-radius:8px;border:2px solid gold;margin-top:5px}
 </style>
 </head>
 <body>
-<h1>💰 MY SHOP - LEDGER - AUD $</h1>
+<h1>💰 MY SHOP - PHASE 5 - AUD $</h1>
+
+<!-- PHASE 5 BACKUP TOP - ALWAYS VISIBLE BRO -->
+<div class="box" style="border-color:#00e676">
+<h3 style="color:#00e676;margin:0">💾 PHASE 5 - BACKUP - SAVE YOUR MONEY!</h3>
+<div class="small" id="backupInfo">Backup saves: Cash, Bank, Coco, Stock, Credit, Debit, History, Ledger - EVERYTHING!</div>
+<div class="row"><div><button class="btn-green" onclick="exportBackup()">💾 DOWNLOAD BACKUP</button></div><div><button class="btn-blue" onclick="document.getElementById('importFile').click()">📂 RESTORE BACKUP</button></div></div>
+<input type="file" id="importFile" accept=".json" class="hidden" onchange="importBackup(event)">
+<div class="row"><div><button class="btn-purple" onclick="copyBackup()">📋 COPY BACKUP TEXT</button></div><div><button class="btn-orange" onclick="autoBackup()">⚡ AUTO BACKUP NOW</button></div></div>
+<div class="small" id="lastBackup">Last Backup: Never - Do backup today bro!</div>
+<textarea id="backupText" class="hidden" style="width:100%;height:100px;background:#fff;color:#000"></textarea>
+</div>
 
 <div class="box">
 <h3 style="color:gold;margin:0">🏦 CAPITAL + WALLETS</h3>
@@ -85,26 +97,25 @@ th{background:gold;color:#000}
 </div>
 
 <div class="box">
-<h3 style="color:gold;margin:0">📋 STOCK & PROFIT</h3>
+<h3 style="color:gold;margin:0">📋 STOCK & PROFIT - Click EDIT to Fix Price</h3>
 <div class="total" id="totals"></div>
-<table><thead><tr><th>Item</th><th>Cost</th><th>Sell</th><th>Qty</th><th>Profit</th><th></th></tr></thead><tbody id="stockBody"></tbody></table>
+<table><thead><tr><th>Item</th><th>Cost</th><th>Sell</th><th>Qty</th><th>Profit</th><th>Edit</th></tr></thead><tbody id="stockBody"></tbody></table>
+<div id="editArea"></div>
 </div>
 
 <div class="box">
-<h3 style="margin:0">📒 CREDIT LIST - Customers Owe YOU - Click Name for Ledger</h3>
+<h3 style="margin:0">📒 CREDIT LIST - Click Name for Ledger</h3>
 <table><thead><tr><th>Customer</th><th>Item</th><th>Amount</th><th>Paid</th></tr></thead><tbody id="creditBody"></tbody></table>
 </div>
 
 <div class="box" style="border-color:#ff9800">
-<h3 style="color:#ff9800;margin:0">🏪 DEBIT LIST - YOU Owe Wholesaler - Click Name for Ledger</h3>
+<h3 style="color:#ff9800;margin:0">🏪 DEBIT LIST - Click Name for Ledger</h3>
 <div class="row"><div><label>Pay Debit With</label><select id="debitPayWith"><option value="cash">Cash</option><option value="bank">Bank</option></select></div></div>
 <table><thead><tr><th>Wholesaler</th><th>Item</th><th>Amount</th><th>Pay</th></tr></thead><tbody id="debitBody"></tbody></table>
 </div>
 
-<!-- PHASE 4 LEDGER -->
 <div class="box" style="border-color:#009688">
-<h3 style="color:#009688;margin:0">📚 PHASE 4 - LEDGER - PROOF BOOK</h3>
-<div class="small">Ledger = Every cent IN / OUT for ONE account. No money can hide bro!</div>
+<h3 style="color:#009688;margin:0">📚 LEDGER - PROOF BOOK</h3>
 <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
 <button class="ledbtn active" id="ledCash" onclick="showLedger('cash')">💵 Cash</button>
 <button class="ledbtn" id="ledBank" onclick="showLedger('bank')">🏦 Bank</button>
@@ -113,13 +124,12 @@ th{background:gold;color:#000}
 <button class="ledbtn" id="ledDebit" onclick="showLedger('debit')">🏪 Debit</button>
 <button class="ledbtn" id="ledProfit" onclick="showLedger('profit')">📈 Profit</button>
 </div>
-<div class="total" id="ledgerSummary" style="margin-top:8px">Ledger Loading...</div>
+<div class="total" id="ledgerSummary" style="margin-top:8px">Loading...</div>
 <table><thead><tr><th>Time</th><th>Detail</th><th>IN +</th><th>OUT -</th><th>Balance</th></tr></thead><tbody id="ledgerBody"></tbody></table>
-
-<h3 style="color:#009688;margin:15px 0 5px 0">👤 PERSON LEDGER - Supplier / Customer Proof</h3>
-<div class="row"><div><label>Choose Person Type</label><select id="personType" onchange="fillPersonList()"><option value="supplier">🏪 Supplier - You Owe Him</option><option value="customer">👤 Customer - He Owes You</option></select></div><div><label>Choose Name</label><select id="personName" onchange="showPersonLedger()"></select></div></div>
+<h3 style="color:#009688;margin:15px 0 5px 0">👤 PERSON LEDGER</h3>
+<div class="row"><div><label>Type</label><select id="personType" onchange="fillPersonList()"><option value="supplier">🏪 Supplier</option><option value="customer">👤 Customer</option></select></div><div><label>Name</label><select id="personName" onchange="showPersonLedger()"></select></div></div>
 <div class="total" id="personSummary">Select a person bro...</div>
-<table><thead><tr><th>Time</th><th>Detail</th><th>IN / OWE +</th><th>PAID -</th><th>Still Owe</th></tr></thead><tbody id="personBody"></tbody></table>
+<table><thead><tr><th>Time</th><th>Detail</th><th>OWE +</th><th>PAID -</th><th>Still Owe</th></tr></thead><tbody id="personBody"></tbody></table>
 </div>
 
 <div class="box" style="border-color:gold">
@@ -130,7 +140,7 @@ th{background:gold;color:#000}
 <table><thead><tr><th>Time</th><th>Type</th><th>Detail</th><th>Amount</th></tr></thead><tbody id="histBody"></tbody></table>
 </div>
 
-<button class="btn-red" onclick="if(confirm('Clear ALL?')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL</button>
+<button class="btn-red" onclick="if(confirm('Clear ALL? Make BACKUP first bro!')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL</button>
 
 <script>
 let stock = JSON.parse(localStorage.getItem('myshop_stock')||'[]');
@@ -147,6 +157,35 @@ function millsVal(){ return roundUpAUD(cocoKg()*4); }
 function nowStr(){ let d=new Date(); return d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 function todayStr(){ return new Date().toLocaleDateString(); }
 function addHist(type,detail,amount){ history.unshift({date:todayStr(),time:nowStr(),type,detail,amount}); if(history.length>500) history=history.slice(0,500); save(); renderHist(); renderLedger(); }
+
+// --- PHASE 5 BACKUP ---
+function getBackupData(){ return {app:'MY SHOP',date:new Date().toISOString(),stock,wallet,credits,debits,history,markup:document.getElementById('myMarkupInput').value}; }
+function exportBackup(){
+  let data=getBackupData(); let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  let a=document.createElement('a'); a.href=URL.createObjectURL(blob); let d=new Date(); a.download='MYSHOP-BACKUP-'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()+'-'+d.getHours()+'h'+d.getMinutes()+'.json'; a.click();
+  localStorage.setItem('myshop_lastbackup',new Date().toLocaleString()); updateBackupInfo(); alert('Backup Downloaded bro! Keep it safe in your phone / Google Drive!');
+}
+function copyBackup(){
+  let txt=document.getElementById('backupText'); txt.classList.remove('hidden'); txt.value=JSON.stringify(getBackupData()); txt.select(); document.execCommand('copy'); alert('Backup Text Copied bro! Paste it in WhatsApp / Notes to yourself!');
+}
+function autoBackup(){
+  localStorage.setItem('myshop_autobackup',JSON.stringify(getBackupData())); localStorage.setItem('myshop_lastbackup',new Date().toLocaleString()); updateBackupInfo(); alert('Auto Backup Saved inside phone bro! If you clear by mistake, you can restore from Auto Backup? No - Auto Backup is inside same phone. For real safety, use DOWNLOAD BACKUP!');
+}
+function importBackup(e){
+  let file=e.target.files[0]; if(!file) return; let r=new FileReader(); r.onload=function(){ try{ let data=JSON.parse(r.result); if(!data.stock || !data.wallet){ alert('Not a MY SHOP backup bro!'); return; } if(!confirm('Restore this backup? Your current data will be replaced bro! Date: '+data.date)) return; stock=data.stock; wallet=data.wallet; credits=data.credits||[]; debits=data.debits||[]; history=data.history||[]; if(data.markup) document.getElementById('myMarkupInput').value=data.markup; save(); updateWallet(); render(); renderHist(); renderLedger(); fillPersonList(); updateBackupInfo(); alert('Restored bro! Welcome back! Cash $'+wallet.cash.toFixed(2)+' Bank $'+wallet.bank.toFixed(2)); }catch(err){ alert('Backup file broken bro! '+err); } }; r.readAsText(file); e.target.value='';
+}
+function updateBackupInfo(){ let lb=localStorage.getItem('myshop_lastbackup')||'Never - Do backup today bro!'; document.getElementById('lastBackup').innerText='Last Backup: '+lb; }
+function restoreAuto(){ let d=localStorage.getItem('myshop_autobackup'); if(!d){alert('No Auto Backup yet bro');return;} let data=JSON.parse(d); stock=data.stock; wallet=data.wallet; credits=data.credits; debits=data.debits; history=data.history; save(); location.reload(); }
+
+// --- EDIT STOCK ---
+function editStock(i){
+  let it=stock[i];
+  document.getElementById('editArea').innerHTML=`<div class="editbox"><h3 style="color:gold;margin:0">✏️ EDIT ${it.name}</h3><label>Item Name</label><input id="e_name" value="${it.name}"><div class="row"><div><label>Cost $</label><input id="e_cost" type="number" step="0.01" value="${it.cost}"></div><div><label>Sell $</label><input id="e_sell" type="number" step="0.05" value="${it.sell}"></div></div><label>Qty</label><input id="e_qty" type="number" value="${it.qty}"><div class="row"><div><button class="btn-green" onclick="saveEdit(${i})">✅ SAVE EDIT</button></div><div><button class="btn-red" onclick="document.getElementById('editArea').innerHTML=''">❌ Cancel</button></div></div><button onclick="deleteStock(${i})" style="background:#333;color:#ff8a80;border:1px solid red">🗑️ Delete This Item</button></div>`;
+  document.getElementById('editArea').scrollIntoView({behavior:'smooth'});
+}
+function saveEdit(i){ let name=document.getElementById('e_name').value.trim(); let cost=parseFloat(document.getElementById('e_cost').value)||0; let sell=parseFloat(document.getElementById('e_sell').value)||0; let qty=parseInt(document.getElementById('e_qty').value)||0; if(!name||cost<=0||sell<=0||qty<0){alert('Fill correct bro');return;} let old=stock[i].name; stock[i]={name,cost,sell,qty}; addHist('EDIT','Edited Stock: '+old+' → '+name+' Cost $'+cost.toFixed(2)+' Sell $'+sell.toFixed(2)+' Qty '+qty,0); save(); render(); updateWallet(); document.getElementById('editArea').innerHTML=''; alert('Edited bro! '+name+' updated'); }
+function deleteStock(i){ if(!confirm('Delete '+stock[i].name+'?')) return; let n=stock[i].name; stock.splice(i,1); addHist('EDIT','Deleted Stock: '+n,0); save(); render(); document.getElementById('editArea').innerHTML=''; }
+
 function updateWallet(){
   document.getElementById('cashBal').innerText='$'+wallet.cash.toFixed(2);
   document.getElementById('bankBal').innerText='$'+wallet.bank.toFixed(2);
@@ -181,7 +220,7 @@ function addPurchase(){
   save(); render(); updateWallet(); document.getElementById('p_name').value=''; document.getElementById('p_cost').value=''; document.getElementById('p_sell').value=''; document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_qty').value='1';
   alert(name+' added. '+(pay==='debit'?'On DEBIT, you owe $'+total.toFixed(2):'Paid $'+total.toFixed(2)+' from '+pay));
 }
-function payDebit(i){ let d=debits[i]; let payWith=document.getElementById('debitPayWith').value; if(wallet[payWith]<d.amount){alert('Not enough '+payWith);return;} wallet[payWith]-=d.amount; addHist('DEBIT PAID','Paid '+d.supplier+' for '+d.item+' via '+payWith.toUpperCase(),-d.amount); debits.splice(i,1); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); alert('Paid '+d.supplier+' $'+d.amount.toFixed(2)+' from '+payWith.toUpperCase()); }
+function payDebit(i){ let d=debits[i]; let payWith=document.getElementById('debitPayWith').value; if(wallet[payWith]<d.amount){alert('Not enough '+payWith);return;} wallet[payWith]-=d.amount; addHist('DEBIT PAID','Paid '+d.supplier+' for '+d.item+' via '+payWith.toUpperCase(),-d.amount); debits.splice(i,1); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); alert('Paid '+d.supplier+' $'+d.amount.toFixed(2)); }
 function fillSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(it) document.getElementById('s_price').value=it.sell.toFixed(2); updateSaleTotal(); }
 function getSaleTotal(){ let p=parseFloat(document.getElementById('s_price').value)||0; let q=parseInt(document.getElementById('s_qty').value)||0; return p*q; }
 function updateSaleTotal(){ let total=getSaleTotal(); document.getElementById('saleTotal').innerText='Total: $'+total.toFixed(2); if(document.getElementById('s_pay').value==='coco'){ autoCocoG1(); } }
@@ -193,11 +232,9 @@ function updateCocoInfo(){ let g1=parseInt(document.getElementById('cocoG1').val
 document.getElementById('cocoG1').addEventListener('input',updateCocoInfo); document.getElementById('cocoG2').addEventListener('input',updateCocoInfo);
 function doSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(!it){alert('No stock');return;} let qty=parseInt(document.getElementById('s_qty').value)||0; let price=parseFloat(document.getElementById('s_price').value)||0; if(qty<=0||qty>it.qty){alert('Qty not enough, have '+it.qty);return;} let total=price*qty; let pay=document.getElementById('s_pay').value; if(pay==='cash'){ wallet.cash+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - CASH',total); } else if(pay==='bank'){ wallet.bank+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - BANK',total); } else if(pay==='coco'){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; if(val+0.001 < total){ alert('Coco not enough'); return; } wallet.g1+=g1; wallet.g2+=g2; addHist('SALE','Sold '+qty+' x '+it.name+' - COCO G1:'+g1+' G2:'+g2,val); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=0; } else if(pay==='credit'){ let cname=document.getElementById('creditName').value.trim()||'Unknown'; credits.push({name:cname,item:it.name,amount:total}); addHist('CREDIT','Sold '+qty+' x '+it.name+' on CREDIT to '+cname,total); } it.qty-=qty; if(it.qty===0) stock=stock.filter(x=>x!==it); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); updateSaleTotal(); alert('Sold '+qty+' x '+it.name+' for $'+total.toFixed(2)+' paid by '+pay.toUpperCase()); }
 function payCredit(i){ let c=credits[i]; let payWith=document.getElementById('creditPayWith').value; wallet[payWith]+=c.amount; addHist('CREDIT PAID',c.name+' paid for '+c.item+' via '+payWith.toUpperCase(),c.amount); credits.splice(i,1); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); alert(c.name+' paid $'+c.amount.toFixed(2)+' to '+payWith.toUpperCase()); }
-// --- LEDGER LOGIC ---
 function showLedger(f){ ledFilter=f; ['cash','bank','coco','credit','debit','profit'].forEach(k=>{ document.getElementById('led'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('active',k===f); }); renderLedger(); }
 function renderLedger(){
-  let rows=[]; let totalIn=0, totalOut=0;
-  let revHistory=[...history].reverse();
+  let rows=[]; let totalIn=0, totalOut=0; let revHistory=[...history].reverse();
   revHistory.forEach(h=>{
     let inn=0, out=0, show=false;
     if(ledFilter==='cash'){
@@ -241,32 +278,16 @@ function renderLedger(){
   rows.forEach(r=>{ running+=r.inn-r.out; tb.innerHTML+=`<tr><td>${r.time}</td><td>${r.detail}</td><td style="color:green;font-weight:bold">${r.inn>0?' +$'+r.inn.toFixed(2):''}</td><td style="color:red;font-weight:bold">${r.out>0?' -$'+r.out.toFixed(2):''}</td><td><b>$${running.toFixed(2)}</b></td></tr>`; });
 }
 function fillPersonList(){
-  let type=document.getElementById('personType').value; let sel=document.getElementById('personName'); sel.innerHTML='';
-  let names=new Set();
-  history.forEach(h=>{
-    if(type==='supplier' && (h.type==='DEBIT' || h.type==='DEBIT PAID')){
-      let m=h.detail.match(/from (\S+)|Paid (\S+) for/); // fallback parse
-      // Better: extract from detail: "from X" or "Paid X for"
-      let name=''; if(h.detail.includes('from ')) name=h.detail.split('from ')[1].split(' -')[0].split(' for')[0]; if(h.detail.includes('Paid ')) name=h.detail.split('Paid ')[1].split(' for')[0];
-      if(name) names.add(name.trim());
-    }
-    if(type==='customer' && (h.type==='CREDIT' || h.type==='CREDIT PAID')){
-      let name=''; if(h.detail.includes('to ')) name=h.detail.split('to ')[1].trim(); if(h.detail.includes(' paid for')) name=h.detail.split(' paid for')[0].trim(); if(h.detail.includes('Sold')) name=''; if(h.detail.includes('to ')) name=h.detail.split('to ')[1].split(' ')[0];
-      // Use credits/debits current for names too
-    }
-  });
-  // Add current lists - most reliable
+  let type=document.getElementById('personType').value; let sel=document.getElementById('personName'); sel.innerHTML=''; let names=new Set();
   if(type==='supplier') debits.forEach(d=>names.add(d.supplier));
   if(type==='customer') credits.forEach(c=>names.add(c.name));
-  // Also from history by splitting properly
   history.forEach(h=>{
-    if(type==='supplier' && h.type==='DEBIT'){ let parts=h.detail.split('from '); if(parts[1]) names.add(parts[1].split(' -')[0].trim()); }
-    if(type==='supplier' && h.type==='DEBIT PAID'){ let parts=h.detail.split('Paid '); if(parts[1]) names.add(parts[1].split(' for')[0].trim()); }
-    if(type==='customer' && h.type==='CREDIT'){ let parts=h.detail.split('to '); if(parts[1]) names.add(parts[1].trim()); }
-    if(type==='customer' && h.type==='CREDIT PAID'){ let parts=h.detail.split(' paid for'); if(parts[0]) names.add(parts[0].trim()); }
+    if(type==='supplier' && h.type==='DEBIT'){ let p=h.detail.split('from '); if(p[1]) names.add(p[1].split(' -')[0].trim()); }
+    if(type==='supplier' && h.type==='DEBIT PAID'){ let p=h.detail.split('Paid '); if(p[1]) names.add(p[1].split(' for')[0].trim()); }
+    if(type==='customer' && h.type==='CREDIT'){ let p=h.detail.split('to '); if(p[1]) names.add(p[1].trim()); }
+    if(type==='customer' && h.type==='CREDIT PAID'){ let p=h.detail.split(' paid for'); if(p[0]) names.add(p[0].trim()); }
   });
-  if(names.size===0) sel.innerHTML='<option value="">No names yet</option>';
-  else [...names].forEach(n=>{ sel.innerHTML+=`<option value="${n}">${n}</option>`; });
+  if(names.size===0) sel.innerHTML='<option value="">No names yet</option>'; else [...names].forEach(n=>{ sel.innerHTML+=`<option value="${n}">${n}</option>`; });
   showPersonLedger();
 }
 function showPersonLedger(){
@@ -290,9 +311,9 @@ function showPersonLedger(){
   rows.forEach(r=>{ running+=r.owe-r.paid; tb.innerHTML+=`<tr><td>${r.time}</td><td>${r.detail}</td><td style="color:orange;font-weight:bold">${r.owe>0?' +$'+r.owe.toFixed(2):''}</td><td style="color:green;font-weight:bold">${r.paid>0?' -$'+r.paid.toFixed(2):''}</td><td><b>$${running.toFixed(2)}</b></td></tr>`; });
 }
 function openPerson(type,name){ document.getElementById('personType').value=type; fillPersonList(); document.getElementById('personName').value=name; showPersonLedger(); document.getElementById('personName').scrollIntoView({behavior:'smooth'}); }
-function render(){ let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML=''; let tp=0, sv=0; stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty; body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="stock.splice(${i},1);save();render()" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`; sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; }); document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`; let cb=document.getElementById('creditBody'); cb.innerHTML=''; credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td><button onclick="openPerson('customer','${c.name}')" style="width:auto;padding:5px;background:#009688;color:#fff">${c.name} 📚</button></td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; }); let db=document.getElementById('debitBody'); db.innerHTML=''; debits.forEach((d,i)=>{ db.innerHTML+=`<tr><td><button onclick="openPerson('supplier','${d.supplier}')" style="width:auto;padding:5px;background:#ff9800;color:#000">${d.supplier} 📚</button></td><td>${d.item} x${d.qty||''}</td><td style="color:#ff9800;font-weight:bold">$${d.amount.toFixed(2)}</td><td><button onclick="payDebit(${i})" style="width:auto;padding:5px;background:#ff9800;color:#000">Pay</button></td></tr>`; }); if(stock.length>0) fillSale(); }
+function render(){ let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML=''; let tp=0, sv=0; stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty; body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="editStock(${i})" style="width:auto;padding:5px 10px;background:gold;color:#000">EDIT</button> <button onclick="deleteStock(${i})" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`; sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; }); document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`; let cb=document.getElementById('creditBody'); cb.innerHTML=''; credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td><button onclick="openPerson('customer','${c.name}')" style="width:auto;padding:5px;background:#009688;color:#fff">${c.name} 📚</button></td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; }); let db=document.getElementById('debitBody'); db.innerHTML=''; debits.forEach((d,i)=>{ db.innerHTML+=`<tr><td><button onclick="openPerson('supplier','${d.supplier}')" style="width:auto;padding:5px;background:#ff9800;color:#000">${d.supplier} 📚</button></td><td>${d.item} x${d.qty||''}</td><td style="color:#ff9800;font-weight:bold">$${d.amount.toFixed(2)}</td><td><button onclick="payDebit(${i})" style="width:auto;padding:5px;background:#ff9800;color:#000">Pay</button></td></tr>`; }); if(stock.length>0) fillSale(); }
 function showHist(f){ histFilter=f; document.getElementById('tabToday').classList.toggle('active',f==='today'); document.getElementById('tabAll').classList.toggle('active',f==='all'); renderHist(); }
-function clearHistory(){ if(confirm('Clear History Only? Money + Stock stays bro! But Ledger will also clear because Ledger uses History!')){ history=[]; save(); renderHist(); renderLedger(); fillPersonList(); } }
+function clearHistory(){ if(confirm('Clear History Only? Ledger will also clear because Ledger uses History!')){ history=[]; save(); renderHist(); renderLedger(); fillPersonList(); } }
 function renderHist(){
   let list = histFilter==='today' ? history.filter(h=>h.date===todayStr()) : history;
   let sales=0, purch=0, mills=0, cred=0, credPaid=0, cap=0, deb=0, debPaid=0;
@@ -304,7 +325,7 @@ function renderHist(){
   if(list.length===0) hb.innerHTML='<tr><td colspan="4" style="text-align:center">No history yet bro</td></tr>';
   list.slice(0,100).forEach(h=>{ let color=h.amount<0?'red':'green'; hb.innerHTML+=`<tr><td>${h.time}</td><td><b>${h.type}</b></td><td>${h.detail}</td><td style="color:${color};font-weight:bold">${h.amount<0?'':' +'}$${h.amount.toFixed(2)}</td></tr>`; });
 }
-updateWallet(); render(); showPayBox(); showDebitBox(); renderHist(); renderLedger(); fillPersonList();
+updateWallet(); render(); showPayBox(); showDebitBox(); renderHist(); renderLedger(); fillPersonList(); updateBackupInfo();
 </script>
 </body>
 </html>
