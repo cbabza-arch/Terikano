@@ -2647,5 +2647,58 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V-FINAL-2 LOADED - hidden backup killed');
 })();
 </script>
+  <script>
+// V-FINAL-3 - Fix top box + clear stock in terikano_data
+(function(){
+  // 1. Fix load - don't block render, just don't migrate old data
+  window.load = async function(){
+    try{
+      var snap = await db.ref('shop').once('value');
+      var cloud = snap.val() || {};
+      // If cloud was cleared, force empty, but STILL render
+      if(cloud.clearedAt){
+        try{ purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; }catch(e){}
+      }
+      if(typeof renderAll==='function') renderAll();
+      if(typeof populateDatalist==='function') populateDatalist();
+    }catch(e){ if(typeof renderAll==='function') renderAll(); }
+  };
+
+  // 2. Fix clear - also clear STOCK in terikano_data in Cloud
+  var _oldClear = window.clearAllTestData;
+  window.clearAllTestData = async function(){
+    if(!confirm('⚠️ CLEAR ALL CLOUD + STOCK?\n\nDeletes Sales + Cash + Stock + ALL on CLOUD.\n\nPW + Name KEPT.\n\nContinue?')) return;
+    if(!confirm('Are you SURE? Cannot undo.')) return;
+    window.__CLEARING = true;
+    try{ db.ref().off(); }catch(e){}
+    var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+    var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+    var biz = localStorage.getItem('terikano_name') || 'TERIKANO';
+    var clearedAt = new Date(Date.now() + 60000).toISOString();
+    localStorage.setItem('terikano_clearedAt', clearedAt);
+    try{
+      purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; collects=[]; ownerTakes=[]; tips=[]; waste=[]; clearance=[]; cart=[]; cocoBuys=[]; cocoMills=[]; badDebts=[]; priceHistory=[]; wholesalerDebts=[];
+    }catch(e){}
+    // Clear phone backup too - otherwise it resurrects Cloud
+    try{
+      localStorage.removeItem('Terikano_storage_data');
+      localStorage.removeItem('terikano_data');
+      localStorage.removeItem('terikano_years');
+      localStorage.removeItem('wholesalerDebts');
+    }catch(e){}
+    // CLOUD ONLY - include terikano_data store = [] for STOCK
+    try{
+      await db.ref('shop').remove();
+      await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], wholesalerDebts:[], dailyTarget:100, terikano_data:{store:[]}, terikano_years:{}, terikano_last_closed_year:'', ALL_LOCAL:{}, clearedAt:clearedAt, time:clearedAt});
+      await db.ref('terikano_config/passwords/ownerPw').set(ownerPw);
+      await db.ref('terikano_config/passwords/staffPw').set(staffPw);
+    }catch(e){ alert('Cloud clear error: '+e.message); window.__CLEARING=false; return; }
+    alert('✅ CLOUD + STOCK CLEARED - Top box will come back after reload.');
+    setTimeout(function(){ location.reload(); }, 500);
+  };
+  window.clearBothData = window.clearAllTestData;
+  console.log('V-FINAL-3 LOADED - stock + top box fix');
+})();
+</script>
 </body>
 </html>
