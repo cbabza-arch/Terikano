@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MY SHOP - PHASE 3 + DEBIT</title>
+<title>MY SHOP - LEDGER</title>
 <style>
 *{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:#111;color:#fff;padding:10px}
@@ -12,7 +12,7 @@ h1{text-align:center;color:gold;margin:5px;font-size:22px}
 label{font-size:13px;color:#ccc}
 input,select{width:100%;padding:12px;margin:5px 0 10px 0;border-radius:8px;border:1px solid #555;background:#fff;color:#000;font-size:16px}
 button{width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin:5px 0}
-.btn-gold{background:gold;color:#000}.btn-green{background:#00c853;color:#fff}.btn-blue{background:#2196f3;color:#fff}.btn-brown{background:#8d6e63;color:#fff}.btn-red{background:#ff3b30;color:#fff}.btn-purple{background:#9c27b0;color:#fff}.btn-orange{background:#ff9800;color:#000}
+.btn-gold{background:gold;color:#000}.btn-green{background:#00c853;color:#fff}.btn-blue{background:#2196f3;color:#fff}.btn-brown{background:#8d6e63;color:#fff}.btn-red{background:#ff3b30;color:#fff}.btn-purple{background:#9c27b0;color:#fff}.btn-orange{background:#ff9800;color:#000}.btn-teal{background:#009688;color:#fff}
 .row{display:flex;gap:8px}.row>div{flex:1}
 table{width:100%;border-collapse:collapse;background:#fff;color:#000;font-size:13px}
 th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left}
@@ -25,10 +25,12 @@ th{background:gold;color:#000}
 .hidden{display:none}
 .tabbtn{flex:1;padding:10px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;font-weight:bold}
 .tabbtn.active{background:gold;color:#000}
+.ledbtn{flex:1;padding:10px;background:#333;color:#fff;border:1px solid #555;border-radius:8px;font-weight:bold;font-size:13px}
+.ledbtn.active{background:#009688;color:#fff}
 </style>
 </head>
 <body>
-<h1>💰 MY SHOP - DEBIT - AUD $</h1>
+<h1>💰 MY SHOP - LEDGER - AUD $</h1>
 
 <div class="box">
 <h3 style="color:gold;margin:0">🏦 CAPITAL + WALLETS</h3>
@@ -39,8 +41,8 @@ th{background:gold;color:#000}
 <div class="wcard">Bank<br><b id="bankBal">$0.00</b></div>
 <div class="wcard">Coco Wallet<br><b id="cocoBal">0 coco</b><br><span id="cocoKg">0.00 kg = $0.00</span></div>
 <div class="wcard">Credit Owe You<br><b id="creditBal" style="color:#ff8a80">$0.00</b></div>
-<div class="wcard" style="border-color:#ff9800">Debit - YOU Owe Wholesaler<br><b id="debitBal" style="color:#ff9800">$0.00</b><br><span>Pay Supplier Later</span></div>
-<div class="wcard">Stock Value<br><b id="stockValBal">$0.00</b></div>
+<div class="wcard" style="border-color:#ff9800">Debit You Owe<br><b id="debitBal" style="color:#ff9800">$0.00</b></div>
+<div class="wcard">Net Money<br><b id="netBal">$0.00</b><br><span>Cash+Bank+Credit-Debit</span></div>
 </div>
 <div class="row" style="margin-top:8px"><div><label>Move Amount $</label><input id="moveAmt" type="number" step="0.01"></div><div><label>&nbsp;</label><button class="btn-blue" onclick="moveCashToBank()">🏦 Cash → Bank</button></div></div>
 <button class="btn-green" onclick="moveBankToCash()">💵 Bank → Cash</button>
@@ -60,11 +62,8 @@ th{background:gold;color:#000}
 <label>Item Name</label><input id="p_name" placeholder="e.g. Rice">
 <div class="row"><div><label>Cost Price $</label><input id="p_cost" type="number" step="0.01"></div><div><label>Sell Price (Auto)</label><input id="p_sell" type="number" step="0.05"></div></div>
 <label>Qty</label><input id="p_qty" type="number" value="1">
-<label>Pay For Purchase With</label><select id="p_pay" onchange="showDebitBox()"><option value="cash">Cash</option><option value="bank">Banking</option><option value="debit">🧾 DEBIT - Owe Wholesaler (Pay Later)</option></select>
-<div id="debitBox" class="hidden" style="background:#4a2c00;padding:10px;border-radius:8px">
-<label>Wholesaler / Supplier Name</label><input id="supplierName" placeholder="e.g. Betio Wholesaler, TUC, etc">
-<div class="small" style="color:#ffcc80">Stock comes NOW, money pay LATER bro! No Cash / Bank deducted now.</div>
-</div>
+<label>Pay For Purchase With</label><select id="p_pay" onchange="showDebitBox()"><option value="cash">Cash</option><option value="bank">Banking</option><option value="debit">DEBIT - Owe Wholesaler (Pay Later)</option></select>
+<div id="debitBox" class="hidden" style="background:#4e342e;padding:10px;border-radius:8px"><label>🏪 Wholesaler Name</label><input id="supplierName" placeholder="e.g. Betio Wholesaler"><div class="small" style="color:#ffcc80">Stock IN now, Money OUT later!</div></div>
 <button class="btn-gold" onclick="addPurchase()">➕ ADD TO STOCK</button>
 </div>
 
@@ -92,27 +91,46 @@ th{background:gold;color:#000}
 </div>
 
 <div class="box">
-<h3 style="margin:0">📒 CREDIT LIST - Customers Owe YOU</h3>
-<table><thead><tr><th>Customer</th><th>Item</th><th>Amount</th><th>Paid With</th></tr></thead><tbody id="creditBody"></tbody></table>
+<h3 style="margin:0">📒 CREDIT LIST - Customers Owe YOU - Click Name for Ledger</h3>
+<table><thead><tr><th>Customer</th><th>Item</th><th>Amount</th><th>Paid</th></tr></thead><tbody id="creditBody"></tbody></table>
 </div>
 
 <div class="box" style="border-color:#ff9800">
-<h3 style="color:#ff9800;margin:0">🧾 DEBIT LIST - YOU Owe Wholesaler</h3>
-<div class="small">When you pay supplier, choose Cash or Bank bro!</div>
-<div class="row"><div><label>Pay Supplier With</label><select id="debitPayWith"><option value="cash">Cash</option><option value="bank">Bank</option></select></div><div><label>&nbsp;</label><button class="btn-orange" onclick="payAllDebit()">💰 PAY ALL SUPPLIERS</button></div></div>
-<table><thead><tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Amount You Owe</th><th></th></tr></thead><tbody id="debitBody"></tbody></table>
-<div class="total" id="debitTotal">Total You Owe: $0.00</div>
+<h3 style="color:#ff9800;margin:0">🏪 DEBIT LIST - YOU Owe Wholesaler - Click Name for Ledger</h3>
+<div class="row"><div><label>Pay Debit With</label><select id="debitPayWith"><option value="cash">Cash</option><option value="bank">Bank</option></select></div></div>
+<table><thead><tr><th>Wholesaler</th><th>Item</th><th>Amount</th><th>Pay</th></tr></thead><tbody id="debitBody"></tbody></table>
+</div>
+
+<!-- PHASE 4 LEDGER -->
+<div class="box" style="border-color:#009688">
+<h3 style="color:#009688;margin:0">📚 PHASE 4 - LEDGER - PROOF BOOK</h3>
+<div class="small">Ledger = Every cent IN / OUT for ONE account. No money can hide bro!</div>
+<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+<button class="ledbtn active" id="ledCash" onclick="showLedger('cash')">💵 Cash</button>
+<button class="ledbtn" id="ledBank" onclick="showLedger('bank')">🏦 Bank</button>
+<button class="ledbtn" id="ledCoco" onclick="showLedger('coco')">🥥 Coco</button>
+<button class="ledbtn" id="ledCredit" onclick="showLedger('credit')">📒 Credit</button>
+<button class="ledbtn" id="ledDebit" onclick="showLedger('debit')">🏪 Debit</button>
+<button class="ledbtn" id="ledProfit" onclick="showLedger('profit')">📈 Profit</button>
+</div>
+<div class="total" id="ledgerSummary" style="margin-top:8px">Ledger Loading...</div>
+<table><thead><tr><th>Time</th><th>Detail</th><th>IN +</th><th>OUT -</th><th>Balance</th></tr></thead><tbody id="ledgerBody"></tbody></table>
+
+<h3 style="color:#009688;margin:15px 0 5px 0">👤 PERSON LEDGER - Supplier / Customer Proof</h3>
+<div class="row"><div><label>Choose Person Type</label><select id="personType" onchange="fillPersonList()"><option value="supplier">🏪 Supplier - You Owe Him</option><option value="customer">👤 Customer - He Owes You</option></select></div><div><label>Choose Name</label><select id="personName" onchange="showPersonLedger()"></select></div></div>
+<div class="total" id="personSummary">Select a person bro...</div>
+<table><thead><tr><th>Time</th><th>Detail</th><th>IN / OWE +</th><th>PAID -</th><th>Still Owe</th></tr></thead><tbody id="personBody"></tbody></table>
 </div>
 
 <div class="box" style="border-color:gold">
 <h3 style="color:gold;margin:0">📊 DAILY REPORT + HISTORY</h3>
-<div class="row"><div><button class="tabbtn active" id="tabToday" onclick="showHist('today')">📅 TODAY</button></div><div><button class="tabbtn" id="tabAll" onclick="showHist('all')">📚 ALL HISTORY</button></div></div>
-<div class="total" id="dailyReport" style="margin-top:8px">Daily Report Loading...</div>
+<div class="row"><div><button class="tabbtn active" id="tabToday" onclick="showHist('today')">📅 TODAY</button></div><div><button class="tabbtn" id="tabAll" onclick="showHist('all')">📚 ALL</button></div></div>
+<div class="total" id="dailyReport" style="margin-top:8px">Loading...</div>
 <div class="row" style="margin-top:8px"><div><label>Pay Credit With</label><select id="creditPayWith"><option value="cash">Cash</option><option value="bank">Bank</option></select></div><div><label>&nbsp;</label><button class="btn-purple" onclick="clearHistory()">🧹 Clear History Only</button></div></div>
 <table><thead><tr><th>Time</th><th>Type</th><th>Detail</th><th>Amount</th></tr></thead><tbody id="histBody"></tbody></table>
 </div>
 
-<button class="btn-red" onclick="if(confirm('Clear ALL?')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL - START OVER</button>
+<button class="btn-red" onclick="if(confirm('Clear ALL?')){localStorage.clear();location.reload()}">🗑️ CLEAR ALL</button>
 
 <script>
 let stock = JSON.parse(localStorage.getItem('myshop_stock')||'[]');
@@ -120,7 +138,7 @@ let wallet = JSON.parse(localStorage.getItem('myshop_wallet')||'{"cash":0,"bank"
 let credits = JSON.parse(localStorage.getItem('myshop_credit')||'[]');
 let debits = JSON.parse(localStorage.getItem('myshop_debit')||'[]');
 let history = JSON.parse(localStorage.getItem('myshop_hist')||'[]');
-let histFilter='today';
+let histFilter='today'; let ledFilter='cash';
 function save(){ localStorage.setItem('myshop_stock',JSON.stringify(stock)); localStorage.setItem('myshop_wallet',JSON.stringify(wallet)); localStorage.setItem('myshop_credit',JSON.stringify(credits)); localStorage.setItem('myshop_debit',JSON.stringify(debits)); localStorage.setItem('myshop_hist',JSON.stringify(history)); }
 function roundUpAUD(v){ return Math.ceil((v-0.0001)/0.05)*0.05; }
 function calcMySell(cost){ let m=parseFloat(document.getElementById('myMarkupInput').value)||15; return roundUpAUD(cost+(cost*m/100)).toFixed(2); }
@@ -128,7 +146,7 @@ function cocoKg(){ return (wallet.g1+wallet.g2)*0.1532; }
 function millsVal(){ return roundUpAUD(cocoKg()*4); }
 function nowStr(){ let d=new Date(); return d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 function todayStr(){ return new Date().toLocaleDateString(); }
-function addHist(type,detail,amount){ history.unshift({date:todayStr(),time:nowStr(),type,detail,amount}); if(history.length>500) history=history.slice(0,500); save(); renderHist(); }
+function addHist(type,detail,amount){ history.unshift({date:todayStr(),time:nowStr(),type,detail,amount}); if(history.length>500) history=history.slice(0,500); save(); renderHist(); renderLedger(); }
 function updateWallet(){
   document.getElementById('cashBal').innerText='$'+wallet.cash.toFixed(2);
   document.getElementById('bankBal').innerText='$'+wallet.bank.toFixed(2);
@@ -137,67 +155,156 @@ function updateWallet(){
   document.getElementById('millsInfo').innerText='G1: '+wallet.g1+' | G2: '+wallet.g2+' | Total: '+(wallet.g1+wallet.g2)+' coco = '+cocoKg().toFixed(4)+' kg x $4 = $'+millsVal().toFixed(2);
   let totCred=0; credits.forEach(c=>totCred+=c.amount); document.getElementById('creditBal').innerText='$'+totCred.toFixed(2);
   let totDeb=0; debits.forEach(d=>totDeb+=d.amount); document.getElementById('debitBal').innerText='$'+totDeb.toFixed(2);
-  document.getElementById('debitTotal').innerText='Total You Owe: $'+totDeb.toFixed(2);
-  let sv=0; stock.forEach(it=>sv+=it.sell*it.qty); document.getElementById('stockValBal').innerText='$'+sv.toFixed(2);
+  document.getElementById('netBal').innerText='$'+(wallet.cash+wallet.bank+totCred-totDeb).toFixed(2);
 }
 function setCapital(){ let amt=parseFloat(document.getElementById('capitalInput').value)||0; if(amt<=0){alert('Enter Capital bro');return;} let to=document.getElementById('capitalTo').value; wallet[to]+=amt; addHist('CAPITAL','Capital to '+to.toUpperCase(),amt); save(); updateWallet(); alert('Capital $'+amt.toFixed(2)+' added to '+to); }
-function moveCashToBank(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.cash){alert('Not enough Cash, have $'+wallet.cash.toFixed(2));return;} wallet.cash-=amt; wallet.bank+=amt; addHist('TRANSFER','Cash → Bank',amt); save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Cash → Bank'); }
-function moveBankToCash(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.bank){alert('Not enough Bank, have $'+wallet.bank.toFixed(2));return;} wallet.bank-=amt; wallet.cash+=amt; addHist('TRANSFER','Bank → Cash',amt); save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Bank → Cash'); }
-function sellToMills(){ let kg=cocoKg(); let val=millsVal(); if(kg<=0){alert('No Coco bro');return;} wallet.cash+=val; let g1=wallet.g1, g2=wallet.g2; wallet.g1=0; wallet.g2=0; addHist('MILLS','Sold '+(g1+g2)+' coco = '+kg.toFixed(4)+'kg to Mills → CASH',val); save(); updateWallet(); alert('Sold '+kg.toFixed(4)+' kg to Mills for $'+val.toFixed(2)+' to CASH'); }
+function moveCashToBank(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.cash){alert('Not enough Cash');return;} wallet.cash-=amt; wallet.bank+=amt; addHist('TRANSFER','Cash → Bank',amt); save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Cash → Bank'); }
+function moveBankToCash(){ let amt=parseFloat(document.getElementById('moveAmt').value)||0; if(amt<=0||amt>wallet.bank){alert('Not enough Bank');return;} wallet.bank-=amt; wallet.cash+=amt; addHist('TRANSFER','Bank → Cash',amt); save(); updateWallet(); document.getElementById('moveAmt').value=''; alert('Moved $'+amt.toFixed(2)+' Bank → Cash'); }
+function sellToMills(){ let kg=cocoKg(); let val=millsVal(); if(kg<=0){alert('No Coco bro');return;} wallet.cash+=val; let g1=wallet.g1, g2=wallet.g2; wallet.g1=0; wallet.g2=0; addHist('MILLS','Sold '+(g1+g2)+' coco = '+kg.toFixed(4)+'kg → CASH',val); save(); updateWallet(); alert('Sold '+kg.toFixed(4)+' kg for $'+val.toFixed(2)+' to CASH'); }
 document.getElementById('p_cost').addEventListener('input',function(){ let s=document.getElementById('p_sell'); if(s.dataset.overridden!=='1'){ let c=parseFloat(this.value)||0; if(c>0) s.value=calcMySell(c); } });
 document.getElementById('p_sell').addEventListener('input',function(){this.dataset.overridden='1';});
 document.getElementById('myMarkupInput').addEventListener('input',function(){ let c=parseFloat(document.getElementById('p_cost').value)||0; if(c>0){document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_sell').value=calcMySell(c);} });
-function showDebitBox(){ document.getElementById('debitBox').classList.toggle('hidden',document.getElementById('p_pay').value!=='debit'); }
+function showDebitBox(){ document.getElementById('debitBox').classList.toggle('hidden', document.getElementById('p_pay').value!=='debit'); }
 function addPurchase(){
   let name=document.getElementById('p_name').value.trim(); let cost=parseFloat(document.getElementById('p_cost').value)||0; let sell=parseFloat(document.getElementById('p_sell').value)||0; let qty=parseInt(document.getElementById('p_qty').value)||0; let pay=document.getElementById('p_pay').value;
   if(!name||cost<=0||sell<=0||qty<=0){alert('Fill all bro');return;} let total=cost*qty;
   if(pay==='debit'){
-    let sup=document.getElementById('supplierName').value.trim()||'Wholesaler';
-    debits.push({supplier:sup,item:name,qty:qty,amount:total});
-    addHist('DEBIT','Bought '+qty+' x '+name+' on DEBIT from '+sup+' - OWE $'+total.toFixed(2),0);
+    let supp=document.getElementById('supplierName').value.trim()||'Wholesaler';
+    debits.push({supplier:supp,item:name,amount:total,qty:qty});
+    addHist('DEBIT','Bought '+qty+' x '+name+' on DEBIT from '+supp+' - YOU OWE',total);
     document.getElementById('supplierName').value='';
   } else {
-    if(wallet[pay]<total){alert('Not enough '+pay+' have $'+wallet[pay].toFixed(2)+' need $'+total.toFixed(2));return;}
+    if(wallet[pay]<total){alert('Not enough '+pay);return;}
     wallet[pay]-=total; addHist('PURCHASE','Bought '+qty+' x '+name+' paid '+pay.toUpperCase(),-total);
   }
   let f=stock.find(x=>x.name.toLowerCase()===name.toLowerCase()); if(f){f.cost=cost;f.sell=sell;f.qty+=qty;} else stock.push({name,cost,sell,qty});
-  save(); render(); updateWallet(); renderHist(); document.getElementById('p_name').value=''; document.getElementById('p_cost').value=''; document.getElementById('p_sell').value=''; document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_qty').value='1'; alert(name+' added. '+(pay==='debit'?'On DEBIT - You Owe $'+total.toFixed(2):'Paid $'+total.toFixed(2)+' from '+pay));
+  save(); render(); updateWallet(); document.getElementById('p_name').value=''; document.getElementById('p_cost').value=''; document.getElementById('p_sell').value=''; document.getElementById('p_sell').dataset.overridden='0'; document.getElementById('p_qty').value='1';
+  alert(name+' added. '+(pay==='debit'?'On DEBIT, you owe $'+total.toFixed(2):'Paid $'+total.toFixed(2)+' from '+pay));
 }
-function payDebit(i){ let d=debits[i]; let payWith=document.getElementById('debitPayWith').value; if(wallet[payWith]<d.amount){alert('Not enough '+payWith+' bro. Have $'+wallet[payWith].toFixed(2)+' need $'+d.amount.toFixed(2));return;} wallet[payWith]-=d.amount; addHist('DEBIT PAID','Paid '+d.supplier+' for '+d.qty+' x '+d.item+' via '+payWith.toUpperCase(),-d.amount); debits.splice(i,1); save(); render(); updateWallet(); renderHist(); alert('Paid '+d.supplier+' $'+d.amount.toFixed(2)+' from '+payWith.toUpperCase()); }
-function payAllDebit(){ let tot=0; debits.forEach(d=>tot+=d.amount); if(tot===0){alert('No Debit bro');return;} let payWith=document.getElementById('debitPayWith').value; if(wallet[payWith]<tot){alert('Not enough '+payWith+' bro. Have $'+wallet[payWith].toFixed(2)+' need $'+tot.toFixed(2));return;} wallet[payWith]-=tot; addHist('DEBIT PAID','Paid ALL Suppliers via '+payWith.toUpperCase(),-tot); debits=[]; save(); render(); updateWallet(); renderHist(); alert('Paid ALL Suppliers $'+tot.toFixed(2)+' from '+payWith.toUpperCase()); }
+function payDebit(i){ let d=debits[i]; let payWith=document.getElementById('debitPayWith').value; if(wallet[payWith]<d.amount){alert('Not enough '+payWith);return;} wallet[payWith]-=d.amount; addHist('DEBIT PAID','Paid '+d.supplier+' for '+d.item+' via '+payWith.toUpperCase(),-d.amount); debits.splice(i,1); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); alert('Paid '+d.supplier+' $'+d.amount.toFixed(2)+' from '+payWith.toUpperCase()); }
 function fillSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(it) document.getElementById('s_price').value=it.sell.toFixed(2); updateSaleTotal(); }
 function getSaleTotal(){ let p=parseFloat(document.getElementById('s_price').value)||0; let q=parseInt(document.getElementById('s_qty').value)||0; return p*q; }
 function updateSaleTotal(){ let total=getSaleTotal(); document.getElementById('saleTotal').innerText='Total: $'+total.toFixed(2); if(document.getElementById('s_pay').value==='coco'){ autoCocoG1(); } }
 document.getElementById('s_price').addEventListener('input',updateSaleTotal); document.getElementById('s_qty').addEventListener('input',updateSaleTotal);
 function showPayBox(){ let v=document.getElementById('s_pay').value; document.getElementById('cocoPayBox').classList.toggle('hidden',v!=='coco'); document.getElementById('creditBox').classList.toggle('hidden',v!=='credit'); if(v==='coco') autoCocoG1(); else updateCocoInfo(); }
-function autoCocoG1(){ let total=getSaleTotal(); let need=Math.ceil(total*3); document.getElementById('cocoG1').value=need; document.getElementById('cocoG2').value=0; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G1 need '+need+' coco - You can override!'; updateCocoInfo(); }
-function autoCocoG2(){ let total=getSaleTotal(); let need=Math.ceil(total*4); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=need; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G2 need '+need+' coco - You can override!'; updateCocoInfo(); }
+function autoCocoG1(){ let total=getSaleTotal(); let need=Math.ceil(total*3); document.getElementById('cocoG1').value=need; document.getElementById('cocoG2').value=0; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G1 need '+need+' coco'; updateCocoInfo(); }
+function autoCocoG2(){ let total=getSaleTotal(); let need=Math.ceil(total*4); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=need; document.getElementById('autoCocoHint').innerText='AUTO: Total $'+total.toFixed(2)+' → G2 need '+need+' coco'; updateCocoInfo(); }
 function updateCocoInfo(){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; let total=getSaleTotal(); document.getElementById('cocoValueInfo').innerText='Coco Value: $'+val.toFixed(2)+' | Need: $'+total.toFixed(2)+' | '+(val>=total?'✅ ENOUGH':'❌ NOT ENOUGH'); }
 document.getElementById('cocoG1').addEventListener('input',updateCocoInfo); document.getElementById('cocoG2').addEventListener('input',updateCocoInfo);
-function doSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(!it){alert('No stock');return;} let qty=parseInt(document.getElementById('s_qty').value)||0; let price=parseFloat(document.getElementById('s_price').value)||0; if(qty<=0||qty>it.qty){alert('Qty not enough, have '+it.qty);return;} let total=price*qty; let pay=document.getElementById('s_pay').value; if(pay==='cash'){ wallet.cash+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - CASH',total); } else if(pay==='bank'){ wallet.bank+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - BANK',total); } else if(pay==='coco'){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; if(val+0.001 < total){ alert('Coco not enough bro! Coco value $'+val.toFixed(2)+' need $'+total.toFixed(2)); return; } wallet.g1+=g1; wallet.g2+=g2; addHist('SALE','Sold '+qty+' x '+it.name+' - COCO G1:'+g1+' G2:'+g2,val); if(val>total) alert('Coco overpaid $'+(val-total).toFixed(2)+' - kept as extra coco'); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=0; } else if(pay==='credit'){ let cname=document.getElementById('creditName').value.trim()||'Unknown'; credits.push({name:cname,item:it.name,amount:total}); addHist('CREDIT','Sold '+qty+' x '+it.name+' on CREDIT to '+cname,total); } it.qty-=qty; if(it.qty===0) stock=stock.filter(x=>x!==it); save(); render(); updateWallet(); renderHist(); updateSaleTotal(); alert('Sold '+qty+' x '+it.name+' for $'+total.toFixed(2)+' paid by '+pay.toUpperCase()); }
-function payCredit(i){ let c=credits[i]; let payWith=document.getElementById('creditPayWith').value; wallet[payWith]+=c.amount; addHist('CREDIT PAID',c.name+' paid for '+c.item+' via '+payWith.toUpperCase(),c.amount); credits.splice(i,1); save(); render(); updateWallet(); renderHist(); alert(c.name+' paid $'+c.amount.toFixed(2)+' to '+payWith.toUpperCase()); }
-function render(){ let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML=''; let tp=0, sv=0; stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty; body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="stock.splice(${i},1);save();render()" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`; sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; }); document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`; let cb=document.getElementById('creditBody'); cb.innerHTML=''; credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td>${c.name}</td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; }); let db=document.getElementById('debitBody'); db.innerHTML=''; if(debits.length===0) db.innerHTML='<tr><td colspan="5" style="text-align:center">No Debit - You owe nobody bro! 🎉</td></tr>'; debits.forEach((d,i)=>{ db.innerHTML+=`<tr><td>${d.supplier}</td><td>${d.item}</td><td>${d.qty}</td><td style="color:#ff9800;font-weight:bold">$${d.amount.toFixed(2)}</td><td><button onclick="payDebit(${i})" style="width:auto;padding:5px;background:#ff9800;color:#000">Pay</button></td></tr>`; }); if(stock.length>0) fillSale(); }
+function doSale(){ let sel=document.getElementById('s_item'); let it=stock.find(x=>x.name===sel.value); if(!it){alert('No stock');return;} let qty=parseInt(document.getElementById('s_qty').value)||0; let price=parseFloat(document.getElementById('s_price').value)||0; if(qty<=0||qty>it.qty){alert('Qty not enough, have '+it.qty);return;} let total=price*qty; let pay=document.getElementById('s_pay').value; if(pay==='cash'){ wallet.cash+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - CASH',total); } else if(pay==='bank'){ wallet.bank+=total; addHist('SALE','Sold '+qty+' x '+it.name+' - BANK',total); } else if(pay==='coco'){ let g1=parseInt(document.getElementById('cocoG1').value)||0; let g2=parseInt(document.getElementById('cocoG2').value)||0; let val=g1/3+g2/4; if(val+0.001 < total){ alert('Coco not enough'); return; } wallet.g1+=g1; wallet.g2+=g2; addHist('SALE','Sold '+qty+' x '+it.name+' - COCO G1:'+g1+' G2:'+g2,val); document.getElementById('cocoG1').value=0; document.getElementById('cocoG2').value=0; } else if(pay==='credit'){ let cname=document.getElementById('creditName').value.trim()||'Unknown'; credits.push({name:cname,item:it.name,amount:total}); addHist('CREDIT','Sold '+qty+' x '+it.name+' on CREDIT to '+cname,total); } it.qty-=qty; if(it.qty===0) stock=stock.filter(x=>x!==it); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); updateSaleTotal(); alert('Sold '+qty+' x '+it.name+' for $'+total.toFixed(2)+' paid by '+pay.toUpperCase()); }
+function payCredit(i){ let c=credits[i]; let payWith=document.getElementById('creditPayWith').value; wallet[payWith]+=c.amount; addHist('CREDIT PAID',c.name+' paid for '+c.item+' via '+payWith.toUpperCase(),c.amount); credits.splice(i,1); save(); render(); updateWallet(); renderHist(); renderLedger(); fillPersonList(); alert(c.name+' paid $'+c.amount.toFixed(2)+' to '+payWith.toUpperCase()); }
+// --- LEDGER LOGIC ---
+function showLedger(f){ ledFilter=f; ['cash','bank','coco','credit','debit','profit'].forEach(k=>{ document.getElementById('led'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('active',k===f); }); renderLedger(); }
+function renderLedger(){
+  let rows=[]; let totalIn=0, totalOut=0;
+  let revHistory=[...history].reverse();
+  revHistory.forEach(h=>{
+    let inn=0, out=0, show=false;
+    if(ledFilter==='cash'){
+      if(h.type==='CAPITAL' && h.detail.includes('CASH')) {inn=h.amount; show=true;}
+      if(h.type==='SALE' && h.detail.includes('CASH')) {inn=h.amount; show=true;}
+      if(h.type==='MILLS') {inn=h.amount; show=true;}
+      if(h.type==='CREDIT PAID' && h.detail.includes('CASH')) {inn=h.amount; show=true;}
+      if(h.type==='TRANSFER' && h.detail==='Bank → Cash') {inn=h.amount; show=true;}
+      if(h.type==='TRANSFER' && h.detail==='Cash → Bank') {out=h.amount; show=true;}
+      if(h.type==='PURCHASE' && h.detail.includes('CASH')) {out=Math.abs(h.amount); show=true;}
+      if(h.type==='DEBIT PAID' && h.detail.includes('CASH')) {out=Math.abs(h.amount); show=true;}
+    } else if(ledFilter==='bank'){
+      if(h.type==='CAPITAL' && h.detail.includes('BANK')) {inn=h.amount; show=true;}
+      if(h.type==='SALE' && h.detail.includes('BANK')) {inn=h.amount; show=true;}
+      if(h.type==='CREDIT PAID' && h.detail.includes('BANK')) {inn=h.amount; show=true;}
+      if(h.type==='TRANSFER' && h.detail==='Cash → Bank') {inn=h.amount; show=true;}
+      if(h.type==='TRANSFER' && h.detail==='Bank → Cash') {out=h.amount; show=true;}
+      if(h.type==='PURCHASE' && h.detail.includes('BANK')) {out=Math.abs(h.amount); show=true;}
+      if(h.type==='DEBIT PAID' && h.detail.includes('BANK')) {out=Math.abs(h.amount); show=true;}
+    } else if(ledFilter==='coco'){
+      if(h.type==='SALE' && h.detail.includes('COCO')) {inn=h.amount; show=true;}
+      if(h.type==='MILLS') {out=h.amount; show=true;}
+    } else if(ledFilter==='credit'){
+      if(h.type==='CREDIT') {inn=h.amount; show=true;}
+      if(h.type==='CREDIT PAID') {out=h.amount; show=true;}
+    } else if(ledFilter==='debit'){
+      if(h.type==='DEBIT') {inn=h.amount; show=true;}
+      if(h.type==='DEBIT PAID') {out=Math.abs(h.amount); show=true;}
+    } else if(ledFilter==='profit'){
+      if(h.type==='SALE') {inn=h.amount; show=true;}
+      if(h.type==='PURCHASE') {out=Math.abs(h.amount); show=true;}
+      if(h.type==='DEBIT') {out=h.amount; show=true;}
+      if(h.type==='MILLS') {inn=h.amount; show=true;}
+    }
+    if(show){ rows.push({time:h.time,detail:h.detail,inn,out}); totalIn+=inn; totalOut+=out; }
+  });
+  let bal=totalIn-totalOut; let running=0;
+  document.getElementById('ledgerSummary').innerHTML=ledFilter.toUpperCase()+' LEDGER | IN: $'+totalIn.toFixed(2)+' | OUT: $'+totalOut.toFixed(2)+' | BALANCE: $'+bal.toFixed(2);
+  let tb=document.getElementById('ledgerBody'); tb.innerHTML='';
+  if(rows.length===0) tb.innerHTML='<tr><td colspan="5" style="text-align:center">No entries for '+ledFilter+' yet bro</td></tr>';
+  rows.forEach(r=>{ running+=r.inn-r.out; tb.innerHTML+=`<tr><td>${r.time}</td><td>${r.detail}</td><td style="color:green;font-weight:bold">${r.inn>0?' +$'+r.inn.toFixed(2):''}</td><td style="color:red;font-weight:bold">${r.out>0?' -$'+r.out.toFixed(2):''}</td><td><b>$${running.toFixed(2)}</b></td></tr>`; });
+}
+function fillPersonList(){
+  let type=document.getElementById('personType').value; let sel=document.getElementById('personName'); sel.innerHTML='';
+  let names=new Set();
+  history.forEach(h=>{
+    if(type==='supplier' && (h.type==='DEBIT' || h.type==='DEBIT PAID')){
+      let m=h.detail.match(/from (\S+)|Paid (\S+) for/); // fallback parse
+      // Better: extract from detail: "from X" or "Paid X for"
+      let name=''; if(h.detail.includes('from ')) name=h.detail.split('from ')[1].split(' -')[0].split(' for')[0]; if(h.detail.includes('Paid ')) name=h.detail.split('Paid ')[1].split(' for')[0];
+      if(name) names.add(name.trim());
+    }
+    if(type==='customer' && (h.type==='CREDIT' || h.type==='CREDIT PAID')){
+      let name=''; if(h.detail.includes('to ')) name=h.detail.split('to ')[1].trim(); if(h.detail.includes(' paid for')) name=h.detail.split(' paid for')[0].trim(); if(h.detail.includes('Sold')) name=''; if(h.detail.includes('to ')) name=h.detail.split('to ')[1].split(' ')[0];
+      // Use credits/debits current for names too
+    }
+  });
+  // Add current lists - most reliable
+  if(type==='supplier') debits.forEach(d=>names.add(d.supplier));
+  if(type==='customer') credits.forEach(c=>names.add(c.name));
+  // Also from history by splitting properly
+  history.forEach(h=>{
+    if(type==='supplier' && h.type==='DEBIT'){ let parts=h.detail.split('from '); if(parts[1]) names.add(parts[1].split(' -')[0].trim()); }
+    if(type==='supplier' && h.type==='DEBIT PAID'){ let parts=h.detail.split('Paid '); if(parts[1]) names.add(parts[1].split(' for')[0].trim()); }
+    if(type==='customer' && h.type==='CREDIT'){ let parts=h.detail.split('to '); if(parts[1]) names.add(parts[1].trim()); }
+    if(type==='customer' && h.type==='CREDIT PAID'){ let parts=h.detail.split(' paid for'); if(parts[0]) names.add(parts[0].trim()); }
+  });
+  if(names.size===0) sel.innerHTML='<option value="">No names yet</option>';
+  else [...names].forEach(n=>{ sel.innerHTML+=`<option value="${n}">${n}</option>`; });
+  showPersonLedger();
+}
+function showPersonLedger(){
+  let type=document.getElementById('personType').value; let name=document.getElementById('personName').value; if(!name) { document.getElementById('personSummary').innerText='No person yet bro'; document.getElementById('personBody').innerHTML=''; return; }
+  let rows=[]; let totalOwe=0, totalPaid=0;
+  [...history].reverse().forEach(h=>{
+    let owe=0, paid=0, show=false;
+    if(type==='supplier'){
+      if(h.type==='DEBIT' && h.detail.includes(name)) {owe=h.amount; show=true;}
+      if(h.type==='DEBIT PAID' && h.detail.includes(name)) {paid=Math.abs(h.amount); show=true;}
+    } else {
+      if(h.type==='CREDIT' && h.detail.includes(name)) {owe=h.amount; show=true;}
+      if(h.type==='CREDIT PAID' && h.detail.includes(name)) {paid=h.amount; show=true;}
+    }
+    if(show){ rows.push({time:h.time,detail:h.detail,owe,paid}); totalOwe+=owe; totalPaid+=paid; }
+  });
+  let still=totalOwe-totalPaid;
+  document.getElementById('personSummary').innerHTML=(type==='supplier'?'🏪 SUPPLIER: ':'👤 CUSTOMER: ')+name+' | Total Owe: $'+totalOwe.toFixed(2)+' | Total Paid: $'+totalPaid.toFixed(2)+' | STILL OWE: $'+still.toFixed(2);
+  let tb=document.getElementById('personBody'); tb.innerHTML=''; let running=0;
+  if(rows.length===0) tb.innerHTML='<tr><td colspan="5" style="text-align:center">No ledger for '+name+' yet</td></tr>';
+  rows.forEach(r=>{ running+=r.owe-r.paid; tb.innerHTML+=`<tr><td>${r.time}</td><td>${r.detail}</td><td style="color:orange;font-weight:bold">${r.owe>0?' +$'+r.owe.toFixed(2):''}</td><td style="color:green;font-weight:bold">${r.paid>0?' -$'+r.paid.toFixed(2):''}</td><td><b>$${running.toFixed(2)}</b></td></tr>`; });
+}
+function openPerson(type,name){ document.getElementById('personType').value=type; fillPersonList(); document.getElementById('personName').value=name; showPersonLedger(); document.getElementById('personName').scrollIntoView({behavior:'smooth'}); }
+function render(){ let body=document.getElementById('stockBody'); let sel=document.getElementById('s_item'); body.innerHTML=''; sel.innerHTML=''; let tp=0, sv=0; stock.forEach((it,i)=>{ let pp=it.sell-it.cost; tp+=pp*it.qty; sv+=it.sell*it.qty; body.innerHTML+=`<tr><td>${it.name}</td><td>$${it.cost.toFixed(2)}</td><td>$${it.sell.toFixed(2)}</td><td>${it.qty}</td><td style="color:green;font-weight:bold">$${pp.toFixed(2)}</td><td><button onclick="stock.splice(${i},1);save();render()" style="width:auto;padding:5px 10px;background:red;color:#fff">X</button></td></tr>`; sel.innerHTML+=`<option value="${it.name}">${it.name} - $${it.sell.toFixed(2)}</option>`; }); document.getElementById('totals').innerHTML=`Profit if sell all: $${tp.toFixed(2)} | Stock Value: $${sv.toFixed(2)}`; let cb=document.getElementById('creditBody'); cb.innerHTML=''; credits.forEach((c,i)=>{ cb.innerHTML+=`<tr><td><button onclick="openPerson('customer','${c.name}')" style="width:auto;padding:5px;background:#009688;color:#fff">${c.name} 📚</button></td><td>${c.item}</td><td>$${c.amount.toFixed(2)}</td><td><button onclick="payCredit(${i})" style="width:auto;padding:5px;background:green;color:#fff">Paid</button></td></tr>`; }); let db=document.getElementById('debitBody'); db.innerHTML=''; debits.forEach((d,i)=>{ db.innerHTML+=`<tr><td><button onclick="openPerson('supplier','${d.supplier}')" style="width:auto;padding:5px;background:#ff9800;color:#000">${d.supplier} 📚</button></td><td>${d.item} x${d.qty||''}</td><td style="color:#ff9800;font-weight:bold">$${d.amount.toFixed(2)}</td><td><button onclick="payDebit(${i})" style="width:auto;padding:5px;background:#ff9800;color:#000">Pay</button></td></tr>`; }); if(stock.length>0) fillSale(); }
 function showHist(f){ histFilter=f; document.getElementById('tabToday').classList.toggle('active',f==='today'); document.getElementById('tabAll').classList.toggle('active',f==='all'); renderHist(); }
-function clearHistory(){ if(confirm('Clear History Only? Money + Stock stays bro!')){ history=[]; save(); renderHist(); } }
+function clearHistory(){ if(confirm('Clear History Only? Money + Stock stays bro! But Ledger will also clear because Ledger uses History!')){ history=[]; save(); renderHist(); renderLedger(); fillPersonList(); } }
 function renderHist(){
   let list = histFilter==='today' ? history.filter(h=>h.date===todayStr()) : history;
-  let sales=0, purch=0, mills=0, cred=0, credPaid=0, cap=0, debitNew=0, debitPaid=0;
+  let sales=0, purch=0, mills=0, cred=0, credPaid=0, cap=0, deb=0, debPaid=0;
   history.filter(h=>h.date===todayStr()).forEach(h=>{
-    if(h.type==='SALE') sales+=h.amount;
-    if(h.type==='PURCHASE') purch+=h.amount;
-    if(h.type==='MILLS') mills+=h.amount;
-    if(h.type==='CREDIT') cred+=h.amount;
-    if(h.type==='CREDIT PAID') credPaid+=h.amount;
-    if(h.type==='CAPITAL') cap+=h.amount;
-    if(h.type==='DEBIT') debitNew+=1;
-    if(h.type==='DEBIT PAID') debitPaid+=h.amount;
+    if(h.type==='SALE') sales+=h.amount; if(h.type==='PURCHASE') purch+=h.amount; if(h.type==='MILLS') mills+=h.amount; if(h.type==='CREDIT') cred+=h.amount; if(h.type==='CREDIT PAID') credPaid+=h.amount; if(h.type==='CAPITAL') cap+=h.amount; if(h.type==='DEBIT') deb+=h.amount; if(h.type==='DEBIT PAID') debPaid+=h.amount;
   });
-  document.getElementById('dailyReport').innerHTML='📅 TODAY '+todayStr()+'<br>Sales: $'+sales.toFixed(2)+' | Mills: $'+mills.toFixed(2)+' | Credit Sold: $'+cred.toFixed(2)+' | Credit Collected: $'+credPaid.toFixed(2)+'<br>Purchases Cash/Bank: $'+Math.abs(purch).toFixed(2)+' | New Debit: '+debitNew+' | Debit Paid: $'+Math.abs(debitPaid).toFixed(2)+'<br>Cash: $'+wallet.cash.toFixed(2)+' | Bank: $'+wallet.bank.toFixed(2)+' | Coco: '+(wallet.g1+wallet.g2)+' | You Owe: $'+debits.reduce((s,d)=>s+d.amount,0).toFixed(2);
+  document.getElementById('dailyReport').innerHTML='📅 TODAY '+todayStr()+'<br>Sales: $'+sales.toFixed(2)+' | Mills: $'+mills.toFixed(2)+' | Credit Sold: $'+cred.toFixed(2)+' | Credit Collected: $'+credPaid.toFixed(2)+'<br>Purchases: $'+Math.abs(purch).toFixed(2)+' | Debit Bought: $'+deb.toFixed(2)+' | Debit Paid: $'+Math.abs(debPaid).toFixed(2)+'<br>Cash: $'+wallet.cash.toFixed(2)+' | Bank: $'+wallet.bank.toFixed(2)+' | You Owe: $'+debits.reduce((s,d)=>s+d.amount,0).toFixed(2);
   let hb=document.getElementById('histBody'); hb.innerHTML='';
   if(list.length===0) hb.innerHTML='<tr><td colspan="4" style="text-align:center">No history yet bro</td></tr>';
   list.slice(0,100).forEach(h=>{ let color=h.amount<0?'red':'green'; hb.innerHTML+=`<tr><td>${h.time}</td><td><b>${h.type}</b></td><td>${h.detail}</td><td style="color:${color};font-weight:bold">${h.amount<0?'':' +'}$${h.amount.toFixed(2)}</td></tr>`; });
 }
-updateWallet(); render(); showPayBox(); renderHist(); showDebitBox();
+updateWallet(); render(); showPayBox(); showDebitBox(); renderHist(); renderLedger(); fillPersonList();
 </script>
 </body>
 </html>
