@@ -2615,5 +2615,37 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V-FINAL LOADED - CLOUD ONLY');
 })();
 </script>
+  <script>
+// V-FINAL-2 - Kill hidden local backup that resurrects Cloud
+(function(){
+  // 1. Never let old load() migrate local -> Cloud after a clear
+  var _oldLoad = window.load;
+  window.load = async function(){
+    var c = localStorage.getItem('terikano_clearedAt') || '';
+    if(c){
+      // Cloud is cleared - do NOT migrate local backup, do NOT load old
+      try{ purchases=[]; sales=[]; capitals=[]; banks=[]; expenses=[]; }catch(e){}
+      return;
+    }
+    if(typeof _oldLoad==='function') return _oldLoad();
+  };
+
+  // 2. Patch clear to also delete hidden local backup - otherwise it resurrects Cloud
+  var _oldClear = window.clearAllTestData;
+  window.clearAllTestData = async function(){
+    // Delete hidden backup BEFORE cloud clear
+    try{
+      localStorage.removeItem('Terikano_storage_data');
+      localStorage.removeItem('terikano_data');
+      localStorage.removeItem('terikano_years');
+      localStorage.removeItem('wholesalerDebts');
+      localStorage.removeItem('Terikano_notepad');
+    }catch(e){}
+    if(typeof _oldClear==='function') return _oldClear();
+  };
+  window.clearBothData = window.clearAllTestData;
+  console.log('V-FINAL-2 LOADED - hidden backup killed');
+})();
+</script>
 </body>
 </html>
