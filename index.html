@@ -2554,5 +2554,80 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V36 LOADED - Dashboard only');
 })();
 </script>
+  <script>
+// V37 - CLEAR FIX - One click clears Local + Cloud, keeps PW + Name - No 2nd BOTH click needed
+(function(){
+  // 1. Remove old broken floating button from V26 if it hides
+  // 2. Create NEW working CLEAR button - always visible for OWNER
+  function makeClearBtn(){
+    var old = document.getElementById('v37ClearBtn');
+    if(old) return;
+    var b = document.createElement('button');
+    b.id = 'v37ClearBtn';
+    b.textContent = '🗑️ CLEAR ALL - FRESH TEST';
+    b.style.cssText = 'position:fixed;bottom:70px;right:10px;z-index:999999;background:#d32f2f;color:#fff;padding:14px 16px;border:3px solid #000;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;';
+    b.onclick = function(){ window.clearAllTestData(); };
+    document.body.appendChild(b);
+  }
+  makeClearBtn();
+  setTimeout(makeClearBtn, 1000);
+
+  // 3. Override clearAllTestData - FIXED - No redirect to V31, no freeze
+  window.clearAllTestData = async function(){
+    if(!confirm('⚠️ CLEAR ALL?\n\nDeletes Sales + Purchases + Capital + Bank + Expenses + Stock + Coco + All lists on Phone + Cloud (Tablet too).\n\nPW + Business Name KEPT.\n\nContinue?')) return;
+    if(!confirm('Are you SURE? Cannot undo.')) return;
+
+    var ownerPw = localStorage.getItem('terikano_owner_pw') || localStorage.getItem('TERI_PW') || '9999';
+    var staffPw = localStorage.getItem('terikano_staff_custom_pw') || '1234';
+    var biz = localStorage.getItem('terikano_name') || 'TERIKANO';
+    var clearedAt = new Date().toISOString();
+
+    try{ if(window.db) db.ref('shop').off('value'); }catch(e){}
+
+    // Clear in-memory
+    try{
+      window.purchases=[]; window.sales=[]; window.capitals=[]; window.banks=[]; window.expenses=[];
+      window.collects=[]; window.ownerTakes=[]; window.tips=[]; window.waste=[]; window.clearance=[];
+      window.cart=[]; window.cocoBuys=[]; window.cocoMills=[]; window.badDebts=[]; window.priceHistory=[];
+      window.wholesalerDebts=[]; window.dailyNotesArr=[];
+    }catch(e){}
+
+    // Clear localStorage - keep ONLY PW + Name + Mode
+    var keep={'terikano_owner_pw':ownerPw,'TERI_PW':ownerPw,'terikano_staff_custom_pw':staffPw,'terikano_name':biz,'DARK_MODE':localStorage.getItem('DARK_MODE')||'0','terikano_cloud_migrated':'1','terikano_clearedAt':clearedAt};
+    var keys=[];
+    for(var i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+    for(var j=0;j<keys.length;j++){ if(!keep.hasOwnProperty(keys[j])){ try{ localStorage.removeItem(keys[j]); }catch(e){} } }
+    for(var k in keep){ localStorage.setItem(k, keep[k]); }
+
+    // Clear Cloud - BOTH in one go - no 2nd click needed
+    try{
+      if(window.db){
+        await db.ref('shop').set({ownerPw:ownerPw, staffPw:staffPw, terikano_name:biz, purchases:[], sales:[], capitals:[], banks:[], expenses:[], collects:[], ownerTakes:[], tips:[], waste:[], clearance:[], cocoBuys:[], cocoMills:[], badDebts:[], priceHistory:[], wholesalerDebts:[], ALL_LOCAL:{}, clearedAt:clearedAt, time:clearedAt});
+        await db.ref('terikano_config/passwords/ownerPw').set(ownerPw);
+        await db.ref('terikano_config/passwords/staffPw').set(staffPw);
+      }
+    }catch(e){ console.log('Cloud clear err', e); }
+
+    try{ if(typeof renderAll==='function') renderAll(); }catch(e){}
+    alert('✅ CLEARED - Local + Cloud - FRESH DATA.\n\nNow do fresh test. Old data will NOT come back.');
+    setTimeout(function(){ location.reload(); }, 500);
+  };
+
+  // 4. Also fix any CLEAR / CLEAR BOTH / CLEAR TEST DATA button inside BACKUP - make them all call same function
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('button') : null;
+    if(!btn) return;
+    var txt = (btn.textContent||'').toUpperCase();
+    if(txt.indexOf('CLEAR')!==-1 && (txt.indexOf('TEST')!==-1 || txt.indexOf('BOTH')!==-1 || txt.indexOf('ALL')!==-1)){
+      // Don't double-run if it's our V37 button
+      if(btn.id==='v37ClearBtn') return;
+      e.preventDefault(); e.stopPropagation();
+      window.clearAllTestData();
+    }
+  });
+
+  console.log('V37 LOADED - CLEAR FIX - 1 click = Local + Cloud');
+})();
+</script>
 </body>
 </html>
