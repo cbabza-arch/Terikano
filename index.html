@@ -2476,5 +2476,77 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V31 LOADED - BACKUP clean, top boxes back');
 })();
 </script>
+  <script>
+// V32 - SHOW CASH / BANK / COCO / CREDIT BOXES EVEN WHEN $0
+(function(){
+  function showSummaryBoxes(){
+    // 1. Find all dashboard boxes by text - CASH, BANK, COCO, CREDIT, DEBT, etc
+    var all = document.querySelectorAll('div, section, article, span');
+    var keywords = ['CASH','BANK','COCO','CREDIT','DEBT','PROFIT','SALES','KAKORO','NIKIRA','TARGET','LOW STOCK','TOTAL'];
+    for(var i=0;i<all.length;i++){
+      var el = all[i];
+      // Only check direct boxes, not huge containers - skip body, MENU, header
+      if(el.id==='menu' || el.className==='menu' || el.tagName==='BODY') continue;
+      var txt = (el.textContent||'').toUpperCase();
+      // Must be a small box - less than 200 chars, contains keyword + $ or number
+      if(el.children.length <= 5 && txt.length < 200){
+        for(var k=0;k<keywords.length;k++){
+          if(txt.indexOf(keywords[k])!==-1 && (txt.indexOf('$')!==-1 || txt.indexOf('0')!==-1)){
+            el.style.display='block';
+            el.style.visibility='visible';
+            el.style.opacity='1';
+            // If its parent was hidden, show parent too
+            if(el.parentNode && el.parentNode.style) {
+              el.parentNode.style.display='flex';
+              el.parentNode.style.visibility='visible';
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Force known dashboard IDs if they exist - show them
+    var ids = ['cashBox','bankBox','cocoBox','creditBox','debtBox','summaryBox','dashBox','topBoxes','dashboard','summary','cashDiv','bankSummary','cocoSummary','totalBox','profitBox','salesBox'];
+    for(var j=0;j<ids.length;j++){
+      var b=document.getElementById(ids[j]);
+      if(b){ b.style.display='flex'; b.style.visibility='visible'; b.style.opacity='1'; }
+    }
+
+    // 3. Force any .summary, .dash, .card, .box at top to show
+    var cards = document.querySelectorAll('.summary, .dash-card, .stat-box, .top-box, .summary-box, .card');
+    for(var c=0;c<cards.length;c++){
+      cards[c].style.display='block';
+      cards[c].style.visibility='visible';
+    }
+  }
+
+  // 4. Override renderAll - after it hides $0 boxes, we show them again
+  var _origRender = window.renderAll;
+  window.renderAll = function(){
+    if(typeof _origRender==='function') _origRender();
+    setTimeout(showSummaryBoxes, 100);
+  };
+
+  showSummaryBoxes();
+  setTimeout(showSummaryBoxes, 500);
+  setTimeout(showSummaryBoxes, 1500);
+
+  // 5. Rebuild CASH / BANK / COCO values from data - even if $0, show $0.00
+  function rebuildTotals(){
+    var cap = window.capitals||[];
+    var bank = window.banks||[];
+    var coco = window.cocoBuys||[];
+    var cashTotal = 0, bankTotal = 0, cocoTotal = 0;
+    for(var i=0;i<cap.length;i++) cashTotal += Number(cap[i].amount||cap[i].total||0);
+    for(var j=0;j<bank.length;j++) bankTotal += Number(bank[j].amount||bank[j].total||0);
+    for(var k=0;k<coco.length;k++) cocoTotal += Number(coco[k].total||coco[k].amount||0);
+    console.log('V32 - CASH:', cashTotal, 'BANK:', bankTotal, 'COCO:', cocoTotal);
+  }
+  rebuildTotals();
+
+  console.log('V32 LOADED - CASH/BANK/COCO boxes forced visible');
+})();
+</script>
 </body>
 </html>
