@@ -2764,5 +2764,58 @@ div[id$="Div"] input[id*="Pay"], div[id$="Div"] select[id*="Pay"], div[id$="Div"
   console.log('V-FINAL-4 LOADED - V21 ALL_LOCAL killed, top box fixed');
 })();
 </script>
+  <script>
+// V39 - ONE PASTE ZERO - Forces $0.00 everywhere, no small patches
+(function(){
+  try{ localStorage.removeItem('Terikano_storage_data'); }catch(e){}
+  try{ localStorage.setItem('terikano_clearedAt', new Date().toISOString()); }catch(e){}
+  window.purchases=[]; window.sales=[]; window.capitals=[]; window.banks=[]; window.expenses=[];
+  window.collects=[]; window.ownerTakes=[]; window.tips=[]; window.waste=[]; window.clearance=[];
+  window.cart=[]; window.cocoBuys=[]; window.cocoMills=[]; window.badDebts=[]; window.priceHistory=[];
+  window.wholesalerDebts=[]; window.dailyNotesArr=[]; window.PRICE_MAP={};
+
+  function zeroAll(){
+    // 1. All dashboard + cash spans to $0.00
+    var ids=['dashSales','dashSalesToday','dashCash','dashBank','dashCreditors','dashExp','dashProfit','dashProfitPct','cashBalanceDisplay','bankBalanceDisplayTop','dashCocoMill','dashDrawing','dashCocoBuy','dashCocoMillKg','tipTotalDisplay2','targetTextTop'];
+    ids.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el) return;
+      if(id==='dashProfitPct') el.textContent='0% Profit Avg';
+      else if(id==='targetTextTop') el.textContent='🎯 TARGET Today $0.00 / $100.00 = 0% | Real Profit Avg $0.00 0%';
+      else if(id==='dashSalesToday') el.textContent='Today $0.00';
+      else if(id==='tipTotalDisplay2') el.textContent='$0.00 TIP | Avg Profit $0.00 | Mill $0.00 Avg';
+      else if(id==='dashCocoMillKg') el.textContent='Sold 0 PCS → CASH';
+      else el.textContent='$0.00';
+    });
+    // 2. Target bar to 0%
+    var bar=document.getElementById('targetBarFillTop');
+    if(bar){ bar.style.width='0%'; bar.textContent='0%'; }
+    // 3. Stock count to 0
+    var ds=document.getElementById('dashStock'); if(ds) ds.textContent='0';
+    var dsr=document.getElementById('dashStockRem'); if(dsr) dsr.textContent='Rem 0 Avg Cost';
+    var coco=document.getElementById('dashCocoStock'); if(coco) coco.textContent='0 PCS';
+    var coco2=document.getElementById('cocoStockDisplay'); if(coco2) coco2.textContent='0 PCS';
+    var coco3=document.getElementById('cocoStockBreakdown'); if(coco3) coco3.textContent='0 - 0 = 0 PCS';
+    // 4. Hide low stock + expiry
+    var low=document.getElementById('lowStockTop'); if(low) low.style.display='none';
+    var low2=document.getElementById('warnLowText'); if(low2) low2.textContent='';
+    // 5. Clear STOCK table - keep header only
+    var st=document.getElementById('stockTbl');
+    if(st){ var rows=st.querySelectorAll('tr'); for(var i=1;i<rows.length;i++) rows[i].remove(); }
+    // 6. Clear ALL tables that have old purchase rows - keep header only
+    document.querySelectorAll('table tbody').forEach(function(tb){
+      // Only clear if it has Flour / Rice / Argentina / Moko / 2026-10
+      if(tb.innerHTML.indexOf('Argentina')!==-1 || tb.innerHTML.indexOf('2026-10')!==-1 || tb.innerHTML.indexOf('Flour')!==-1){
+        tb.innerHTML='';
+      }
+    });
+  }
+  // Run now + after render + every 1 sec for 5 sec to beat old renderAll
+  zeroAll();
+  setTimeout(zeroAll,500); setTimeout(zeroAll,1000); setTimeout(zeroAll,2000); setTimeout(zeroAll,3000); setTimeout(zeroAll,5000);
+  // Stop old save from bringing data back
+  window.__CLEARING=true; setTimeout(function(){ window.__CLEARING=false; },6000);
+})();
+</script>
 </body>
 </html>
