@@ -1,17 +1,27 @@
-// TERIKANO V28.2 - INSTALL APP + OFFLINE
-const CACHE_NAME = 'terikano-v28.2';
-const urlsToCache = ['./','./index.html','./manifest.json'];
+// V40 - SW FIX - Delete ALL old cache, never cache old V28 again
+var CACHE = 'terikano-v40-fresh';
 
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache)));
+self.addEventListener('install', function(e){
   self.skipWaiting();
+  e.waitUntil(
+    caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+    })
+  );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));
-  self.clients.claim();
+self.addEventListener('activate', function(e){
+  e.waitUntil(
+    caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){ if(k !== CACHE) return caches.delete(k); }));
+    }).then(function(){ return self.clients.claim(); })
+  );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(fetch(event.request).catch(()=>caches.match(event.request).then(r=>r||caches.match('./index.html'))));
+self.addEventListener('fetch', function(e){
+  if(e.request.url.indexOf('.html')!==-1 || e.request.url.indexOf('.js')!==-1){
+    e.respondWith(fetch(e.request));
+    return;
+  }
+  e.respondWith(fetch(e.request).catch(function(){ return caches.match(e.request); }));
 });
