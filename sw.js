@@ -1,15 +1,4 @@
-// TERIKANO - NO CACHE - ALWAYS FRESH - V5
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(keys.map((k) => caches.delete(k)));
-    }).then(() => self.clients.claim())
-  );
-});
-self.addEventListener('fetch', (e) => {
-  // NEVER cache HTML - Always go to Network!
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-});
+// TERIKANO PRO B - NO CACHE - V7
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});
