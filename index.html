@@ -9,6 +9,27 @@
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json?v=HIDE5">
 <meta name="theme-color" content="#000000">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+// AUTO UPDATE - Change this number EVERY time you update index.html!
+let APP_VERSION = 'V6';
+let savedVer = localStorage.getItem('terikano_app_version');
+if(savedVer && savedVer !== APP_VERSION){
+  localStorage.setItem('terikano_app_version', APP_VERSION);
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(rs=>{
+      rs.forEach(r=>r.unregister());
+      if('caches' in window){
+        caches.keys().then(ks=>{ks.forEach(k=>caches.delete(k)); location.reload(true);});
+      } else location.reload(true);
+    });
+  } else location.reload(true);
+} else {
+  localStorage.setItem('terikano_app_version', APP_VERSION);
+}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Arial}
 body{background:#000;color:#fff;padding:10px;padding-bottom:90px}
