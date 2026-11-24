@@ -1,6 +1,16 @@
-<html>
-<style>
-   div{min-height:1em;}
-</style>
-<body>self.addEventListener(&#39;fetch&#39;, e =&gt; {<br/>  e.respondWith(<br/>    caches.open(&#39;terikano-v1&#39;).then(c =&gt; c.match(e.request).then(r =&gt; r || fetch(e.request).then(res =&gt; { c.put(e.request, res.clone()); return res; }).catch(()=&gt;r)))<br/>  );<br/>});</body>
-</html>
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open('terikano-v2').then(c => c.addAll(['./', './index.html', './manifest.json'])));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+      let copy = res.clone();
+      caches.open('terikano-v2').then(c => c.put(e.request, copy));
+      return res;
+    }).catch(() => r))
+  );
+});
