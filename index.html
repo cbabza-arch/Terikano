@@ -258,5 +258,39 @@ function logout(){ localStorage.removeItem('terikano_role'); location.reload(); 
 if(role){ document.getElementById('login').classList.add('hidden'); applyRole(); }
 renderAll();
 </script>
+  <script>
+// UNIVERSAL STAFF DEAD FIX - Works on ANY file!
+(function(){
+  // Check if Staff - Change this to how YOUR file stores role!
+  let isStaff = document.body.innerHTML.includes('STAFF MODE') || localStorage.getItem('terikano_role')==='staff' || localStorage.getItem('role')==='staff';
+  // If your file uses different storage, tell me bro!
+  if(!isStaff) return;
+
+  let ownerWords = ['OWNER SETTINGS','CAPITAL','PROFIT & LOSS','COCO','PURCHASE','DRAWINGS','DEBIT LIST','DAILY REPORT','BACKUP'];
+  
+  document.querySelectorAll('div, button, section').forEach(el=>{
+    let txt = (el.innerText||'').toUpperCase();
+    // Only the BAR itself, not inside content
+    if(el.children.length>0 && el.className.toString().toLowerCase().includes('bar')) return;
+    ownerWords.forEach(word=>{
+      if(txt.includes(word) && el.offsetHeight < 80 && el.offsetHeight > 20){
+        el.style.opacity = '0.45';
+        el.style.filter = 'grayscale(1)';
+        el.style.pointerEvents = 'none';
+        el.style.background = '#1a1a1a';
+        el.style.color = '#888';
+        el.style.border = '1px dashed #555';
+        el.innerHTML += ' <span style="background:#333;color:#fff;font-size:10px;padding:4px 8px;border-radius:20px">🔒 OWNER ONLY</span>';
+      }
+    });
+  });
+  // Block Settings button at bottom
+  document.querySelectorAll('button').forEach(b=>{
+    if(b.innerText.toUpperCase().includes('SETTING')){
+      b.style.opacity='0.4'; b.style.pointerEvents='none'; b.innerText='🔒 Settings';
+    }
+  });
+})();
+  </script>
 </body>
 </html>
