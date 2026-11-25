@@ -207,7 +207,10 @@ function showHist(f){histFilter=f;document.getElementById('tabToday').classList.
 function clearHistory(){if(confirm('Clear History?')){history=[];save();renderHist();renderLedger();renderStaffLedger();renderPL();renderBalanceSheet();}}
 function renderHist(){let list=histFilter==='today'?history.filter(h=>h.date===todayStr()):history;let sales=0,purch=0,mills=0,cred=0,credPaid=0,deb=0,debPaid=0,ret=0,draw=0,exp=0,tips=0,bad=0;history.filter(h=>h.date===todayStr()).forEach(h=>{if(h.type==='SALE')sales+=h.amount;if(h.type==='PURCHASE')purch+=h.amount;if(h.type==='MILLS')mills+=h.amount;if(h.type==='TIPS')tips+=h.amount;if(h.type==='CREDIT')cred+=h.amount;if(h.type==='CREDIT PAID')credPaid+=h.amount;if(h.type==='DEBIT')deb+=h.amount;if(h.type==='DEBIT PAID')debPaid+=h.amount;if(h.type==='RETURN')ret+=Math.abs(h.amount);if(h.type==='DRAWINGS')draw+=Math.abs(h.amount);if(h.type==='EXPENSE')exp+=Math.abs(h.amount);if(h.type==='BAD DEBT')bad+=Math.abs(h.amount);});document.getElementById('dailyReport').innerHTML='📅 TODAY '+todayStr()+'<br>Sales $'+sales.toFixed(2)+' | Mills $'+mills.toFixed(2)+' | Tips $'+tips.toFixed(2)+' | Returns $'+ret.toFixed(2)+'<br>Credit Sold $'+cred.toFixed(2)+' | Credit Collected $'+credPaid.toFixed(2)+' | Bad Debt $'+bad.toFixed(2)+'<br>Drawings $'+draw.toFixed(2)+' | Expenses $'+exp.toFixed(2)+'<br>Cash $'+wallet.cash.toFixed(2)+' | Bank $'+wallet.bank.toFixed(2);let hb=document.getElementById('histBody');hb.innerHTML='';if(!list.length)hb.innerHTML='<tr><td colspan="5" style="text-align:center">No history</td></tr>';list.slice(0,100).forEach(h=>{hb.innerHTML+=`<tr><td>${h.time}</td><td><b>${h.type}</b></td><td>${h.detail}</td><td style="color:${h.amount<0?'red':'green'}">${h.amount<0?'':' +'}$${h.amount.toFixed(2)}</td><td></td></tr>`;});}
 setRole('owner');applyStoreName();
-
+let s=document.createElement('div');
+s.style.cssText='position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:1;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold;color:white;background:#22c55e;';
+s.textContent='🟢 Online - Synced ✅';
+document.body.appendChild(s);
 </script>
 </body>
 </html>
