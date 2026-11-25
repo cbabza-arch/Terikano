@@ -4,10 +4,22 @@
 <title>TERIKANO PRO</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0f0f0f;color:#fff;font-family:Arial;padding-bottom:80px}
-.hidden{display:none!important}.top{background:#111;padding:14px;text-align:center;border-bottom:2px solid #ffcc00}.top h1{margin:0;color:#ffcc00;font-size:22px}.top p{margin:2px 0;color:#aaa;font-size:12px}
-.login{max-width:360px;margin:20px auto;background:#1a1a1a;padding:20px;border-radius:12px;text-align:center}.login input{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #333;background:#222;color:#fff;font-size:16px}
-.btn{width:100%;padding:12px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin:6px 0}.btn-gold{background:#ffcc00;color:#000}
-.roleRow{display:flex;gap:10px}.roleRow button{flex:1;padding:12px;border-radius:10px;border:2px solid #333;background:#222;color:#fff;font-weight:bold}.roleRow button.active{background:#ffcc00;color:#000}
+.hidden{display:none!important}
+.loginWrap{background:#0f0f0f;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+.loginBox{width:100%;max-width:420px;background:#1a1a1a;border:2px solid #ffcc00;border-radius:14px;padding:22px;text-align:center;margin-top:10px}
+.loginBox h1{margin:0;color:#ffcc00;font-size:26px}
+.loginBox .cloud{color:#4CAF50;font-size:12px;margin:6px 0 2px}
+.loginBox .who{color:#aaa;font-size:13px;margin:0 0 14px}
+.roleRow{display:flex;gap:10px}.roleRow button{flex:1;padding:13px;border:none;border-radius:8px;font-weight:bold;font-size:15px;cursor:pointer}
+.roleRow button.owner{background:#ffcc00;color:#000}
+.roleRow button.staff{background:#2a6ea6;color:#fff}
+.roleRow button.owner.active{outline:3px solid #fff}.roleRow button.staff.active{outline:3px solid #fff}
+.roleDesc{color:#aaa;font-size:12px;margin:10px 0}
+.loginBox label{display:block;color:#fff;font-size:14px;margin:12px 0 6px}
+.loginBox input{width:100%;padding:13px;border-radius:6px;border:none;background:#fff;color:#000;font-size:16px}
+.btnLogin{width:100%;padding:13px;border:none;border-radius:8px;background:#22c55e;color:#fff;font-weight:bold;font-size:16px;margin-top:14px;cursor:pointer}
+.loginFoot{color:#666;font-size:12px;margin-top:12px}.loginFoot2{color:#4CAF50;font-size:12px;margin-top:2px}
+.top{background:#111;padding:14px;text-align:center;border-bottom:2px solid #ffcc00}.top h1{margin:0;color:#ffcc00;font-size:22px}.top p{margin:2px 0;color:#aaa;font-size:12px}
 .nav{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#111;position:sticky;top:0;z-index:10}.nav button{padding:8px 10px;border-radius:20px;border:1px solid #333;background:#222;color:#fff;font-size:12px}
 .content{padding:12px;display:none}.content.active{display:block}.cardRow{display:flex;gap:10px;flex-wrap:wrap}.card{flex:1;min-width:140px;background:#1a1a1a;padding:14px;border-radius:10px;border-left:4px solid #ffcc00}.card b{font-size:20px;color:#ffcc00}.card span{font-size:12px;color:#aaa}
 input,select{width:100%;padding:11px;margin:6px 0;border-radius:8px;border:1px solid #333;background:#222;color:#fff}
@@ -17,9 +29,24 @@ button.action{background:#ffcc00;color:#000;padding:11px;border:none;border-radi
 @keyframes flashRed{0%,100%{background:#ff3b30;color:#fff}50%{background:#fff;color:#ff3b30}}@keyframes flashYellow{0%,100%{background:#ffeb3b;color:#000}50%{background:#ff9800;color:#fff}}
 .staffBanner{background:#ffcc00;color:#000;text-align:center;padding:8px;font-weight:bold;font-size:12px}.bottomBar{position:fixed;bottom:0;left:0;right:0;background:#111;display:flex;justify-content:space-around;padding:8px;border-top:1px solid #333}.bottomBar button{background:none;border:none;color:#fff;font-size:11px}hr{border:1px solid #333;margin:14px 0}
 </style></head><body>
-<div class="top"><h1>🏪 TERIKANO PRO</h1><p>Kiribati Store Management</p><p>☁️ Cloud ✅ | 📴 Works Offline ✅</p></div>
-<div id="loginPage" class="login"><h2>Who are you bro?</h2><div class="roleRow"><button id="roleOwner" class="active" onclick="setRole('owner')">👑 OWNER</button><button id="roleStaff" onclick="setRole('staff')">👤 STAFF</button></div><p class="small" id="roleDesc">Owner sees EVERYTHING</p><input id="pinInput" type="password" placeholder="Enter your password bro 🔒"><button class="btn btn-gold" onclick="doLogin()">🔓 Login</button><p class="small">🔒 Ask Owner for your PIN</p></div>
-<div id="appPage" class="hidden"><div id="staffBanner" class="staffBanner hidden">👋 STAFF MODE - Sale, Return, Stock, Credit, Ledger Only</div><div id="alertBox"></div><div class="nav" id="navBar"></div>
+
+<div id="loginPage" class="loginWrap"><div class="loginBox">
+<h1>📅 TERIKANO PRO</h1>
+<p class="cloud">☁️ Cloud: Connected ✅ | 📴 Works Offline ✅</p>
+<p class="who">Who are you bro?</p>
+<div class="roleRow"><button id="roleOwner" class="owner active" onclick="setRole('owner')">👑 OWNER</button><button id="roleStaff" class="staff" onclick="setRole('staff')">👤 STAFF</button></div>
+<p class="roleDesc" id="roleDesc">Owner sees EVERYTHING.</p>
+<label>Password</label>
+<input id="pinInput" type="password" placeholder="Enter Password">
+<button class="btnLogin" onclick="doLogin()">🔒 LOGIN</button>
+<p class="loginFoot">Enter your password bro 🔒</p>
+</div></div>
+
+<div id="appPage" class="hidden">
+<div class="top"><h1>🏪 TERIKANO PRO</h1><p>Kiribati Store Management</p><p>☁️ Cloud: Connected ✅ | 📴 Works Offline ✅</p></div>
+<div id="staffBanner" class="staffBanner hidden">👋 STAFF MODE - Sale, Return, Stock, Credit, Ledger Only</div>
+<div id="alertBox"></div>
+<div class="nav" id="navBar"></div>
 <div id="tab-dashboard" class="content active"><h3>📊 Dashboard</h3><div class="cardRow"><div class="card"><b id="dSales">$0</b><br><span>Today Sales</span></div><div class="card"><b id="dProfit">$0</b><br><span>Profit (Owner)</span></div><div class="card"><b id="dStock">0</b><br><span>Stock Items</span></div><div class="card"><b id="dCredit">$0</b><br><span>Credit Owed</span></div></div><div class="card" style="margin-top:10px"><b id="dCapital">$0</b><br><span>Capital</span></div><div class="card" style="margin-top:10px"><b id="dCoco">$0</b><br><span>Coco Total</span></div></div>
 <div id="tab-sale" class="content"><h3>🛒 Sale</h3><input id="saleItem" placeholder="Product Name"><input id="saleQty" type="number" placeholder="Qty"><input id="salePrice" type="number" placeholder="Price $"><select id="salePay"><option value="cash">Cash</option><option value="credit">Credit</option></select><input id="saleCust" placeholder="Customer Name (for Credit)"><button class="action" onclick="addSale()">Add Sale 🧾</button><div id="saleList"></div></div>
 <div id="tab-return" class="content"><h3>↩️ Return</h3><input id="retItem" placeholder="Product"><input id="retQty" type="number" placeholder="Qty"><input id="retAmt" type="number" placeholder="Amount $"><button class="action" onclick="addReturn()">Add Return</button><div id="retList"></div></div>
@@ -39,8 +66,8 @@ button.action{background:#ffcc00;color:#000;padding:11px;border:none;border-radi
 let role='owner';
 let sales=JSON.parse(localStorage.getItem('terikano_sales')||'[]');let stock=JSON.parse(localStorage.getItem('terikano_stock')||'[]');let credits=JSON.parse(localStorage.getItem('terikano_credit')||'[]');let debits=JSON.parse(localStorage.getItem('terikano_debit')||'[]');let returns=JSON.parse(localStorage.getItem('terikano_returns')||'[]');let purchases=JSON.parse(localStorage.getItem('terikano_purchase')||'[]');let capitals=JSON.parse(localStorage.getItem('terikano_capital')||'[]');let cocos=JSON.parse(localStorage.getItem('terikano_coco')||'[]');let drawings=JSON.parse(localStorage.getItem('terikano_drawings')||'[]');let barters=JSON.parse(localStorage.getItem('terikano_barter')||'[]');
 function save(){localStorage.setItem('terikano_sales',JSON.stringify(sales));localStorage.setItem('terikano_stock',JSON.stringify(stock));localStorage.setItem('terikano_credit',JSON.stringify(credits));localStorage.setItem('terikano_debit',JSON.stringify(debits));localStorage.setItem('terikano_returns',JSON.stringify(returns));localStorage.setItem('terikano_purchase',JSON.stringify(purchases));localStorage.setItem('terikano_capital',JSON.stringify(capitals));localStorage.setItem('terikano_coco',JSON.stringify(cocos));localStorage.setItem('terikano_drawings',JSON.stringify(drawings));localStorage.setItem('terikano_barter',JSON.stringify(barters));}
-function setRole(r){role=r;document.getElementById('roleOwner').classList.toggle('active',r==='owner');document.getElementById('roleStaff').classList.toggle('active',r==='staff');document.getElementById('roleDesc').textContent=r==='owner'?'Owner sees EVERYTHING':'Staff sees ONLY Sale, Return, Stock, Credit, Ledger';}
-function doLogin(){let pin=document.getElementById('pinInput').value;let ok=(role==='owner'&&pin==='1234')||(role==='staff'&&pin==='1111');if(!ok) return alert('Wrong PIN bro! Ask Owner!');document.getElementById('loginPage').classList.add('hidden');document.getElementById('appPage').classList.remove('hidden');buildNav();renderAll();}
+function setRole(r){role=r;document.getElementById('roleOwner').classList.toggle('active',r==='owner');document.getElementById('roleStaff').classList.toggle('active',r==='staff');document.getElementById('roleDesc').textContent=r==='owner'?'Owner sees EVERYTHING.':'Staff sees ONLY Sale, Return, Stock, Credit, Ledger';}
+function doLogin(){let pin=document.getElementById('pinInput').value;let ok=(role==='owner'&&pin==='1234')||(role==='staff'&&pin==='1111');if(!ok) return alert('Wrong Password bro!');document.getElementById('loginPage').classList.add('hidden');document.getElementById('appPage').classList.remove('hidden');buildNav();renderAll();}
 function logout(){location.reload();}
 function buildNav(){let all=[['dashboard','📊 Dashboard'],['sale','🛒 Sale'],['return','↩️ Return'],['purchase','📦 Purchase'],['stock','📦 Stock'],['credit','💳 Credit'],['debit','💸 Debit'],['ledger','📒 Ledger'],['capital','🏦 Capital'],['coco','🥥 Coco'],['drawings','💰 Drawings'],['report','📊 Report'],['backup','💾 Backup']];let show=role==='staff'?all.filter(x=>['sale','return','stock','credit','ledger'].includes(x[0])):all;document.getElementById('navBar').innerHTML=show.map(x=>`<button onclick="showTab('${x[0]}')">${x[1]}</button>`).join('');document.getElementById('staffBanner').classList.toggle('hidden',role!=='staff');document.querySelectorAll('.ownerOnly').forEach(e=>{e.style.display=role==='staff'?'none':'block';});}
 function showTab(t){document.querySelectorAll('.content').forEach(e=>e.classList.remove('active'));let el=document.getElementById('tab-'+t);if(el) el.classList.add('active');}
