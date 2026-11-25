@@ -213,5 +213,72 @@ s.style.cssText='position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z
 s.textContent='🟢 Online - Synced ✅';
 document.body.appendChild(s);
   </script>
+  <script>
+// V-PURCHASE-5c - Round PURCHASE total to nearest 5c - 34.08 -> 34.10
+(function(){
+  // Nearest 5c: 34.08->34.10, 34.07->34.05, 34.02->34.00
+  window.round5 = function(v){
+    return Math.round((parseFloat(v)||0) * 20) / 20;
+  };
+
+  // 1. LIVE PREVIEW - Show rounded total as you type in PURCHASE
+  function showPurTotal(){
+    var c = parseFloat(document.getElementById('p_cost')?.value)||0;
+    var q = parseInt(document.getElementById('p_qty')?.value)||0;
+    if(c<=0 || q<=0) return;
+    var raw = c * q;
+    var rounded = window.round5(raw);
+    var el = document.getElementById('p_totalPreview');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'p_totalPreview';
+      el.className = 'total';
+      el.style.marginTop = '8px';
+      var btn = document.querySelector('#secPurchase button');
+      if(btn) btn.parentNode.insertBefore(el, btn);
+    }
+    el.innerText = 'TOTAL TO PAY: $' + rounded.toFixed(2) + (raw !== rounded ? '  (Raw $' + raw.toFixed(2) + ' → Rounded $' + rounded.toFixed(2) + ')' : '');
+  }
+  document.addEventListener('input', function(e){
+    if(e.target && (e.target.id==='p_cost' || e.target.id==='p_qty')) showPurTotal();
+  });
+
+  // 2. FIX THE REAL SAVE - Override addPurchase to use ROUNDED total
+  window.addPurchase = function(){
+    var n = document.getElementById('p_name').value.trim();
+    var c = parseFloat(document.getElementById('p_cost').value)||0;
+    var s = parseFloat(document.getElementById('p_sell').value)||0;
+    var q = parseInt(document.getElementById('p_qty').value)||0;
+    var e = document.getElementById('p_exp').value||'';
+    var pay = document.getElementById('p_pay').value;
+    if(!n || c<=0 || s<=0 || q<=0){ alert('Fill all'); return; }
+
+    // *** THE FIX - Round ONLY total, NOT unit cost ***
+    var rawTot = c * q;
+    var tot = window.round5(rawTot); // 24 x 1.42 = 34.08 -> 34.10
+
+    if(pay==='debit'){
+      var supp = document.getElementById('supplierName').value.trim()||'Wholesaler';
+      debits.push({supplier:supp, item:n, amount:tot, qty:q});
+      addHist('DEBIT','Bought '+q+' x '+n+' on DEBIT from '+supp+' (Raw $'+rawTot.toFixed(2)+' → Pay $'+tot.toFixed(2)+')', tot);
+      document.getElementById('supplierName').value='';
+    } else {
+      if(wallet[pay] < tot){ alert('Not enough '+pay+' - Need $'+tot.toFixed(2)); return; }
+      wallet[pay] -= tot;
+      addHist('PURCHASE','Bought '+q+' x '+n+' paid '+pay.toUpperCase()+' (Raw $'+rawTot.toFixed(2)+' → Pay $'+tot.toFixed(2)+')', -tot);
+    }
+
+    // Stock keeps REAL cost 1.42 - so profit stays correct
+    var f = stock.find(x=>x.name.toLowerCase()===n.toLowerCase());
+    if(f){ f.cost=c; f.sell=s; f.qty+=q; if(e) f.exp=e; }
+    else stock.push({name:n, cost:c, sell:s, qty:q, exp:e, clearPrice:0});
+
+    save(); render(); updateWallet();
+    alert('Added! Total to pay: $' + tot.toFixed(2));
+  };
+
+  console.log('V-PURCHASE-5c LOADED - 34.08 -> 34.10');
+})();
+  </script>
   </body>
 </html>
