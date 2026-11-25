@@ -1,3 +1,9 @@
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{self.clients.claim();});
-self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});
+const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "terikano-3d137.firebaseapp.com",
+  databaseURL: "https://terikano-3d137-default-rtdb.firebaseio.com",
+  projectId: "terikano-3d137",
+  storageBucket: "terikano-3d137.appspot.com",
+  messagingSenderId: "....",
+  appId: "1:....:web:...."
+};
