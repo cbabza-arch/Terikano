@@ -280,5 +280,111 @@ document.body.appendChild(s);
   console.log('V-PURCHASE-5c LOADED - 34.08 -> 34.10');
 })();
   </script>
+  <script>
+// V-FIX-CLEAR + CUSTOMER NAME
+(function(){
+
+  // ===== 1. CUSTOMER NAME IN SALE =====
+  function ensureCustInput(){
+    var cust = document.getElementById('s_cust');
+    if(cust) return cust;
+    // If no cust input, create it at top of saleDiv
+    var sale = document.getElementById('saleDiv');
+    if(!sale) return null;
+    var div = document.createElement('div');
+    div.innerHTML = '<label style="font-weight:bold;">Customer Name:</label><input id="s_cust" placeholder="Walk-in / Customer Name" value="Walk-in" style="width:100%;padding:10px;margin:5px 0;">';
+    sale.insertBefore(div, sale.firstChild);
+    return document.getElementById('s_cust');
+  }
+  ensureCustInput();
+  setTimeout(ensureCustInput, 500);
+
+  function getCust(){
+    var v = (document.getElementById('s_cust')||{}).value || '';
+    v = v.trim();
+    return v || 'Walk-in';
+  }
+
+  // ===== 2. SHOW CUSTOMER NAME IN CHANGE / PAY LATER =====
+  var _origCalc = window.calcChange;
+  window.calcChange = function(){
+    var r = null;
+    if(typeof _origCalc === 'function'){ try{ r = _origCalc(); }catch(e){} }
+    // Now fix the text to include name
+    var cust = getCust();
+    var big = document.getElementById('bigChangeDisplay');
+    if(big && big.style.display !== 'none'){
+      // Don't duplicate name if already there
+      if(big.innerText.indexOf(cust) === -1 && big.innerText.indexOf('TO PAY LATER') !== -1){
+        big.innerText = big.innerText + ' - ' + cust;
+      }
+      if(big.innerText.indexOf('CHANGE') !== -1){
+        big.innerText = big.innerText + ' - ' + cust;
+      }
+    }
+    var pl = document.getElementById('payLaterLine');
+    if(pl && pl.style.display !== 'none'){
+      if(pl.innerText.indexOf(cust) === -1) pl.innerText = 'TO PAY LATER: $' + pl.innerText.replace(/[^0-9.]/g,'') + ' - Customer: ' + cust;
+    }
+    return r;
+  };
+
+  // ===== 3. BLOCK PAY LATER WITHOUT NAME =====
+  var _origCheckout = window.checkoutCartWithConfirm;
+  window.checkoutCartWithConfirm = function(){
+    var tot = 0; for(var i=0;i<(window.cart||[]).length;i++) tot += Number(window.cart[i].price||0);
+    tot = window.roundAUD ? window.roundAUD(tot) : tot;
+    var paid = parseFloat(document.getElementById('paidAmt') ? document.getElementById('paidAmt').value : 0)||0;
+    var cust = getCust();
+    // If owes money and name is Walk-in / empty -> STOP, ask for name
+    if(paid < tot && (cust === 'Walk-in' || cust === '')){
+      alert('⚠️ Customer owes $' + (tot - paid).toFixed(2) + '\n\nPlease type CUSTOMER NAME first!\n\nOtherwise you will not know who owes you.');
+      var el = document.getElementById('s_cust');
+      if(el){ el.value=''; el.focus(); el.style.border='3px solid red'; }
+      return;
+    }
+    var res = null;
+    if(typeof _origCheckout === 'function') res = _origCheckout();
+
+    // ===== 4. CLEAR SALE WINDOW AFTER CHECKOUT =====
+    setTimeout(function(){
+      try{
+        window.cart = [];
+        var paidEl = document.getElementById('paidAmt'); if(paidEl) paidEl.value='';
+        var custEl = document.getElementById('s_cust'); if(custEl) custEl.value='Walk-in';
+        var itemEl = document.getElementById('s_item'); if(itemEl) itemEl.value='';
+        var qtyEl = document.getElementById('s_qty'); if(qtyEl) qtyEl.value='';
+        var priceEl = document.getElementById('s_price'); if(priceEl) priceEl.value='';
+        var chEl = document.getElementById('changeAmt'); if(chEl) chEl.innerText='0.00';
+        var big2 = document.getElementById('bigChangeDisplay'); if(big2) big2.style.display='none';
+        var pl2 = document.getElementById('payLaterLine'); if(pl2) pl2.style.display='none';
+        if(typeof renderAll==='function') renderAll();
+        console.log('SALE CLEARED - Ready for next customer');
+      }catch(e){}
+    }, 300);
+    return res;
+  };
+
+  // ===== 5. CLEAR PURCHASE WINDOW AFTER ADD =====
+  var _origAddPur = window.addPurchase;
+  window.addPurchase = function(){
+    var res = null;
+    if(typeof _origAddPur === 'function') res = _origAddPur();
+    setTimeout(function(){
+      try{
+        var ids = ['p_name','p_cost','p_sell','p_qty','p_exp','supplierName'];
+        for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(el) el.value=''; }
+        var prev = document.getElementById('p_totalPreview'); if(prev) prev.innerText='';
+        var payEl = document.getElementById('p_pay'); if(payEl) payEl.value='cash';
+        var first = document.getElementById('p_name'); if(first) first.focus();
+        console.log('PURCHASE CLEARED - Ready for next item');
+      }catch(e){}
+    }, 200);
+    return res;
+  };
+
+  console.log('V-FIX-CLEAR + CUSTOMER LOADED');
+})();
+  </script>
   </body>
 </html>
