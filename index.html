@@ -17,7 +17,7 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 .top h2{font-size:22px}
 .top p{color:#64748b;font-size:13px;margin-top:4px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px}
-.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;position:relative;min-height:110px;transition:.2s}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;border:2px solid transparent;position:relative;min-height:110px;transition:.2s}
 .card:active{transform:scale(.97)}
 .card .icon{font-size:28px}
 .card h3{font-size:15px;margin:8px 0 4px}
@@ -29,8 +29,19 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 .card.purple{background:#ede9fe}
 .card.orange{background:#ffedd5}
 .card.red{background:#fee2e2}
-.card.owner-dead{opacity:.55 !important;filter:grayscale(1) !important;pointer-events:none !important;background:#e2e8f0 !important;border:1px dashed #94a3b8 !important;cursor:not-allowed !important}
-.card.owner-dead .lock{position:absolute;top:8px;right:8px;background:#1e293b;color:#fff;font-size:9px;font-weight:800;padding:4px 8px;border-radius:20px}
+/* PRO DEAD BOX - OWNER ONLY, DEAD FOR STAFF */
+.card.owner-dead{
+  opacity:.55 !important;
+  filter:grayscale(1) !important;
+  pointer-events:none !important;
+  background:#e2e8f0 !important;
+  border:1px dashed #94a3b8 !important;
+  cursor:not-allowed !important;
+}
+.card.owner-dead .lock{
+  position:absolute;top:8px;right:8px;background:#1e293b;color:#fff;
+  font-size:9px;font-weight:800;padding:4px 8px;border-radius:20px;letter-spacing:.5px
+}
 .card.owner-dead h3,.card.owner-dead p,.card.owner-dead .amt{color:#64748b !important}
 .bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #e2e8f0;padding:10px;z-index:10}
 .bottom button{flex:1;background:none;border:0;font-size:13px;font-weight:700;color:#64748b}
@@ -52,11 +63,6 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 .close{background:#e2e8f0 !important;color:#000 !important}
 .freeze{background:#ef4444 !important}
 .owner-badge{display:inline-block;background:#f59e0b;color:#fff;font-size:10px;padding:3px 8px;border-radius:20px;margin-left:6px}
-.ledger-daily{background:#dcfce7;border-radius:12px;padding:14px;margin-bottom:14px}
-.ledger-daily b{font-size:20px}
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{flex:1;padding:10px !important}
-.tabs button.active{background:#0f172a !important;color:#fff !important}
 </style>
 </head>
 <body>
@@ -87,11 +93,12 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 </div>
 
 <div class="grid">
+  <!-- STAFF CAN USE - SELL -->
   <div class="card green" onclick="openModal('sellModal')">
     <div class="icon">🛒</div><h3>Sell / POS</h3><p>Staff Can Sell</p><div class="amt">Sell Now →</div>
   </div>
 
-  <!-- STAFF BOXES - ALL ACTIVE ✅ -->
+  <!-- STAFF ONLY - ACTIVE FOR STAFF ✅ -->
   <div class="card yellow" onclick="openModal('salesModal')">
     <div class="icon">💰</div><h3>Sales</h3><p>Staff Sales</p><div class="amt" id="totalSales">$0.00</div>
   </div>
@@ -104,9 +111,12 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
     <div class="icon">⚠️</div><h3>Credit / Bad Debt</h3><p>Who Owes Money</p><div class="amt" id="creditAmt">$0.00 Owed</div>
   </div>
 
-  <!-- LEDGER - CONTAINS MY DAILY SALES INSIDE! -->
   <div class="card blue" onclick="openModal('ledgerModal')">
-    <div class="icon">📒</div><h3>Ledger</h3><p>Includes My Daily Sales</p><div class="amt" id="todaySales">$0.00 Today</div>
+    <div class="icon">📒</div><h3>Ledger</h3><p>Staff Ledger</p><div class="amt">View Ledger →</div>
+  </div>
+
+  <div class="card green" onclick="openModal('dailyModal')">
+    <div class="icon">📊</div><h3>My Daily Sales</h3><p>Today Report</p><div class="amt" id="todaySales">$0.00 Today</div>
   </div>
 
   <!-- OWNER ONLY - DEAD FOR STAFF 🔒 -->
@@ -127,6 +137,7 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
   <button id="settingsBtn" onclick="openModal('settingsModal')">⚙️ Settings</button>
 </div>
 
+<!-- MODALS -->
 <div id="sellModal" class="modal hidden"><div class="modal-box">
   <h3>🛒 Sell Product</h3>
   <input id="sellItem" placeholder="Product Name e.g. Rice 10kg">
@@ -157,25 +168,15 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
   <button class="close" onclick="closeModal('creditModal')">Close</button>
 </div></div>
 
-<!-- LEDGER MODAL - WITH MY DAILY SALES INSIDE! -->
 <div id="ledgerModal" class="modal hidden"><div class="modal-box">
-  <h3>📒 Ledger - Staff Can Use ✅</h3>
-
-  <div class="ledger-daily">
-    <div style="font-size:13px">📊 MY DAILY SALES - TODAY</div>
-    <b id="dailyToday">$0.00</b>
-    <div id="dailyCount" style="font-size:12px;color:#166534">0 sales today</div>
-  </div>
-
-  <div class="tabs">
-    <button id="tabDailyBtn" class="active" onclick="showLedgerTab('daily')">My Daily Sales</button>
-    <button id="tabAllBtn" onclick="showLedgerTab('all')">Full Ledger</button>
-  </div>
-
-  <div id="ledgerDailyView"><p id="dailyList">No sales today.</p></div>
-  <div id="ledgerAllView" class="hidden"><p id="ledgerList">No entries yet.</p></div>
-
+  <h3>📒 Ledger - Staff Can Use ✅</h3><p id="ledgerList">No entries yet.</p>
   <button class="close" onclick="closeModal('ledgerModal')">Close</button>
+</div></div>
+
+<div id="dailyModal" class="modal hidden"><div class="modal-box">
+  <h3>📊 My Daily Sales - Staff Can Use ✅</h3>
+  <p>Today: <b id="dailyToday">$0.00</b></p><p id="dailyList"></p>
+  <button class="close" onclick="closeModal('dailyModal')">Close</button>
 </div></div>
 
 <div id="profitModal" class="modal hidden"><div class="modal-box">
@@ -215,6 +216,7 @@ function login(wantRole){
 function applyRole(){
   document.getElementById('roleLabel').innerText = role==='owner' ? 'Owner 👑' : 'Staff';
   document.getElementById('welcomeText').innerText = role==='owner' ? 'Welcome, Owner 👋' : 'Welcome, Staff 👋';
+  // ONLY Owner-only boxes go DEAD for Staff. Staff boxes stay ACTIVE!
   document.querySelectorAll('.owner-box').forEach(box=>{
     let lock = box.querySelector('.lock');
     if(role==='staff'){ box.classList.add('owner-dead'); if(lock) lock.classList.remove('hidden'); }
@@ -237,6 +239,7 @@ function toggleFreeze(){
   updateFreezeUI(); alert(frozen ? 'Store FROZEN ❄️' : 'Store OPEN ✅');
 }
 function openModal(id){
+  // Staff BLOCKED only from Owner modals + Settings
   if(role==='staff' && (id==='settingsModal' || id==='profitModal' || id==='staffManageModal')){
     alert('🔒 OWNER ONLY! This box is not active for Staff.'); return;
   }
@@ -245,12 +248,6 @@ function openModal(id){
 }
 function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
 function showHome(btn){ document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-function showLedgerTab(tab){
-  document.getElementById('ledgerDailyView').classList.toggle('hidden', tab!=='daily');
-  document.getElementById('ledgerAllView').classList.toggle('hidden', tab!=='all');
-  document.getElementById('tabDailyBtn').classList.toggle('active', tab==='daily');
-  document.getElementById('tabAllBtn').classList.toggle('active', tab==='all');
-}
 function doSell(){
   let name = document.getElementById('sellItem').value;
   let price = parseFloat(document.getElementById('sellPrice').value||0);
@@ -273,20 +270,18 @@ function addStock(){
 }
 function renderAll(){
   let total = sales.reduce((a,s)=>a+s.total,0);
-  let todaySales = sales.filter(s=>s.date.includes(new Date().toLocaleDateString()));
-  let todayTotal = todaySales.reduce((a,s)=>a+s.total,0);
+  let todayTotal = sales.filter(s=>s.date.includes(new Date().toLocaleDateString())).reduce((a,s)=>a+s.total,0);
   let creditTotal = sales.filter(s=>s.type==='credit').reduce((a,s)=>a+s.total,0);
   document.getElementById('totalSales').innerText = '$'+total.toFixed(2);
   document.getElementById('todaySales').innerText = '$'+todayTotal.toFixed(2);
   document.getElementById('dailyToday').innerText = '$'+todayTotal.toFixed(2);
-  document.getElementById('dailyCount').innerText = todaySales.length+' sales today';
   document.getElementById('creditAmt').innerText = '$'+creditTotal.toFixed(2)+' Owed';
   document.getElementById('stockCount').innerText = stock.length+' Items';
   document.getElementById('profitAmt').innerText = '$'+(total*0.3).toFixed(2);
   document.getElementById('salesList').innerHTML = sales.length ? sales.map(s=>`<div style="padding:8px;border-bottom:1px solid #eee">${s.name} x${s.qty} - $${s.total.toFixed(2)} (${s.type})<br><small>${s.date}</small></div>`).join('') : 'No sales yet.';
   document.getElementById('creditList').innerHTML = sales.filter(s=>s.type==='credit').length ? sales.filter(s=>s.type==='credit').map(s=>`<div style="padding:8px;border-bottom:1px solid #eee">${s.name} - $${s.total.toFixed(2)}<br><small>${s.date}</small></div>`).join('') : 'No credit yet.';
   document.getElementById('ledgerList').innerHTML = sales.length ? sales.map(s=>`<div style="padding:8px;border-bottom:1px solid #eee">${s.date} - ${s.name} - $${s.total.toFixed(2)} (${s.type})</div>`).join('') : 'No entries yet.';
-  document.getElementById('dailyList').innerHTML = todaySales.length ? todaySales.map(s=>`<div style="padding:8px;border-bottom:1px solid #eee">${s.name} x${s.qty} - $${s.total.toFixed(2)} (${s.type})<br><small>${s.date}</small></div>`).join('') : 'No sales today.';
+  document.getElementById('dailyList').innerHTML = document.getElementById('salesList').innerHTML;
   document.getElementById('stockList').innerHTML = stock.length ? stock.map(s=>`<div style="padding:8px;border-bottom:1px solid #eee">${s.n} - Qty: ${s.q} - $${s.p}</div>`).join('') : 'No stock yet.';
   document.getElementById('profitList').innerHTML = 'Total Sales: $'+total.toFixed(2)+'<br>Est. Profit (30%): $'+(total*0.3).toFixed(2);
 }
@@ -295,4 +290,4 @@ if(role){ document.getElementById('login').classList.add('hidden'); applyRole();
 renderAll();
 </script>
 </body>
-  </html>
+      </html>
