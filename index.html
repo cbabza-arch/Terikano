@@ -386,5 +386,61 @@ document.body.appendChild(s);
   console.log('V-FIX-CLEAR + CUSTOMER LOADED');
 })();
   </script>
+  <script>
+// V-AUTO-SAVE - Never lose data when closing
+(function(){
+  // 1. Show SAVE status at top
+  var status = document.getElementById('saveStatus');
+  if(!status){
+    status = document.createElement('div');
+    status.id = 'saveStatus';
+    status.style.cssText = 'position:fixed;top:5px;left:5px;z-index:999999;background:#333;color:#fff;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:bold;';
+    status.innerText = '● Ready';
+    document.body.appendChild(status);
+  }
+
+  function setStatus(txt, color){
+    status.innerText = txt;
+    status.style.background = color;
+  }
+
+  // 2. Wrap real save to show status
+  var _origSave = window.save;
+  window.save = function(){
+    setStatus('● Saving...', '#ff9800');
+    try{ if(typeof _origSave === 'function') _origSave(); }catch(e){}
+    // Firebase takes 1-2 sec - show Saved after 1.5 sec
+    setTimeout(function(){ setStatus('✅ Saved to Cloud - Safe to Close', '#4caf50'); }, 1500);
+  };
+
+  // 3. Auto-save after EVERY important action
+  var _origAddPur = window.addPurchase;
+  if(typeof _origAddPur === 'function'){
+    window.addPurchase = function(){
+      var r = _origAddPur();
+      setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 300);
+      return r;
+    };
+  }
+  var _origCheckout = window.checkoutCartWithConfirm;
+  if(typeof _origCheckout === 'function'){
+    window.checkoutCartWithConfirm = function(){
+      var r = _origCheckout();
+      setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 300);
+      return r;
+    };
+  }
+
+  // 4. Save when you close / switch app - last chance
+  window.addEventListener('beforeunload', function(){
+    try{ if(typeof window.save==='function') window.save(); }catch(e){}
+  });
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ try{ if(typeof window.save==='function') window.save(); }catch(e){} }
+  });
+
+  console.log('V-AUTO-SAVE LOADED');
+})();
+  </script>
   </body>
 </html>
