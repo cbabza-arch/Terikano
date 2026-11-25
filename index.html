@@ -1,89 +1,266 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TERIKANO PRO</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERIKANO</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="manifest" href="manifest.json?v=HIDE5">
+<meta name="theme-color" content="#000000">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0f0f0f;color:#fff;font-family:Arial;padding-bottom:80px}
-.hidden{display:none!important}
-.loginWrap{background:#0f0f0f;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
-.loginBox{width:100%;max-width:420px;background:#1a1a1a;border:2px solid #ffcc00;border-radius:14px;padding:22px;text-align:center;margin-top:10px}
-.loginBox h1{margin:0;color:#ffcc00;font-size:26px}
-.loginBox .cloud{color:#4CAF50;font-size:12px;margin:6px 0 2px}
-.loginBox .who{color:#aaa;font-size:13px;margin:0 0 14px}
-.roleRow{display:flex;gap:10px}.roleRow button{flex:1;padding:13px;border:none;border-radius:8px;font-weight:bold;font-size:15px;cursor:pointer}
-.roleRow button.owner{background:#ffcc00;color:#000}
-.roleRow button.staff{background:#2a6ea6;color:#fff}
-.roleRow button.owner.active{outline:3px solid #fff}.roleRow button.staff.active{outline:3px solid #fff}
-.roleDesc{color:#aaa;font-size:12px;margin:10px 0}
-.loginBox label{display:block;color:#fff;font-size:14px;margin:12px 0 6px}
-.loginBox input{width:100%;padding:13px;border-radius:6px;border:none;background:#fff;color:#000;font-size:16px}
-.btnLogin{width:100%;padding:13px;border:none;border-radius:8px;background:#22c55e;color:#fff;font-weight:bold;font-size:16px;margin-top:14px;cursor:pointer}
-.loginFoot{color:#666;font-size:12px;margin-top:12px}.loginFoot2{color:#4CAF50;font-size:12px;margin-top:2px}
-.top{background:#111;padding:14px;text-align:center;border-bottom:2px solid #ffcc00}.top h1{margin:0;color:#ffcc00;font-size:22px}.top p{margin:2px 0;color:#aaa;font-size:12px}
-.nav{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#111;position:sticky;top:0;z-index:10}.nav button{padding:8px 10px;border-radius:20px;border:1px solid #333;background:#222;color:#fff;font-size:12px}
-.content{padding:12px;display:none}.content.active{display:block}.cardRow{display:flex;gap:10px;flex-wrap:wrap}.card{flex:1;min-width:140px;background:#1a1a1a;padding:14px;border-radius:10px;border-left:4px solid #ffcc00}.card b{font-size:20px;color:#ffcc00}.card span{font-size:12px;color:#aaa}
-input,select{width:100%;padding:11px;margin:6px 0;border-radius:8px;border:1px solid #333;background:#222;color:#fff}
-button.action{background:#ffcc00;color:#000;padding:11px;border:none;border-radius:8px;font-weight:bold;width:100%;margin:6px 0}
-.item{background:#1a1a1a;padding:10px;border-radius:8px;margin:6px 0;display:flex;justify-content:space-between}.small{font-size:11px;color:#aaa}
-.flash-exp{animation:flashRed .8s infinite;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:10px 0}.flash-low{animation:flashYellow 1s infinite;padding:12px;border-radius:10px;text-align:center;font-weight:bold;margin:10px 0}
-@keyframes flashRed{0%,100%{background:#ff3b30;color:#fff}50%{background:#fff;color:#ff3b30}}@keyframes flashYellow{0%,100%{background:#ffeb3b;color:#000}50%{background:#ff9800;color:#fff}}
-.staffBanner{background:#ffcc00;color:#000;text-align:center;padding:8px;font-weight:bold;font-size:12px}.bottomBar{position:fixed;bottom:0;left:0;right:0;background:#111;display:flex;justify-content:space-around;padding:8px;border-top:1px solid #333}.bottomBar button{background:none;border:none;color:#fff;font-size:11px}hr{border:1px solid #333;margin:14px 0}
-</style></head><body>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Arial}
+body{background:#000;color:#fff;padding:10px;padding-bottom:90px}
+header{background:#111;padding:14px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border:1px solid #333}
+header b{font-size:20px;letter-spacing:1px}
+header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-radius:8px;font-weight:700}
+.top{text-align:center;margin-bottom:10px}
+.top h2{font-size:18px}
+.top p{font-size:12px;color:#aaa}
+.dash{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.dashCard{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:12px;text-align:center}
+.dashCard b{font-size:18px;display:block}
+.dashCard span{font-size:11px;color:#aaa}
+.dashCard.yellow{background:#facc15;color:#000}
+.dashCard.yellow span{color:#333}
+.bar{background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:700;font-size:14px}
+.bar span:last-child{font-size:12px}
+.bar.active{background:#facc15;color:#000;border-color:#facc15}
+.bar.yellow{background:#facc15;color:#000}
+.content{display:none;background:#111;border:1px solid #333;border-radius:10px;padding:12px;margin:-4px 0 10px 0}
+.content.open{display:block}
+.content input,.content select{width:100%;padding:11px;border-radius:8px;border:1px solid #444;background:#222;color:#fff;margin-bottom:8px}
+.content button{width:100%;padding:11px;border:0;border-radius:8px;background:#facc15;color:#000;font-weight:800;margin-bottom:8px}
+.content .btn-dark{background:#333;color:#fff}
+.content p{font-size:13px;color:#ccc}
+#login{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:99;padding:20px}
+.login-box{background:#111;width:100%;max-width:360px;border-radius:20px;padding:24px;text-align:center;border:1px solid #333}
+.login-box h1{font-size:28px}
+.login-box p{color:#aaa;font-size:13px;margin:8px 0 16px}
+.login-box input{width:100%;padding:13px;border-radius:12px;border:1px solid #444;background:#222;color:#fff;font-size:18px;text-align:center;letter-spacing:5px;margin-bottom:12px}
+.login-box button{width:100%;padding:13px;border:0;border-radius:12px;background:#facc15;color:#000;font-weight:800;font-size:15px;margin-bottom:8px}
+.login-box .staff-btn{background:#333;color:#fff}
+.hidden{display:none !important}
+.staffBanner{background:#2196f3;color:#fff;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin:10px 0}
+.daily-blue{background:#2563eb;border-radius:10px;padding:12px;text-align:center;margin-bottom:8px}
+.daily-blue b{font-size:15px}
+.daily-blue p{font-size:12px;color:#dbeafe}
+.daily-black{background:#000;border:1px solid #facc15;border-radius:8px;padding:10px;text-align:center;color:#facc15;font-weight:700;font-size:13px;margin-bottom:8px}
+.daily-table{width:100%;border-collapse:collapse;background:#fff;color:#000;border-radius:8px;overflow:hidden}
+.daily-table th{background:#facc15;padding:8px;font-size:12px;text-align:left}
+.daily-table td{padding:8px;font-size:12px;border-bottom:1px solid #eee}
+.frozen-banner{background:#ef4444;color:#fff;padding:10px;border-radius:10px;font-weight:700;text-align:center;margin-bottom:10px}
+.bottomNav{position:fixed;bottom:0;left:0;right:0;background:#111;display:flex;border-top:1px solid #333;padding:10px;z-index:10}
+.bottomNav button{flex:1;background:none;border:0;color:#aaa;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
 
-<div id="loginPage" class="loginWrap"><div class="loginBox">
-<h1>📅 TERIKANO PRO</h1>
-<p class="cloud">☁️ Cloud: Connected ✅ | 📴 Works Offline ✅</p>
-<p class="who">Who are you bro?</p>
-<div class="roleRow"><button id="roleOwner" class="owner active" onclick="setRole('owner')">👑 OWNER</button><button id="roleStaff" class="staff" onclick="setRole('staff')">👤 STAFF</button></div>
-<p class="roleDesc" id="roleDesc">Owner sees EVERYTHING.</p>
-<label>Password</label>
-<input id="pinInput" type="password" placeholder="Enter Password">
-<button class="btnLogin" onclick="doLogin()">🔒 LOGIN</button>
-<p class="loginFoot">Enter your password bro 🔒</p>
-</div></div>
-
-<div id="appPage" class="hidden">
-<div class="top"><h1>🏪 TERIKANO PRO</h1><p>Kiribati Store Management</p><p>☁️ Cloud: Connected ✅ | 📴 Works Offline ✅</p></div>
-<div id="staffBanner" class="staffBanner hidden">👋 STAFF MODE - Sale, Return, Stock, Credit, Ledger Only</div>
-<div id="alertBox"></div>
-<div class="nav" id="navBar"></div>
-<div id="tab-dashboard" class="content active"><h3>📊 Dashboard</h3><div class="cardRow"><div class="card"><b id="dSales">$0</b><br><span>Today Sales</span></div><div class="card"><b id="dProfit">$0</b><br><span>Profit (Owner)</span></div><div class="card"><b id="dStock">0</b><br><span>Stock Items</span></div><div class="card"><b id="dCredit">$0</b><br><span>Credit Owed</span></div></div><div class="card" style="margin-top:10px"><b id="dCapital">$0</b><br><span>Capital</span></div><div class="card" style="margin-top:10px"><b id="dCoco">$0</b><br><span>Coco Total</span></div></div>
-<div id="tab-sale" class="content"><h3>🛒 Sale</h3><input id="saleItem" placeholder="Product Name"><input id="saleQty" type="number" placeholder="Qty"><input id="salePrice" type="number" placeholder="Price $"><select id="salePay"><option value="cash">Cash</option><option value="credit">Credit</option></select><input id="saleCust" placeholder="Customer Name (for Credit)"><button class="action" onclick="addSale()">Add Sale 🧾</button><div id="saleList"></div></div>
-<div id="tab-return" class="content"><h3>↩️ Return</h3><input id="retItem" placeholder="Product"><input id="retQty" type="number" placeholder="Qty"><input id="retAmt" type="number" placeholder="Amount $"><button class="action" onclick="addReturn()">Add Return</button><div id="retList"></div></div>
-<div id="tab-purchase" class="content ownerOnly"><h3>📦 Purchase (Owner)</h3><input id="purItem" placeholder="Product"><input id="purQty" type="number" placeholder="Qty"><input id="purCost" type="number" placeholder="Cost $"><button class="action" onclick="addPurchase()">Add Purchase</button><div id="purList"></div></div>
-<div id="tab-stock" class="content"><h3>📦 Stock</h3><input id="stockName" placeholder="Product Name"><input id="stockQty" type="number" placeholder="Qty to Add"><input id="stockPrice" type="number" placeholder="Price $"><input id="stockExpiry" type="date"><p class="small">Expiry - Warning 1 MONTH before!</p><input id="stockLow" type="number" placeholder="Low Stock Alert - e.g. 5"><button class="action" onclick="addStock()">Add Stock</button><div id="stockList"></div></div>
-<div id="tab-credit" class="content"><h3>💳 Credit</h3><input id="crName" placeholder="Customer"><input id="crAmt" type="number" placeholder="Amount $"><button class="action" onclick="addCredit()">Add Credit</button><div id="crList"></div></div>
-<div id="tab-debit" class="content ownerOnly"><h3>💸 Debit (Owner)</h3><input id="dbName" placeholder="Who / What"><input id="dbAmt" type="number" placeholder="Amount $"><button class="action" onclick="addDebit()">Add Debit</button><div id="dbList"></div></div>
-<div id="tab-ledger" class="content"><h3>📒 Ledger</h3><div id="ledgerList"></div></div>
-<div id="tab-capital" class="content ownerOnly"><h3>🏦 Capital (Owner)</h3><input id="capAmt" type="number" placeholder="Add Capital $"><button class="action" onclick="addCapital()">Add Capital</button><div id="capList"></div></div>
-<div id="tab-coco" class="content ownerOnly"><h3>🥥 Coco (Owner) - YOUR FORMULA</h3><p class="small" style="color:#ffcc00;font-weight:bold">Grade 1: 3 Coco = $1 | Grade 2: 4 Coco = $1</p><select id="cocoGrade"><option value="Grade 1">🥥 Grade 1 - 3 Coco = $1</option><option value="Grade 2">🥥 Grade 2 - 4 Coco = $1</option></select><input id="cocoQty" type="number" placeholder="Coco Qty - How many Coco?"><input id="cocoSeller" placeholder="Seller Name - Who brought Coco?"><button class="action" onclick="addCoco()">Add Coco 🥥</button><hr><h3>🛒 Buy Item WITH Coco (Barter)</h3><p class="small">Customer pays with Coco, not cash! Same formula: G1 3=$1, G2 4=$1</p><input id="barterCust" placeholder="Customer Name"><input id="barterItem" placeholder="Item They Buy - e.g. Rice"><input id="barterQty" type="number" placeholder="Item Qty They Buy"><select id="barterGrade"><option value="Grade 1">Pay with Grade 1 - 3 Coco = $1</option><option value="Grade 2">Pay with Grade 2 - 4 Coco = $1</option></select><input id="barterCocoQty" type="number" placeholder="Coco They Give (Qty)"><button class="action" style="background:#4CAF50" onclick="addBarter()">Buy With Coco ✅</button><div id="cocoList"></div><div id="barterList"></div></div>
-<div id="tab-drawings" class="content ownerOnly"><h3>💰 Drawings (Owner)</h3><input id="drawAmt" type="number" placeholder="Amount $"><input id="drawNote" placeholder="Note"><button class="action" onclick="addDrawing()">Add Drawing</button><div id="drawList"></div></div>
-<div id="tab-report" class="content ownerOnly"><h3>📊 Daily Report (Owner)</h3><div id="reportBox"></div><button class="action" onclick="renderAll()">Refresh Report</button></div>
-<div id="tab-backup" class="content ownerOnly"><h3>💾 Backup (Owner)</h3><button class="action" onclick="exportData()">Export Backup (Download)</button><input type="file" id="importFile" onchange="importData(event)"><p class="small">Import Backup JSON - Works Offline</p><button class="action" style="background:#ff3b30;color:#fff" onclick="hardReset()">⚠️ Hard Reset - Clear All Data</button></div>
+<div id="login">
+  <div class="login-box">
+    <h1>🏪 TERIKANO</h1>
+    <p>Kiribati Store Management<br>Enter your password bro 🔒</p>
+    <input id="pinInput" type="password" placeholder="••••" maxlength="4" autocomplete="off">
+    <button onclick="login('owner')">Login as OWNER</button>
+    <button class="staff-btn" onclick="login('staff')">Login as STAFF</button>
+    <p style="font-size:11px;color:#666">🔒 Ask Owner for your PIN</p>
+  </div>
 </div>
-<div class="bottomBar"><button onclick="showTab('dashboard')">🏠 Home</button><button onclick="showTab('sale')">🛒 Sale</button><button onclick="showTab('stock')">📦 Stock</button><button onclick="showTab('ledger')">📒 Ledger</button><button onclick="logout()">🚪 Logout</button></div>
+
+<header>
+  <div><b>TERIKANO STORE</b><br><small id="roleLabel">Owner 👑</small></div>
+  <div style="display:flex;gap:8px;align-items:center"><span id="statusBadge">● OPEN</span><button onclick="logout()">Logout</button></div>
+</header>
+<div class="top"><h2 id="welcomeText">Welcome, Owner 👋</h2><p id="dateText"></p></div>
+<div id="staffBanner" class="staffBanner hidden">👋 STAFF MODE - You can only see Sale, Stock, Ledger, Credit, Return</div>
+<div id="frozenBanner" class="frozen-banner hidden">❄️ STORE IS FROZEN - Owner Only Can Unfreeze</div>
+
+<div class="dash">
+  <div class="dashCard"><b id="dashSalesToday">$0.00</b><span>Sales Today</span></div>
+  <div class="dashCard" id="dashStockCard"><b id="dashStock">0</b><span>Total Stock</span></div>
+  <div class="dashCard yellow"><b id="dashMySales">$0.00</b><span>My Sales Today</span></div>
+  <div class="dashCard" id="dashCreditCard"><b id="dashCredit">$0.00</b><span>Creditors</span></div>
+</div>
+
+<div class="accHead bar" id="ownerSettingsHead" data-sec="secOwnerSettings" onclick="toggleBar(this,'ownerSettings')">⚙️ OWNER SETTINGS - Click to Hide / Show <span id="ownerSettingsArrow">▼</span></div>
+<div id="ownerSettings" class="content hidden">
+  <p>Owner Only - Change PINs, Freeze Store, Manage App</p>
+  <button onclick="alert('Change Owner PIN')">Change Owner PIN</button>
+  <button onclick="alert('Change Staff PIN')">Change Staff PIN</button>
+  <button style="background:#ef4444;color:#fff" id="freezeBtn" onclick="toggleFreeze()">❄️ FREEZE STORE</button>
+</div>
+
+<div class="accHead bar" data-sec="secCapital" onclick="toggleBar(this,'capital')">💵 CAPITAL + WALLETS <span>▼</span></div>
+<div id="capital" class="content"><p>Capital + Wallets - Owner Only</p><input placeholder="Capital Amount $"><button>Save Capital</button></div>
+
+<div class="accHead bar" data-sec="secProfit" onclick="toggleBar(this,'profit')">📈 PROFIT & LOSS + BALANCE SHEET (MYOB) <span>▼</span></div>
+<div id="profit" class="content"><p id="profitText">Profit data - Owner Only</p></div>
+
+<div class="accHead bar" data-sec="secCoco" onclick="toggleBar(this,'coco')">🥥 COCO + MILLS <span>▼</span></div>
+<div id="coco" class="content"><p>Coco + Mills - Owner Only</p><input placeholder="Coco Kg"><button>Save Coco</button></div>
+
+<div class="accHead bar" data-sec="secPurchase" onclick="toggleBar(this,'purchase')">📦 PURCHASE <span>▼</span></div>
+<div id="purchase" class="content"><p>Purchase - Owner Only</p><input placeholder="Product to Buy"><input type="number" placeholder="Cost $"><button onclick="alert('Purchase Saved - Owner Only')">Save Purchase</button></div>
+
+<div class="accHead bar" data-sec="secSale" onclick="toggleBar(this,'sale')">🛒 SALE + 🛍️ CART + 💰 TIPS <span>▼</span></div>
+<div id="sale" class="content">
+  <input id="sellItem" placeholder="Product Name e.g. Rice 10kg">
+  <input id="sellPrice" type="number" placeholder="Price $">
+  <input id="sellQty" type="number" placeholder="Qty" value="1">
+  <select id="sellType"><option value="cash">Cash</option><option value="credit">Credit (Teboka)</option></select>
+  <button onclick="doSell()">Complete Sale ✅</button>
+  <p id="saleList">No sales yet.</p>
+</div>
+
+<div class="accHead bar" data-sec="secReturn" onclick="toggleBar(this,'returnSec')">↩️ RETURN <span>▼</span></div>
+<div id="returnSec" class="content"><p>Return Product - Staff Can Use ✅</p><input placeholder="Product to Return"><input type="number" placeholder="Amount $"><button>Process Return</button></div>
+
+<div class="accHead bar" data-sec="secDrawings" onclick="toggleBar(this,'drawings')">💰 DRAWINGS + EXPENSES <span>▼</span></div>
+<div id="drawings" class="content"><p>Drawings + Expenses - Owner Only</p><input placeholder="Reason"><input type="number" placeholder="Amount $"><button>Save Expense</button></div>
+
+<div class="accHead bar" data-sec="secStock" onclick="toggleBar(this,'stock')">📦 STOCK <span>▼</span></div>
+<div id="stock" class="content"><input id="stockName" placeholder="Product Name"><input id="stockQty" type="number" placeholder="Qty to Add"><input id="stockPrice" type="number" placeholder="Price $"><button onclick="addStock()">Add Stock</button><p id="stockList">No stock yet.</p></div>
+
+<div class="accHead bar" data-sec="secCredit" onclick="toggleBar(this,'credit')">📓 CREDIT + 💀 BAD DEBT <span>▼</span></div>
+<div id="credit" class="content"><p id="creditList">No credit yet.</p><p id="creditTotal">Total Owed: $0.00</p></div>
+
+<div class="accHead bar" data-sec="secDebit" onclick="toggleBar(this,'debit')">🧾 DEBIT LIST <span>▼</span></div>
+<div id="debit" class="content"><p>Debit List - Owner Only</p></div>
+
+<div class="accHead bar yellow" data-sec="secLedger" onclick="toggleBar(this,'ledger')">📒 LEDGER <span>▼</span></div>
+<div id="ledger" class="content">
+  <div class="daily-blue"><b>👤 MY DAILY SALES - TODAY ONLY</b><p>This is your record for today bro! Nothing else shown!</p></div>
+  <div class="daily-black">📅 <span id="todayLabel">TODAY 25/11/2026</span> | Sales Count: <span id="todayCount">0</span> | TOTAL SALES TODAY: <span id="todayTotal">$0.00</span></div>
+  <table class="daily-table"><tr><th>Time</th><th>What You Sold</th><th>Amount</th></tr><tbody id="dailyTableBody"><tr><td colspan="3" style="text-align:center">No sales yet today bro - Sell something!</td></tr></tbody></table>
+  <br><p style="color:#aaa">Full Ledger (All Sales):</p><p id="ledgerList">No entries yet.</p>
+</div>
+
+<div class="accHead bar" data-sec="secDailyReport" onclick="toggleBar(this,'dailyReport')">📊 DAILY REPORT + HISTORY <span>▼</span></div>
+<div id="dailyReport" class="content"><p>Daily Report + History - Owner Only</p><p id="historyList">No history yet.</p></div>
+
+<div class="accHead bar" data-sec="secBackup" onclick="toggleBar(this,'backup')">💾 BACKUP <span>▼</span></div>
+<div id="backup" class="content"><p>Backup - Owner Only</p><button onclick="alert('Backup Done - Owner Only')">Backup Now</button></div>
+
+<div class="bottomNav">
+  <button class="active">🏠 Home</button>
+  <button onclick="openSection('secSale')">🛒 Sell</button>
+  <button id="settingsBottomBtn" onclick="openSection('secOwnerSettings')">⚙️ Settings</button>
+</div>
+
 <script>
-let role='owner';
-let sales=JSON.parse(localStorage.getItem('terikano_sales')||'[]');let stock=JSON.parse(localStorage.getItem('terikano_stock')||'[]');let credits=JSON.parse(localStorage.getItem('terikano_credit')||'[]');let debits=JSON.parse(localStorage.getItem('terikano_debit')||'[]');let returns=JSON.parse(localStorage.getItem('terikano_returns')||'[]');let purchases=JSON.parse(localStorage.getItem('terikano_purchase')||'[]');let capitals=JSON.parse(localStorage.getItem('terikano_capital')||'[]');let cocos=JSON.parse(localStorage.getItem('terikano_coco')||'[]');let drawings=JSON.parse(localStorage.getItem('terikano_drawings')||'[]');let barters=JSON.parse(localStorage.getItem('terikano_barter')||'[]');
-function save(){localStorage.setItem('terikano_sales',JSON.stringify(sales));localStorage.setItem('terikano_stock',JSON.stringify(stock));localStorage.setItem('terikano_credit',JSON.stringify(credits));localStorage.setItem('terikano_debit',JSON.stringify(debits));localStorage.setItem('terikano_returns',JSON.stringify(returns));localStorage.setItem('terikano_purchase',JSON.stringify(purchases));localStorage.setItem('terikano_capital',JSON.stringify(capitals));localStorage.setItem('terikano_coco',JSON.stringify(cocos));localStorage.setItem('terikano_drawings',JSON.stringify(drawings));localStorage.setItem('terikano_barter',JSON.stringify(barters));}
-function setRole(r){role=r;document.getElementById('roleOwner').classList.toggle('active',r==='owner');document.getElementById('roleStaff').classList.toggle('active',r==='staff');document.getElementById('roleDesc').textContent=r==='owner'?'Owner sees EVERYTHING.':'Staff sees ONLY Sale, Return, Stock, Credit, Ledger';}
-function doLogin(){let pin=document.getElementById('pinInput').value;let ok=(role==='owner'&&pin==='1234')||(role==='staff'&&pin==='1111');if(!ok) return alert('Wrong Password bro!');document.getElementById('loginPage').classList.add('hidden');document.getElementById('appPage').classList.remove('hidden');buildNav();renderAll();}
-function logout(){location.reload();}
-function buildNav(){let all=[['dashboard','📊 Dashboard'],['sale','🛒 Sale'],['return','↩️ Return'],['purchase','📦 Purchase'],['stock','📦 Stock'],['credit','💳 Credit'],['debit','💸 Debit'],['ledger','📒 Ledger'],['capital','🏦 Capital'],['coco','🥥 Coco'],['drawings','💰 Drawings'],['report','📊 Report'],['backup','💾 Backup']];let show=role==='staff'?all.filter(x=>['sale','return','stock','credit','ledger'].includes(x[0])):all;document.getElementById('navBar').innerHTML=show.map(x=>`<button onclick="showTab('${x[0]}')">${x[1]}</button>`).join('');document.getElementById('staffBanner').classList.toggle('hidden',role!=='staff');document.querySelectorAll('.ownerOnly').forEach(e=>{e.style.display=role==='staff'?'none':'block';});}
-function showTab(t){document.querySelectorAll('.content').forEach(e=>e.classList.remove('active'));let el=document.getElementById('tab-'+t);if(el) el.classList.add('active');}
-function addSale(){let n=document.getElementById('saleItem').value,q=+document.getElementById('saleQty').value||1,p=+document.getElementById('salePrice').value||0,pay=document.getElementById('salePay').value,cust=document.getElementById('saleCust').value;if(!n||!p) return alert('Enter product + price');let total=q*p;sales.push({n,q,p,total,pay,cust,date:new Date().toLocaleDateString()});if(pay==='credit'&&cust) credits.push({n:cust,amt:total,date:new Date().toLocaleDateString()});save();renderAll();alert('Sale Saved ✅ $'+total);}
-function addReturn(){let n=document.getElementById('retItem').value,q=+document.getElementById('retQty').value||1,a=+document.getElementById('retAmt').value||0;if(!n) return alert('Enter product');returns.push({n,q,a,date:new Date().toLocaleDateString()});save();renderAll();}
-function addPurchase(){let n=document.getElementById('purItem').value,q=+document.getElementById('purQty').value||1,c=+document.getElementById('purCost').value||0;if(!n) return alert('Enter product');purchases.push({n,q,c,date:new Date().toLocaleDateString()});save();renderAll();}
-function addStock(){let n=document.getElementById('stockName').value,q=+document.getElementById('stockQty').value||0,p=+document.getElementById('stockPrice').value||0,ex=document.getElementById('stockExpiry').value,low=+document.getElementById('stockLow').value||5;if(!n) return alert('Enter product');let exItem=stock.find(s=>s.n===n);if(exItem){exItem.q=+exItem.q+q;exItem.p=p;exItem.expiry=ex;exItem.low=low;}else stock.push({n,q,p,expiry:ex,low});save();renderAll();}
-function addCredit(){let n=document.getElementById('crName').value,a=+document.getElementById('crAmt').value||0;if(!n) return alert('Enter customer');credits.push({n,amt:a,date:new Date().toLocaleDateString()});save();renderAll();}
-function addDebit(){let n=document.getElementById('dbName').value,a=+document.getElementById('dbAmt').value||0;if(!n) return alert('Enter name');debits.push({n,amt:a,date:new Date().toLocaleDateString()});save();renderAll();}
-function addCapital(){let a=+document.getElementById('capAmt').value||0;if(!a) return alert('Enter amount');capitals.push({amt:a,date:new Date().toLocaleDateString()});save();renderAll();}
-function addCoco(){let g=document.getElementById('cocoGrade').value,q=+document.getElementById('cocoQty').value||0,seller=document.getElementById('cocoSeller').value;if(!q) return alert('Enter Coco Qty');let total=g==='Grade 1'? q/3 : q/4;total=Math.round(total*100)/100;cocos.push({grade:g,q,price:g==='Grade 1'?'3 Coco = $1':'4 Coco = $1',amt:total,seller,date:new Date().toLocaleDateString()});save();renderAll();alert('Coco Saved ✅ '+g+' - '+q+' Coco = $'+total);}
-function addBarter(){let cust=document.getElementById('barterCust').value,item=document.getElementById('barterItem').value,q=+document.getElementById('barterQty').value||0,g=document.getElementById('barterGrade').value,cq=+document.getElementById('barterCocoQty').value||0;if(!cust||!item) return alert('Enter customer + item');let cocoValue=g==='Grade 1'? cq/3 : cq/4;cocoValue=Math.round(cocoValue*100)/100;barters.push({cust,item,q,grade:g,cocoQty:cq,cocoValue,date:new Date().toLocaleDateString()});save();renderAll();alert('Barter Saved ✅ '+cust+' bought '+item+' with '+cq+' '+g+' = $'+cocoValue);}
-function addDrawing(){let a=+document.getElementById('drawAmt').value||0,n=document.getElementById('drawNote').value;if(!a) return alert('Enter amount');drawings.push({amt:a,n,date:new Date().toLocaleDateString()});save();renderAll();}
-function renderAlerts(){let box=document.getElementById('alertBox');let today=new Date();today.setHours(0,0,0,0);let expired=[],low=[],soon=[];stock.forEach(s=>{let qty=+s.q||0,lim=+s.low||5;if(qty<=lim) low.push(s.n+' ('+qty+' left)');if(s.expiry){let exp=new Date(s.expiry);exp.setHours(0,0,0,0);let diff=Math.ceil((exp-today)/86400000);if(diff<0) expired.push(s.n+' - Expired '+s.expiry);else if(diff<=30) soon.push(s.n+' - Expires in '+diff+' days - 1 MONTH WARNING!');}});let h='';if(expired.length) h+=`<div class="flash-exp">🚨 EXPIRED! ${expired.join(' | ')}</div>`;if(soon.length) h+=`<div class="flash-low">⚠️ EXPIRING IN 1 MONTH! ${soon.join(' | ')}</div>`;if(low.length) h+=`<div class="flash-low">⚠️ LOW STOCK! ${low.join(' | ')}</div>`;box.innerHTML=h;}
-function renderAll(){renderAlerts();let today=new Date().toLocaleDateString();let tSales=sales.filter(s=>s.date===today).reduce((a,s)=>a+s.total,0);let tProfit=tSales - purchases.filter(p=>p.date===today).reduce((a,p)=>a+p.c,0);let tCap=capitals.reduce((a,c)=>a+c.amt,0);let tCred=credits.reduce((a,c)=>a+c.amt,0);let tCoco=cocos.reduce((a,c)=>a+c.amt,0);document.getElementById('dSales').textContent='$'+tSales;document.getElementById('dProfit').textContent='$'+tProfit;document.getElementById('dStock').textContent=stock.length;document.getElementById('dCredit').textContent='$'+tCred;document.getElementById('dCapital').textContent='$'+tCap;document.getElementById('dCoco').textContent='$'+tCoco;document.getElementById('saleList').innerHTML=sales.slice(-10).reverse().map(s=>`<div class="item"><span>${s.n} x${s.q} - ${s.pay}</span><b>$${s.total}</b></div>`).join('')||'No sales yet';document.getElementById('stockList').innerHTML=stock.map(s=>`<div class="item"><span>${s.n} - Qty ${s.q} - $${s.p} ${s.expiry?'| Exp: '+s.expiry:''} ${(+s.q<= (+s.low||5))?'⚠️ LOW':''} ${(s.expiry&&new Date(s.expiry)<new Date())?'🚨 EXPIRED':''}</span></div>`).join('')||'No stock';document.getElementById('crList').innerHTML=credits.map(c=>`<div class="item"><span>${c.n} - ${c.date}</span><b>$${c.amt}</b></div>`).join('')||'No credit';document.getElementById('dbList').innerHTML=debits.map(c=>`<div class="item"><span>${c.n}</span><b>$${c.amt}</b></div>`).join('')||'No debit';document.getElementById('retList').innerHTML=returns.map(c=>`<div class="item"><span>${c.n} x${c.q}</span><b>$${c.a}</b></div>`).join('')||'No returns';document.getElementById('purList').innerHTML=purchases.map(c=>`<div class="item"><span>${c.n} x${c.q}</span><b>$${c.c}</b></div>`).join('')||'No purchases';document.getElementById('capList').innerHTML=capitals.map(c=>`<div class="item"><span>${c.date}</span><b>$${c.amt}</b></div>`).join('')||'No capital';document.getElementById('cocoList').innerHTML=cocos.map(c=>`<div class="item"><span>🥥 ${c.grade||''} x${c.q} Coco - ${c.seller||''} - ${c.date} (${c.price||''})</span><b>$${c.amt}</b></div>`).join('')||'No coco';document.getElementById('barterList').innerHTML=barters.map(c=>`<div class="item"><span>🛒 ${c.cust} bought ${c.item} x${c.q} with ${c.cocoQty} ${c.grade} = $${c.cocoValue} - ${c.date}</span></div>`).join('')||'';document.getElementById('drawList').innerHTML=drawings.map(c=>`<div class="item"><span>${c.n||''} - ${c.date}</span><b>$${c.amt}</b></div>`).join('')||'No drawings';document.getElementById('ledgerList').innerHTML=`<div class="item"><span>Total Sales</span><b>$${sales.reduce((a,s)=>a+s.total,0)}</b></div><div class="item"><span>Total Purchases</span><b>$${purchases.reduce((a,s)=>a+s.c,0)}</b></div><div class="item"><span>Total Credit</span><b>$${tCred}</b></div><div class="item"><span>Total Debit</span><b>$${debits.reduce((a,s)=>a+s.amt,0)}</b></div><div class="item"><span>Total Drawings</span><b>$${drawings.reduce((a,s)=>a+s.amt,0)}</b></div><div class="item"><span>Total Coco</span><b>$${tCoco}</b></div><div class="item"><span>Total Barter</span><b>${barters.length} trades</b></div>`;document.getElementById('reportBox').innerHTML=`<div class="item"><span>Today Sales (${today})</span><b>$${tSales}</b></div><div class="item"><span>Today Profit</span><b>$${tProfit}</b></div><div class="item"><span>Total Sales All Time</span><b>$${sales.reduce((a,s)=>a+s.total,0)}</b></div><div class="item"><span>Total Capital</span><b>$${tCap}</b></div><div class="item"><span>Coco Total</span><b>$${tCoco}</b></div>`;}
-function exportData(){let data={sales,stock,credits,debits,returns,purchases,capitals,cocos,drawings,barters};let blob=new Blob([JSON.stringify(data)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='terikano-backup.json';a.click();}
-function importData(e){let f=e.target.files[0];if(!f) return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);sales=d.sales||sales;stock=d.stock||stock;credits=d.credits||credits;debits=d.debits||debits;returns=d.returns||returns;purchases=d.purchases||purchases;capitals=d.capitals||capitals;cocos=d.cocos||cocos;drawings=d.drawings||drawings;barters=d.barters||barters;save();renderAll();alert('Backup Restored ✅');}catch(err){alert('Bad file');}};r.readAsText(f);}
-function hardReset(){if(!confirm('Clear ALL data bro? This cannot undo!')) return;localStorage.clear();location.reload();}
-</script></body></html>
+(function(){let VER='TERIKANO-PRO-HIDE-V5';if(localStorage.getItem('terikano_hard_reset')!==VER){localStorage.setItem('terikano_hard_reset',VER);if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>{rs.forEach(r=>r.unregister());if('caches' in window){caches.keys().then(ks=>{ks.forEach(k=>caches.delete(k));location.reload(true);});}else location.reload(true);});}else location.reload(true);return;}})();
+</script>
+
+<script>
+let role = localStorage.getItem('terikano_role') || '';
+let sales = JSON.parse(localStorage.getItem('terikano_sales')||'[]');
+let stock = JSON.parse(localStorage.getItem('terikano_stock')||'[]');
+let frozen = localStorage.getItem('terikano_frozen')==='1';
+document.getElementById('dateText').innerText = new Date().toDateString();
+document.getElementById('todayLabel').innerText = 'TODAY '+new Date().toLocaleDateString('en-GB');
+function isStaff(){return role==='staff';}
+function login(wantRole){
+  let pin = document.getElementById('pinInput').value;
+  if(wantRole==='owner' && pin!=='1234'){ alert('Wrong Owner PIN'); return; }
+  if(wantRole==='staff' && pin!=='1111'){ alert('Wrong Staff PIN'); return; }
+  role = wantRole; localStorage.setItem('terikano_role', role);
+  applyRole(); applyRoleVisibility(); document.getElementById('login').classList.add('hidden');
+}
+function applyRole(){
+  document.getElementById('roleLabel').innerText = role==='owner' ? 'Owner 👑' : 'Staff';
+  document.getElementById('welcomeText').innerText = role==='owner' ? 'Welcome, Owner 👋' : 'Welcome, Staff 👋';
+  updateFreezeUI(); renderAll();
+}
+function applyRoleVisibility(){
+  let staff=isStaff();
+  document.getElementById('staffBanner').classList.toggle('hidden',!staff);
+  document.getElementById('ownerSettingsHead').classList.toggle('hidden',staff);
+  document.getElementById('ownerSettings').classList.add('hidden');
+  document.getElementById('ownerSettingsArrow').innerText='▼';
+  let staffAllowed=['secSale','secStock','secLedger','secCredit','secReturn'];
+  document.querySelectorAll('.accHead').forEach(h=>{
+    let s=h.getAttribute('data-sec');
+    if(staff && !staffAllowed.includes(s)){h.classList.add('hidden');}
+    else{h.classList.remove('hidden');}
+  });
+  let sb=document.getElementById('settingsBottomBtn');
+  if(sb){sb.style.display=staff?'none':'flex';}
+  let dashStock=document.getElementById('dashStockCard');
+  let dashCredit=document.getElementById('dashCreditCard');
+  if(dashStock) dashStock.style.display=staff?'none':'block';
+  if(dashCredit) dashCredit.style.display=staff?'none':'block';
+}
+function toggleBar(barEl, contentId){
+  let sec = barEl.getAttribute('data-sec');
+  if(isStaff() && !['secSale','secStock','secLedger','secCredit','secReturn'].includes(sec)){alert('Staff can only open Sale, Stock, Ledger, Credit, Return bro!');return;}
+  let c = document.getElementById(contentId);
+  let isOpen = c.classList.contains('open');
+  document.querySelectorAll('.content').forEach(x=>x.classList.remove('open'));
+  document.querySelectorAll('.bar').forEach(x=>x.classList.remove('active'));
+  if(!isOpen){ c.classList.add('open'); barEl.classList.add('active'); }
+}
+function openSection(id){
+  if(isStaff() && !['secSale','secStock','secLedger','secCredit','secReturn'].includes(id)){alert('Staff can only open Sale, Stock, Ledger, Credit, Return bro!');return;}
+  if(id==='secOwnerSettings'){let h=document.getElementById('ownerSettingsHead');toggleBar(h,'ownerSettings');window.scrollTo(0,0);return;}
+  let map={secSale:'sale',secStock:'stock',secLedger:'ledger',secCredit:'credit',secReturn:'returnSec'};
+  let contentId=map[id]; if(!contentId) return;
+  let head=document.querySelector('[data-sec="'+id+'"]'); if(head) toggleBar(head,contentId);
+}
+function toggleFreeze(){
+  if(role!=='owner'){ alert('🔒 Owner Only! Staff cannot freeze.'); return; }
+  frozen = !frozen; localStorage.setItem('terikano_frozen', frozen?'1':'0');
+  updateFreezeUI(); alert(frozen?'Store FROZEN ❄️':'Store OPEN ✅');
+}
+function updateFreezeUI(){
+  document.getElementById('frozenBanner').classList.toggle('hidden', !frozen);
+  document.getElementById('statusBadge').innerText = frozen ? '❄️ FROZEN' : '● OPEN';
+  let fb=document.getElementById('freezeBtn'); if(fb) fb.innerText = frozen?'✅ UNFREEZE STORE':'❄️ FREEZE STORE';
+}
+function doSell(){
+  if(frozen && role==='staff'){ alert('❄️ Store is Frozen by Owner. Cannot Sell.'); return; }
+  let name=document.getElementById('sellItem').value;
+  let price=parseFloat(document.getElementById('sellPrice').value||0);
+  let qty=parseInt(document.getElementById('sellQty').value||1);
+  let type=document.getElementById('sellType').value;
+  if(!name||!price){ alert('Enter product + price'); return; }
+  let total=price*qty;
+  sales.push({name,price,qty,total,type,time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),date:new Date().toLocaleString()});
+  localStorage.setItem('terikano_sales', JSON.stringify(sales));
+  renderAll(); alert('Sale Saved ✅ $'+total.toFixed(2));
+}
+function addStock(){
+  let n=document.getElementById('stockName').value;
+  let q=document.getElementById('stockQty').value;
+  let p=document.getElementById('stockPrice').value;
+  if(!n) return alert('Enter product');
+  stock.push({n,q,p}); localStorage.setItem('terikano_stock', JSON.stringify(stock));
+  renderAll(); alert('Stock Added ✅');
+}
+function renderAll(){
+  let total=sales.reduce((a,s)=>a+s.total,0);
+  let todaySales=sales.filter(s=>s.date.includes(new Date().toLocaleDateString()));
+  let todayTotal=todaySales.reduce((a,s)=>a+s.total,0);
+  let creditTotal=sales.filter(s=>s.type==='credit').reduce((a,s)=>a+s.total,0);
+  document.getElementById('dashSalesToday').innerText='$'+todayTotal.toFixed(2);
+  document.getElementById('dashStock').innerText=stock.length;
+  document.getElementById('dashMySales').innerText='$'+todayTotal.toFixed(2);
+  document.getElementById('dashCredit').innerText='$'+creditTotal.toFixed(2);
+  document.getElementById('todayCount').innerText=todaySales.length;
+  document.getElementById('todayTotal').innerText='$'+todayTotal.toFixed(2);
+  document.getElementById('creditTotal').innerText='Total Owed: $'+creditTotal.toFixed(2);
+  document.getElementById('profitText').innerText='Total Sales: $'+total.toFixed(2)+' | Est Profit (30%): $'+(total*0.3).toFixed(2);
+  document.getElementById('saleList').innerHTML=sales.length?sales.map(s=>`<div>${s.name} x${s.qty} - $${s.total.toFixed(2)} (${s.type})</div>`).join(''):'No sales yet.';
+  document.getElementById('stockList').innerHTML=stock.length?stock.map(s=>`<div>${s.n} - Qty: ${s.q} - $${s.p}</div>`).join(''):'No stock yet.';
+  document.getElementById('creditList').innerHTML=sales.filter(s=>s.type==='credit').length?sales.filter(s=>s.type==='credit').map(s=>`<div>${s.name} - $${s.total.toFixed(2)} - ${s.date}</div>`).join(''):'No credit yet.';
+  document.getElementById('ledgerList').innerHTML=sales.length?sales.map(s=>`<div>${s.date} - ${s.name} - $${s.total.toFixed(2)} (${s.type})</div>`).join(''):'No entries yet.';
+  document.getElementById('historyList').innerHTML=document.getElementById('ledgerList').innerHTML;
+  document.getElementById('dailyTableBody').innerHTML=todaySales.length?todaySales.map(s=>`<tr><td>${s.time}</td><td>${s.name} x${s.qty}</td><td>$${s.total.toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center">No sales yet today bro - Sell something!</td></tr>';
+}
+function logout(){ localStorage.removeItem('terikano_role'); location.reload(); }
+if(role){ document.getElementById('login').classList.add('hidden'); applyRole(); applyRoleVisibility(); }
+renderAll();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+</script>
+</body>
+    </html>
