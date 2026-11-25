@@ -96,13 +96,14 @@
 <script>
 // ============ PASTE YOUR OLD FIREBASE HERE - ONLY PLACE TO CHANGE ============
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_OLD_API_KEY_HERE",
+  apiKey: "AIzaSyCUlQDoaPYSD-ZVFtyc_uBnI9galYEe9qs",
   authDomain: "terikano-3d137.firebaseapp.com",
   databaseURL: "https://terikano-3d137-default-rtdb.firebaseio.com",
   projectId: "terikano-3d137",
-  storageBucket: "terikano-3d137.appspot.com",
-  messagingSenderId: "PASTE_YOUR_OLD_SENDER_ID",
-  appId: "PASTE_YOUR_OLD_APP_ID"
+  storageBucket: "terikano-3d137.firebasestorage.app",
+  messagingSenderId: "906871391351",
+  appId: "1:906871391351:web:d6acfb65cecd19ebbd3272",
+  measurementId: "G-W3SHGN7W6R"
 };
 let cloudReady=false, cloudRef=null;
 try{ if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('PASTE')===-1){ firebase.initializeApp(firebaseConfig); cloudRef=firebase.database().ref('terikano_v1'); cloudReady=true; } }catch(e){ cloudReady=false; }
