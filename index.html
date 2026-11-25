@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="manifest" href="manifest.json?v=FIXED3">
+<link rel="manifest" href="manifest.json?v=FIXED2">
 <meta name="theme-color" content="#000000">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,Arial}
@@ -28,8 +28,16 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 .content button{width:100%;padding:11px;border:0;border-radius:8px;background:#facc15;color:#000;font-weight:800;margin-bottom:8px}
 .content .btn-dark{background:#333;color:#fff}
 .content p{font-size:13px;color:#ccc}
-.bar.owner-dead{opacity:.45 !important;filter:grayscale(1) !important;pointer-events:none !important;border:1px dashed #555 !important}
-.bar.owner-dead .lock-badge{background:#333;color:#fff;font-size:10px;padding:4px 8px;border-radius:20px;white-space:nowrap;margin-left:8px}
+/* DEAD - ONLY DIM + GREY + LOCK - NO LAYOUT CHANGE! */
+.bar.owner-dead{
+  opacity:.45 !important;
+  filter:grayscale(1) !important;
+  pointer-events:none !important;
+  border:1px dashed #555 !important;
+}
+.bar.owner-dead .lock-badge{
+  background:#333;color:#fff;font-size:10px;padding:4px 8px;border-radius:20px;white-space:nowrap;margin-left:8px
+}
 #login{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:99;padding:20px}
 .login-box{background:#111;width:100%;max-width:360px;border-radius:20px;padding:24px;text-align:center;border:1px solid #333}
 .login-box h1{font-size:28px}
@@ -57,10 +65,10 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
   <div class="login-box">
     <h1>🏪 TERIKANO</h1>
     <p>Kiribati Store Management<br>Enter PIN</p>
-    <input id="pinInput" type="password" placeholder="••••" maxlength="4" autocomplete="off">
+    <input id="pinInput" type="password" placeholder="••••" maxlength="4">
     <button onclick="login('owner')">Login as OWNER</button>
     <button class="staff-btn" onclick="login('staff')">Login as STAFF</button>
-    <p style="font-size:11px;color:#666">🔒 Ask Owner for your PIN</p>
+    <p style="font-size:11px">Demo - Owner: 1234 | Staff: 1111</p>
   </div>
 </div>
 
@@ -137,8 +145,10 @@ header button{background:#ef4444;color:#fff;border:0;padding:8px 12px;border-rad
 </div>
 
 <script>
+// ===== HARD RESET - AUTO - NOTHING TO DO! =====
+// This runs FIRST - Clears OLD cache + OLD Service Worker ONCE, then reloads fresh!
 (function(){
-  let VER = 'TERIKANO-FIXED-V3';
+  let VER = 'TERIKANO-FIXED-V2';
   if(localStorage.getItem('terikano_hard_reset') !== VER){
     localStorage.setItem('terikano_hard_reset', VER);
     if('serviceWorker' in navigator){
@@ -172,6 +182,7 @@ function applyRole(){
   document.getElementById('roleLabel').innerText = role==='owner' ? 'Owner 👑' : 'Staff';
   document.getElementById('welcomeText').innerText = role==='owner' ? 'Welcome, Owner 👋' : 'Welcome, Staff 👋';
   document.querySelectorAll('.owner-bar').forEach(bar=>{
+    // Add LOCK badge ONCE - Don't duplicate!
     if(role==='staff'){
       bar.classList.add('owner-dead');
       if(!bar.querySelector('.lock-badge')){
