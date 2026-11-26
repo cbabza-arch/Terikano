@@ -1105,5 +1105,62 @@ document.body.appendChild(s);
   console.log('V-FIX-DOUBLE-2 LOADED');
 })();
       </script>
+  <script>
+// V-FINAL-FIX - Stop empty boxes FOREVER - overrides all old patches
+(function(){
+  function isReal(p){
+    if(!p) return false;
+    var n = (p.name || p.item || p.product || '') + '';
+    var q = Number(p.qty || p.quantity || 0);
+    return n.trim() !== '' && q > 0;
+  }
+  function cleanList(list){
+    var out = [], seen = {};
+    for(var i=0;i<(list||[]).length;i++){
+      var p = list[i];
+      if(!isReal(p)) continue;
+      var k = p.name + '|' + p.qty + '|' + p.total + '|' + p.date;
+      if(seen[k]) continue;
+      seen[k]=true; out.push(p);
+    }
+    return out;
+  }
+  // 1. Clean NOW + every time we render
+  window.purchaseLog = cleanList(window.purchaseLog);
+  try{ localStorage.setItem('purchaseLog', JSON.stringify(window.purchaseLog)); }catch(e){}
+
+  // 2. Render - NEVER show empty box
+  window.renderPurchaseLog = function(){
+    var box = document.getElementById('purchaseLogBox');
+    if(!box) return;
+    window.purchaseLog = cleanList(window.purchaseLog);
+    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
+    if(window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
+    for(var j=0;j<window.purchaseLog.length;j++){
+      var p = window.purchaseLog[j];
+      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center">'
+        + '<div><b>'+p.name+'</b> - '+p.qty+' x $'+Number(p.cost).toFixed(2)+' = <b>$'+Number(p.total).toFixed(2)+'</b><br><small>'+(p.pay||'cash').toUpperCase()+' | '+p.date+'</small></div>'
+        + '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold">🗑️ RETURN</button>'
+        + '</div>';
+    }
+    box.innerHTML = html;
+  };
+
+  // 3. Stop empty from EVER being saved to Cloud
+  var _origSaveCloud = window.saveToCloud;
+  if(typeof _origSaveCloud === 'function' && !window.saveToCloud.__finalFixed){
+    var wrapped = async function(){
+      window.purchaseLog = cleanList(window.purchaseLog);
+      return _origSaveCloud();
+    };
+    wrapped.__finalFixed = true;
+    window.saveToCloud = wrapped;
+  }
+
+  // 4. Re-render after cloud load
+  setTimeout(function(){ window.renderPurchaseLog(); if(typeof window.save==='function') window.save(); }, 1000);
+  console.log('V-FINAL-FIX LOADED - empty boxes blocked');
+})();
+  </script>
   </body>
 </html>
