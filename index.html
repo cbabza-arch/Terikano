@@ -779,5 +779,96 @@ document.body.appendChild(s);
   console.log('V-FIX-DB LOADED - Using real db');
 })();
   </script>
+  <script>
+// V-FIX-KEYS - DON'T save ALL_LOCAL - it has dots, Firebase rejects it
+(function(){
+  function getRealDB(){
+    try{ if(typeof db !== 'undefined' && db) return db; }catch(e){}
+    try{ if(window.db) return window.db; }catch(e){}
+    try{ if(typeof firebase !== 'undefined' && firebase.database) return firebase.database(); }catch(e){}
+    return null;
+  }
+
+  // Clean data - NO dots, NO ALL_LOCAL
+  window.saveToCloud = async function(){
+    var st = document.getElementById('saveStatus');
+    if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; }
+    try{
+      var myDB = getRealDB();
+      if(!myDB) throw new Error('No db');
+
+      // ONLY save clean data - NO ALL_LOCAL!
+      var data = {
+        stock: (typeof stock !== 'undefined' ? stock : []),
+        wallet: (typeof wallet !== 'undefined' ? wallet : {}),
+        debits: (typeof debits !== 'undefined' ? debits : []),
+        history: (typeof history !== 'undefined' ? history : []),
+        purchaseLog: (typeof window.purchaseLog !== 'undefined' ? window.purchaseLog : []),
+        time: new Date().toISOString()
+      };
+
+      console.log('SAVING CLEAN:', data);
+      await myDB.ref('shop').set(data);
+
+      if(st){ st.innerText='✅ REALLY Saved to Cloud'; st.style.background='#4caf50'; }
+      console.log('✅ SAVE SUCCESS - CLEAN');
+      return true;
+    }catch(e){
+      console.log('❌ SAVE FAILED:', e);
+      if(st){ st.innerText='❌ SAVE FAILED: '+e.message; st.style.background='#d32f2f'; }
+      alert('❌ SAVE FAILED:\n'+e.message);
+      return false;
+    }
+  };
+
+  window.save = function(){
+    try{
+      var d = { stock: stock, wallet: wallet, debits: debits, history: history };
+      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d));
+    }catch(e){}
+    window.saveToCloud();
+  };
+
+  // Fix LOAD too - no ALL_LOCAL
+  window.load = async function(){
+    var st = document.getElementById('saveStatus');
+    if(st){ st.innerText='● Loading...'; st.style.background='#ff9800'; }
+    try{
+      var myDB = getRealDB();
+      var snap = await myDB.ref('shop').once('value');
+      var cloud = snap.val();
+      if(!cloud){ if(st){ st.innerText='⚠️ Cloud Empty'; st.style.background='#ff9800'; } if(typeof render==='function') render(); return; }
+      if(cloud.stock) stock = cloud.stock;
+      if(cloud.wallet) wallet = cloud.wallet;
+      if(cloud.debits) debits = cloud.debits;
+      if(cloud.history) history = cloud.history;
+      if(cloud.purchaseLog) window.purchaseLog = cloud.purchaseLog;
+      if(st){ st.innerText='✅ Loaded from Cloud'; st.style.background='#4caf50'; }
+      if(typeof render==='function') render();
+      if(typeof updateWallet==='function') updateWallet();
+    }catch(e){
+      console.log('LOAD FAILED', e);
+      if(st){ st.innerText='❌ LOAD FAILED'; st.style.background='#d32f2f'; }
+    }
+  };
+
+  // Fix SYNC NOW button
+  setTimeout(function(){
+    var btns = document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      if(((btns[i].textContent||'').toUpperCase().indexOf('SYNC NOW')!==-1)){
+        btns[i].onclick = async function(){
+          var old = this.textContent;
+          this.textContent = 'Saving...';
+          await window.saveToCloud();
+          this.textContent = old;
+        };
+      }
+    }
+  }, 500);
+
+  console.log('V-FIX-KEYS LOADED - No more ALL_LOCAL');
+})();
+ </script>
   </body>
 </html>
