@@ -1091,5 +1091,75 @@ document.body.appendChild(s);
   };
 })();
 </script>
+  <script>
+// CLEANUP - NO STRUCTURE CHANGE - KEEP 1 ONLINE + GOLDEN T + AUTO-CLEAR
+(function(){
+  // --- 1. REMOVE 2 EXTRA ONLINE, KEEP THE GOOD SYNC ONE ---
+  function cleanOnline(){
+    try{
+      var all = document.querySelectorAll('div,span,p,small');
+      all.forEach(function(el){
+        var t = (el.innerText||'').trim();
+        // Only exact Online/Offline badges, NOT the good one that says Cloud / Synced / Syncing
+        if((t==='● Online' || t==='Online' || t==='● Offline' || t==='Offline' || t==='🟢 Online') && !el.querySelector('*')){
+          // Keep if this IS the good one - good one has Cloud/Synced in parent
+          var parentTxt = el.parentElement ? el.parentElement.innerText||'' : '';
+          if(parentTxt.indexOf('Cloud')===-1 && parentTxt.indexOf('Synced')===-1 && parentTxt.indexOf('Syncing')===-1){
+            el.style.display='none';
+          }
+        }
+      });
+    }catch(e){}
+  }
+  setInterval(cleanOnline, 1000);
+  cleanOnline();
+
+  // --- 2. GOLDEN YELLOW T + TERIKANO SHORTCUT BACK ---
+  try{
+    // Make golden T icon on the fly - 512x512
+    var c = document.createElement('canvas'); c.width=512; c.height=512;
+    var x = c.getContext('2d');
+    x.fillStyle='#FFC107'; x.fillRect(0,0,512,512);
+    // rounded look
+    x.fillStyle='#FFD54F'; x.fillRect(20,20,472,472);
+    x.fillStyle='#1a1a00'; x.font='bold 340px Arial'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('T', 256, 280);
+    var iconURL = c.toDataURL('image/png');
+    // Remove old icons, set new golden T
+    document.querySelectorAll('link[rel*="icon"]').forEach(function(l){ l.remove(); });
+    var l1=document.createElement('link'); l1.rel='icon'; l1.href=iconURL; document.head.appendChild(l1);
+    var l2=document.createElement('link'); l2.rel='apple-touch-icon'; l2.href=iconURL; document.head.appendChild(l2);
+    var m1=document.createElement('meta'); m1.name='apple-mobile-web-app-title'; m1.content='Terikano'; document.head.appendChild(m1);
+    var m2=document.createElement('meta'); m2.name='application-name'; m2.content='Terikano'; document.head.appendChild(m2);
+    document.title='Terikano';
+  }catch(e){}
+
+  // --- 3. AUTO-CLEAR AFTER ENTERING DATA ---
+  // After you click any ADD / SAVE / RECORD button, clear inputs in that same card
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    var txt = (btn.innerText||'').toLowerCase();
+    if(txt.indexOf('add')===-1 && txt.indexOf('save')===-1 && txt.indexOf('record')===-1 && txt.indexOf('enter')===-1 && txt.indexOf('move')===-1) return;
+    // Don't clear First Capital / Settings buttons
+    if(txt.indexOf('capital')!==-1 && txt.indexOf('first')!==-1) return;
+    setTimeout(function(){
+      var card = btn.closest('div');
+      if(!card) return;
+      card.querySelectorAll('input').forEach(function(inp){
+        if(inp.type==='checkbox' || inp.type==='radio') return;
+        if(inp.id && (inp.id.toLowerCase().indexOf('capital')!==-1 || inp.id.toLowerCase().indexOf('markup')!==-1)) return;
+        inp.value='';
+      });
+      card.querySelectorAll('select').forEach(function(s){ s.selectedIndex=0; });
+      card.querySelectorAll('textarea').forEach(function(t){ t.value=''; });
+      // Focus first input for next entry
+      var first = card.querySelector('input');
+      if(first) first.focus();
+    }, 250);
+  });
+  console.log('CLEANUP ON - 1 Online kept, Golden T restored, Auto-clear on');
+})();
+</script>
   </body>
 </html>
