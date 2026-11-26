@@ -1,13 +1,24 @@
 {
-  "name": "TERIKANO STORE",
-  "short_name": "TERIKANO",
+  "name": "Terikano",
+  "short_name": "Terikano",
+  "description": "Terikano Shop - Stock, Sales, Credit, Debit",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#0b0f14",
+  "background_color": "#000000",
+  "theme_color": "#FFD700",
+  "orientation": "portrait",
   "icons": [
-    {"src": "https://cdn-icons-png.flaticon.com/512/263/263115.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "https://cdn-icons-png.flaticon.com/512/263/263115.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
