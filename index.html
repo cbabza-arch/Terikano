@@ -1030,5 +1030,80 @@ document.body.appendChild(s);
   console.log('V-FIX-DOUBLE LOADED');
 })();
   </script>
+  <script>
+// V-FIX-DOUBLE-2 - Wipe ALL empty RETURN boxes + Show real data
+(function(){
+  function getName(p){
+    if(!p) return '';
+    return p.name || p.item || p.product || p.itemName || p.productName || p.title || '';
+  }
+  function getCost(p){
+    if(!p) return 0;
+    return p.cost || p.price || p.unitCost || p.buyPrice || 0;
+  }
+  function getQty(p){
+    if(!p) return 0;
+    return p.qty || p.quantity || p.count || 0;
+  }
+
+  // 1. SHOW ME what is inside - for debug
+  console.log('BEFORE CLEAN:', JSON.stringify(window.purchaseLog));
+
+  // 2. Clean - delete if NO name in ANY field OR qty 0
+  if(window.purchaseLog){
+    var clean = [];
+    for(var i=0;i<window.purchaseLog.length;i++){
+      var p = window.purchaseLog[i];
+      var nm = (getName(p)+'').trim();
+      var q = Number(getQty(p)||0);
+      // Keep ONLY if it has a real name AND qty > 0
+      if(nm==='' || q<=0){
+        console.log('DELETING EMPTY:', p);
+        continue;
+      }
+      clean.push(p);
+    }
+    window.purchaseLog = clean;
+    try{ localStorage.setItem('purchaseLog', JSON.stringify(clean)); }catch(e){}
+    console.log('AFTER CLEAN:', clean.length, 'left');
+  }
+
+  // 3. Replace render with FLEXIBLE version - works with any field name
+  window.renderPurchaseLog = function(){
+    var box = document.getElementById('purchaseLogBox');
+    if(!box) return;
+    box.innerHTML = '';
+    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
+    if(!window.purchaseLog || window.purchaseLog.length===0){
+      html += '<p>No purchases yet</p>';
+      box.innerHTML = html;
+      return;
+    }
+    for(var j=0;j<window.purchaseLog.length;j++){
+      var p2 = window.purchaseLog[j];
+      var nm2 = getName(p2);
+      var ct2 = Number(getCost(p2)||0);
+      var qt2 = Number(getQty(p2)||0);
+      var tt2 = Number(p2.total || (ct2*qt2) || 0);
+      var pay2 = p2.pay || p2.payWith || p2.payment || 'cash';
+      var sup2 = p2.supplier || p2.supplierName || '';
+      var dt2 = p2.date || p2.time || '';
+      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><b>'+nm2+'</b> - '+qt2+' x $'+ct2.toFixed(2)+' = <b>$'+tt2.toFixed(2)+'</b><br><small>'+pay2.toUpperCase()+(pay2==='debit'?' - '+sup2:'')+' | '+dt2+'</small></div>' +
+        '<button onclick="window.deletePurchase('+(p2.id||j)+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;">🗑️ RETURN</button>' +
+        '</div>';
+    }
+    box.innerHTML = html;
+  };
+
+  // 4. Re-render + Save clean list to Cloud
+  setTimeout(function(){
+    if(typeof window.renderPurchaseLog==='function') window.renderPurchaseLog();
+    if(typeof window.save==='function') window.save();
+  }, 600);
+
+  console.log('V-FIX-DOUBLE-2 LOADED');
+})();
+      </script>
   </body>
 </html>
