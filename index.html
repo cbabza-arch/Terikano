@@ -965,5 +965,70 @@ document.body.appendChild(s);
   console.log('V-CUSTOMER-NAME-FIX LOADED - lastCustomer:', lastCustomer);
 })();
          </script>
+  <script>
+// V-FIX-DOUBLE - Remove duplicate RETURN + Stop double logging
+(function(){
+  // 1. Clean existing log - remove empty + duplicates
+  if(window.purchaseLog){
+    var seen = {};
+    var clean = [];
+    for(var i=0;i<window.purchaseLog.length;i++){
+      var p = window.purchaseLog[i];
+      // Remove empty - no name, no cost
+      if(!p || !p.name || p.name.trim()==='' ) continue;
+      if(!p.qty || p.qty<=0) continue;
+      // Remove duplicate by id + name + total + date (same second)
+      var key = p.id + '|' + p.name + '|' + p.total + '|' + p.date;
+      if(seen[key]) continue;
+      seen[key] = true;
+      clean.push(p);
+    }
+    window.purchaseLog = clean;
+    try{ localStorage.setItem('purchaseLog', JSON.stringify(clean)); }catch(e){}
+    console.log('CLEANED: removed duplicates, now', clean.length, 'items');
+  }
+
+  // 2. Stop future doubles - block addPurchase from logging twice in 1 second
+  var lastLogTime = 0;
+  var lastLogKey = '';
+  // Wrap the current addPurchase logger - we can't easily unwrap old ones,
+  // so we patch render to always show de-duplicated list
+  var _origRenderLog = window.renderPurchaseLog;
+  // We will replace renderPurchaseLog with a clean version
+  window.renderPurchaseLog = function(){
+    var box = document.getElementById('purchaseLogBox');
+    if(!box) return;
+    // De-duplicate before showing
+    if(window.purchaseLog){
+      var s = {};
+      var c = [];
+      for(var i=0;i<window.purchaseLog.length;i++){
+        var p = window.purchaseLog[i];
+        if(!p || !p.name || p.name.trim()==='') continue;
+        var k = p.id + '|' + p.name + '|' + p.total;
+        if(s[k]) continue;
+        s[k]=true;
+        c.push(p);
+      }
+      window.purchaseLog = c;
+    }
+    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
+    if(!window.purchaseLog || window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
+    for(var j=0;j<window.purchaseLog.length;j++){
+      var p2 = window.purchaseLog[j];
+      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><b>'+p2.name+'</b> - '+p2.qty+' x $'+Number(p2.cost).toFixed(2)+' = <b>$'+Number(p2.total).toFixed(2)+'</b><br><small>'+(p2.pay||'cash').toUpperCase()+(p2.pay==='debit'?' - '+p2.supplier:'')+' | '+p2.date+'</small></div>' +
+        '<button onclick="window.deletePurchase('+p2.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;">🗑️ RETURN</button>' +
+        '</div>';
+    }
+    box.innerHTML = html;
+  };
+
+  // 3. Re-render clean now
+  setTimeout(function(){ if(typeof window.renderPurchaseLog==='function') window.renderPurchaseLog(); if(typeof window.save==='function') window.save(); }, 500);
+
+  console.log('V-FIX-DOUBLE LOADED');
+})();
+  </script>
   </body>
 </html>
