@@ -1172,5 +1172,105 @@ document.body.appendChild(s);
   console.log('CLEANUP V2 ON - Ready+Bottom hidden, Golden T, Auto-clear');
 })();
 </script>
+  <script>
+// FIX DELETE V3 - SALES + PURCHASES BOTH REVERSE - MUST BE LAST
+(function(){
+  function parseLine(detail){
+    var d = detail||'';
+    var qty = 1, item = '', pay = 'cash';
+    var m = d.match(/(\d+)\s*x\s*([^-\n]+?)(?:\s+via\s+|\s+-\s+|\s+using\s+|\s+by\s+)(CASH|BANK|CREDIT|DEBIT)/i);
+    if(m){ qty = parseInt(m[1])||1; item = m[2].trim(); pay = m[3].toLowerCase(); }
+    else {
+      var m2 = d.match(/(\d+)\s*x\s*([^\n]+)/i);
+      if(m2){ qty = parseInt(m2[1])||1; item = m2[2].trim(); }
+      if(d.toUpperCase().indexOf('BANK')!==-1) pay='bank';
+      else if(d.toUpperCase().indexOf('CREDIT')!==-1) pay='credit';
+      else if(d.toUpperCase().indexOf('DEBIT')!==-1) pay='debit';
+      else pay='cash';
+      item = item.replace(/via.*$/i,'').replace(/CASH|BANK|CREDIT|DEBIT/gi,'').replace(/\(.*\)/g,'').trim();
+    }
+    return {qty:qty, item:item, pay:pay};
+  }
+
+  function removeFrom(arr, amt){
+    if(!arr) return;
+    for(var i=arr.length-1;i>=0;i--){
+      if(Math.abs((parseFloat(arr[i].amount)||0)-amt)<0.01){ arr.splice(i,1); break; }
+    }
+  }
+
+  function reverseSale(h){
+    var amt = parseFloat(h.amount)||0;
+    var p = parseLine(h.detail||'');
+    if(p.pay==='bank') wallet.bank -= amt;
+    else if(p.pay==='credit') removeFrom(credits, amt);
+    else if(p.pay==='debit') removeFrom(debits, amt);
+    else wallet.cash -= amt;
+    var f = stock.find(function(x){ return x.name && x.name.toLowerCase()===p.item.toLowerCase(); });
+    if(f) f.qty = (parseFloat(f.qty)||0) + p.qty;
+    else if(p.item) stock.push({name:p.item, cost:0, sell:amt/Math.max(1,p.qty), qty:p.qty, exp:'', clearPrice:0});
+    return p;
+  }
+
+  function reversePurchase(h){
+    var amt = Math.abs(parseFloat(h.amount)||0);
+    var p = parseLine(h.detail||'');
+    // Stock DOWN - we return goods to supplier
+    var f = stock.find(function(x){ return x.name && x.name.toLowerCase()===p.item.toLowerCase(); });
+    if(f) f.qty = Math.max(0, (parseFloat(f.qty)||0) - p.qty);
+    // Money UP - supplier refunds you
+    if(p.pay==='bank') wallet.bank += amt;
+    else if(p.pay==='credit') removeFrom(credits, amt);
+    else if(p.pay==='debit'){
+      // You bought on debit = you owed supplier. Return = you don't owe.
+      // Also remove from debits list if exists
+      removeFrom(debits, amt);
+      // If debit was already paid, cash would have been out - but we already removed debit, so no cash add
+      // If your app adds debit AND cash out, uncomment next line: wallet.cash += amt;
+    }
+    else wallet.cash += amt;
+    // Remove from purchaseLog too
+    if(window.purchaseLog){
+      for(var i=window.purchaseLog.length-1;i>=0;i--){
+        var pl = window.purchaseLog[i];
+        if(pl.name && pl.name.toLowerCase()===p.item.toLowerCase() && Math.abs((pl.total||pl.amount||0)-amt)<0.01){ window.purchaseLog.splice(i,1); break; }
+      }
+    }
+    return p;
+  }
+
+  window.deleteHistory = window.deleteHist = window.delHist = window.removeHistory = function(idx){
+    try{
+      var h = history[idx];
+      if(!h){ alert('Not found'); return; }
+      var amt = Math.abs(parseFloat(h.amount)||0);
+      var msg = 'DELETE / RETURN THIS?\n\n' + h.type + ' - ' + h.detail + ' - $' + amt.toFixed(2);
+      if(h.type==='SALE'){
+        var ps = parseLine(h.detail||'');
+        msg += '\n\nWill REVERSE:\n- Stock: +'+ps.qty+' x '+ps.item+' back\n- Money: -$'+amt.toFixed(2)+' from '+ps.pay.toUpperCase();
+      }
+      if(h.type==='PURCHASE'){
+        var pp = parseLine(h.detail||'');
+        msg += '\n\nWill RETURN TO SUPPLIER:\n- Stock: -'+pp.qty+' x '+pp.item+' (remove)\n- Money: +$'+amt.toFixed(2)+' back to '+pp.pay.toUpperCase()+'\n- Debit removed if it was DEBIT';
+      }
+      if(!confirm(msg)) return;
+      if(h.type==='SALE') reverseSale(h);
+      else if(h.type==='PURCHASE') reversePurchase(h);
+      else {
+        // Other types - just delete line, don't touch money/stock
+      }
+      history.splice(idx,1);
+      if(typeof save==='function') save();
+      if(typeof updateWallet==='function') updateWallet();
+      if(typeof render==='function') render();
+      if(typeof renderHist==='function') renderHist();
+      if(typeof renderLedger==='function') renderLedger();
+      if(typeof renderPurchaseLog==='function') renderPurchaseLog();
+      alert('✅ Deleted + Reversed!\nStock + Money fixed.');
+    }catch(e){ alert('Delete failed: '+e.message); }
+  };
+  console.log('DELETE V3 ON - Sales + Purchases reverse');
+})();
+  </script>
   </body>
 </html>
