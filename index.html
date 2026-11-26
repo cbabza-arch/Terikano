@@ -696,5 +696,88 @@ document.body.appendChild(s);
   console.log('V-DELETE-PURCHASE LOADED');
 })();
     </script>
+  <script>
+// V-FIX-DB - Use REAL firebase, not window.db
+(function(){
+  // 1. Find the REAL db your app uses
+  function getRealDB(){
+    // Try all possible names your app uses
+    try{ if(typeof db !== 'undefined' && db) return db; }catch(e){}
+    try{ if(window.db) return window.db; }catch(e){}
+    try{ if(typeof firebase !== 'undefined' && firebase.database) return firebase.database(); }catch(e){}
+    try{ if(window.firebase && window.firebase.database) return window.firebase.database(); }catch(e){}
+    return null;
+  }
+
+  var realDB = getRealDB();
+  console.log('REAL DB FOUND?', !!realDB);
+
+  // 2. Fix saveToCloud to use REAL db
+  window.saveToCloud = async function(){
+    var st = document.getElementById('saveStatus');
+    if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; }
+    try{
+      var myDB = getRealDB();
+      if(!myDB) throw new Error('Still no db - Firebase not loaded yet, wait 3 sec and try again');
+      
+      var data = {};
+      try{
+        if(typeof stock !== 'undefined') data.stock = stock;
+        if(typeof wallet !== 'undefined') data.wallet = wallet;
+        if(typeof debits !== 'undefined') data.debits = debits;
+        if(typeof history !== 'undefined') data.history = history;
+        if(typeof purchaseLog !== 'undefined') data.purchaseLog = window.purchaseLog;
+        // Save ALL localStorage too
+        data.ALL_LOCAL = {};
+        for(var i=0;i<localStorage.length;i++){
+          var k = localStorage.key(i);
+          data.ALL_LOCAL[k] = localStorage.getItem(k);
+        }
+        data.time = new Date().toISOString();
+      }catch(e){}
+
+      console.log('SAVING TO REAL DB:', data);
+      await myDB.ref('shop').set(data);
+      
+      if(st){ st.innerText='✅ REALLY Saved to Cloud'; st.style.background='#4caf50'; }
+      console.log('✅ SAVE SUCCESS - REAL');
+      return true;
+    }catch(e){
+      console.log('❌ SAVE FAILED REAL:', e);
+      if(st){ st.innerText='❌ SAVE FAILED: '+e.message; st.style.background='#d32f2f'; }
+      alert('❌ SAVE FAILED:\n'+e.message);
+      return false;
+    }
+  };
+
+  window.save = function(){
+    try{
+      var d = {};
+      if(typeof stock !== 'undefined') d.stock = stock;
+      if(typeof wallet !== 'undefined') d.wallet = wallet;
+      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d));
+    }catch(e){}
+    window.saveToCloud();
+  };
+
+  // 3. Fix SYNC NOW button to use REAL save
+  setTimeout(function(){
+    var btns = document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var t = (btns[i].textContent||'').toUpperCase();
+      if(t.indexOf('SYNC NOW')!==-1){
+        btns[i].onclick = async function(){
+          var old = this.textContent;
+          this.textContent = 'Saving...';
+          await window.saveToCloud();
+          this.textContent = old;
+        };
+      }
+    }
+  }, 500);
+
+  console.log('V-FIX-DB LOADED - Using real db');
+})();
+  </script>
   </body>
 </html>
