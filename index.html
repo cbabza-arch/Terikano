@@ -932,70 +932,57 @@ document.body.appendChild(s);
   }
   console.log('V-CUSTOMER-NAME-FIX LOADED - lastCustomer:', lastCustomer);
 })();
-  </script><script>
-// FINAL FIX - REAL SAVE BEFORE CLOSE - FOR TERIKANO cloudRef terikano_v1
+  </script>
+  <script>
+// FINAL FIX - NO DELAY SAVE - BYPASS 2-sec THROTTLE
 (function(){
-  var _origSave = window.save;
-  var _origLogout = window.doLogout;
-
-  // 1. Make save() also make a Local Backup instantly - no delay
+  // Do NOT call old throttled save() anymore - save DIRECT to your cloudRef
   window.save = function(){
     try{
       var d = window.getAllData();
       try{ if(window.purchaseLog) d.purchaseLog = window.purchaseLog; }catch(e){}
       try{ if(window.cart) d.cart = window.cart; }catch(e){}
-      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d));
-    }catch(e){}
-    if(typeof _origSave === 'function') return _origSave();
-  };
-
-  // 2. Force a REAL immediate save - no 2-sec throttle
-  window.saveNow = function(){
-    try{
-      if(typeof window.cloudReady !== 'undefined' && !window.cloudReady && typeof cloudReady !== 'undefined' && !cloudReady) return false;
-      // Use your real cloudRef
+      // 1. Phone Backup - instant
+      try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d)); }catch(e){}
+      // 2. Cloud - INSTANT, no 2-sec wait, no setTimeout
       if(typeof cloudRef !== 'undefined' && cloudRef){
-        var d2 = window.getAllData();
-        try{ if(window.purchaseLog) d2.purchaseLog = window.purchaseLog; }catch(e){}
-        localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d2));
-        return cloudRef.set(d2); // returns a Promise - real Cloud write
+        // Use YOUR real cloudRef terikano_v1
+        cloudRef.set(d).then(function(){
+          try{ updateCloudStatus('☁️ Cloud: Synced ✅ ' + new Date().toLocaleTimeString()); }catch(e){}
+        }).catch(function(){});
+        // Also update lastCloudSave so old code doesn't double-save
+        try{ lastCloudSave = Date.now(); }catch(e){}
       }
-    }catch(e){ console.log('saveNow err', e); }
-    return false;
+    }catch(e){ console.log('save err', e); }
   };
+  window.saveNow = window.save;
 
-  // 3. When you press LOGOUT - force save FIRST, then logout
+  // Logout - save then wait a bit
+  var _origLogout = window.doLogout;
   window.doLogout = function(){
-    try{ window.saveNow(); }catch(e){}
-    // Give Cloud 600ms to finish, then logout
-    setTimeout(function(){ if(typeof _origLogout === 'function') _origLogout(); }, 600);
+    try{ window.save(); }catch(e){}
+    setTimeout(function(){ if(typeof _origLogout === 'function') _origLogout(); }, 800);
   };
 
-  // 4. When you CLOSE the app fully - try to save
-  window.addEventListener('pagehide', function(){ try{ window.saveNow(); }catch(e){} });
-  window.addEventListener('beforeunload', function(){ try{ window.saveNow(); }catch(e){} });
-
-  // 5. On REOPEN - if Cloud is empty, restore from Phone Backup
+  // On reopen - if Cloud empty, restore from Phone
   setTimeout(function(){
     try{
-      // If after 3 sec we still have empty stock + empty wallet, but backup exists, restore it
       var bak = localStorage.getItem('Terikano_REAL_BACKUP');
       if(!bak) return;
       var b = JSON.parse(bak);
       var cloudEmpty = (!window.stock || window.stock.length===0) && (!window.history || window.history.length===0) && (!window.wallet || (window.wallet.cash===0 && window.wallet.bank===0));
       var backupHasData = (b.stock && b.stock.length>0) || (b.history && b.history.length>0) || (b.wallet && (b.wallet.cash>0 || b.wallet.bank>0));
       if(cloudEmpty && backupHasData){
-        if(confirm('Cloud empty but Phone Backup found ($'+(b.wallet?b.wallet.cash:0)+' Cash). Restore from Phone Backup?')){
-          if(typeof window.applyCloudData === 'function') window.applyCloudData(b);
-          else if(typeof applyCloudData === 'function') applyCloudData(b);
-          window.saveNow();
-          alert('Restored from Phone Backup bro!');
+        if(confirm('Cloud empty but Phone Backup found - Cash $'+(b.wallet?b.wallet.cash:0)+'. Restore?')){
+          if(typeof applyCloudData === 'function') applyCloudData(b);
+          window.save();
+          alert('Restored bro!');
         }
       }
     }catch(e){}
   }, 3000);
 
-  console.log('FINAL FIX REAL-SAVE LOADED - saveNow + logout + close + restore');
+  console.log('FINAL FIX NO-DELAY SAVE LOADED');
 })();
 </script>
   </body>
