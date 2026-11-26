@@ -1003,5 +1003,34 @@ document.body.appendChild(s);
   console.log('CACHE KILLER LOADED');
 })();
 </script>
+  <script>
+// SUPER SAVE - SAVE ON EVERY TYPE + EVERY 2 SEC
+(function(){
+  function superSave(){
+    try{
+      var d = window.getAllData();
+      try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d)); }catch(e){}
+      try{ localStorage.setItem('Terikano_BACKUP_v2', JSON.stringify(d)); }catch(e){}
+      if(typeof cloudRef!=='undefined' && cloudRef){
+        cloudRef.set(d).then(function(){
+          try{ updateCloudStatus('☁️ Cloud: Synced ✅ ' + new Date().toLocaleTimeString()); }catch(e){}
+        }).catch(function(err){
+          alert('❌ CLOUD FAILED: ' + (err && err.message ? err.message : err));
+        });
+      }
+    }catch(e){}
+  }
+  // Save on every input / change
+  document.addEventListener('input', superSave);
+  document.addEventListener('change', superSave);
+  // Save every 2 sec automatically
+  setInterval(superSave, 2000);
+  // Save on close
+  window.addEventListener('beforeunload', superSave);
+  window.addEventListener('pagehide', superSave);
+  window.save = superSave;
+  console.log('SUPER SAVE LOADED');
+})();
+</script>
   </body>
 </html>
