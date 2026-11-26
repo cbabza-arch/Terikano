@@ -873,14 +873,12 @@ document.body.appendChild(s);
   <script>
 // V-CUSTOMER-NAME-FIX - Every sale in Notepad MUST have Customer Name
 (function(){
-  // 1. Find your Customer Name box - try all possible names
   function getCustomerName(){
     var ids = ['customerName','custName','customer_name','buyerName','customer','cust_name','saleCustomer','customerInput'];
     for(var i=0;i<ids.length;i++){
       var el = document.getElementById(ids[i]);
       if(el && el.value && el.value.trim()!=='') return el.value.trim();
     }
-    // Also try any input with placeholder "customer"
     var inputs = document.querySelectorAll('input');
     for(var j=0;j<inputs.length;j++){
       var ph = (inputs[j].placeholder||'').toLowerCase();
@@ -888,7 +886,6 @@ document.body.appendChild(s);
     }
     return '';
   }
-
   function getCustomerInput(){
     var ids = ['customerName','custName','customer_name','buyerName','customer','cust_name','saleCustomer','customerInput'];
     for(var i=0;i<ids.length;i++){
@@ -897,270 +894,93 @@ document.body.appendChild(s);
     }
     return null;
   }
-
-  // 2. Remember last customer - so even if box is cleared, we still know
   var lastCustomer = '';
   document.addEventListener('input', function(e){
     var n = getCustomerName();
     if(n) lastCustomer = n;
   });
-
-  // 3. Wrap addHist - force Customer Name into EVERY history / notepad entry
   var _origAddHist = window.addHist;
   if(typeof _origAddHist === 'function'){
     window.addHist = function(type, desc, amount){
       var cust = getCustomerName() || lastCustomer;
-      // If this is a SALE / DEBIT sale and no customer in text, add it
       if(cust && (type==='SALE' || type==='DEBIT' || type==='DEBIT SALE' || type.indexOf('SALE')!==-1)){
         if(desc.indexOf(cust)===-1){
           desc = '[' + cust + '] ' + desc;
         }
       }
-      // Also for RETURN / PURCHASE, keep customer if it's a sale return
-      if(cust && type==='RETURN' && desc.indexOf(cust)===-1 && desc.toLowerCase().indexOf('return')!==-1){
-        // Don't force for purchase returns, only sale returns - skip
-      }
       return _origAddHist(type, desc, amount);
     };
   }
-
-  // 4. Wrap checkout - save customer BEFORE it clears the box
   var _origCheckout = window.checkoutCartWithConfirm;
   if(typeof _origCheckout === 'function'){
     window.checkoutCartWithConfirm = function(){
       var cust = getCustomerName();
       if(cust) lastCustomer = cust;
-      // Store it so saveToCloud can save it too
       window.lastCustomerName = lastCustomer;
       try{ localStorage.setItem('lastCustomerName', lastCustomer); }catch(e){}
       var r = _origCheckout();
-      // Re-save after checkout with customer name
       setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 500);
       return r;
     };
   }
-
-  // 5. Also fix Purchase Log / Sale Log if you have it - add customer column
-  var _origSaveCloud = window.saveToCloud;
-  if(typeof _origSaveCloud === 'function'){
-    window.saveToCloud = async function(){
-      // Make sure last customer is saved in history before saving
-      return _origSaveCloud();
-    };
-  }
-
-  // 6. Show a reminder if customer name is empty on checkout
-  setTimeout(function(){
-    var btns = document.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){
-      var t = (btns[i].textContent||'').toUpperCase();
-      if(t.indexOf('CHECKOUT')!==-1 || t.indexOf('SELL')!==-1 || t.indexOf('PAY')!==-1){
-        // Don't block, just warn - wrap click to warn
-        var oldClick = btns[i].onclick;
-        // We already wrapped checkout function, so just show hint
-      }
-    }
-  }, 1000);
-
   console.log('V-CUSTOMER-NAME-FIX LOADED - lastCustomer:', lastCustomer);
-})();
-         </script>
-  <script>
-// V-FIX-DOUBLE - Remove duplicate RETURN + Stop double logging
-(function(){
-  // 1. Clean existing log - remove empty + duplicates
-  if(window.purchaseLog){
-    var seen = {};
-    var clean = [];
-    for(var i=0;i<window.purchaseLog.length;i++){
-      var p = window.purchaseLog[i];
-      // Remove empty - no name, no cost
-      if(!p || !p.name || p.name.trim()==='' ) continue;
-      if(!p.qty || p.qty<=0) continue;
-      // Remove duplicate by id + name + total + date (same second)
-      var key = p.id + '|' + p.name + '|' + p.total + '|' + p.date;
-      if(seen[key]) continue;
-      seen[key] = true;
-      clean.push(p);
-    }
-    window.purchaseLog = clean;
-    try{ localStorage.setItem('purchaseLog', JSON.stringify(clean)); }catch(e){}
-    console.log('CLEANED: removed duplicates, now', clean.length, 'items');
-  }
-
-  // 2. Stop future doubles - block addPurchase from logging twice in 1 second
-  var lastLogTime = 0;
-  var lastLogKey = '';
-  // Wrap the current addPurchase logger - we can't easily unwrap old ones,
-  // so we patch render to always show de-duplicated list
-  var _origRenderLog = window.renderPurchaseLog;
-  // We will replace renderPurchaseLog with a clean version
-  window.renderPurchaseLog = function(){
-    var box = document.getElementById('purchaseLogBox');
-    if(!box) return;
-    // De-duplicate before showing
-    if(window.purchaseLog){
-      var s = {};
-      var c = [];
-      for(var i=0;i<window.purchaseLog.length;i++){
-        var p = window.purchaseLog[i];
-        if(!p || !p.name || p.name.trim()==='') continue;
-        var k = p.id + '|' + p.name + '|' + p.total;
-        if(s[k]) continue;
-        s[k]=true;
-        c.push(p);
-      }
-      window.purchaseLog = c;
-    }
-    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
-    if(!window.purchaseLog || window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
-    for(var j=0;j<window.purchaseLog.length;j++){
-      var p2 = window.purchaseLog[j];
-      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">' +
-        '<div><b>'+p2.name+'</b> - '+p2.qty+' x $'+Number(p2.cost).toFixed(2)+' = <b>$'+Number(p2.total).toFixed(2)+'</b><br><small>'+(p2.pay||'cash').toUpperCase()+(p2.pay==='debit'?' - '+p2.supplier:'')+' | '+p2.date+'</small></div>' +
-        '<button onclick="window.deletePurchase('+p2.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;">🗑️ RETURN</button>' +
-        '</div>';
-    }
-    box.innerHTML = html;
-  };
-
-  // 3. Re-render clean now
-  setTimeout(function(){ if(typeof window.renderPurchaseLog==='function') window.renderPurchaseLog(); if(typeof window.save==='function') window.save(); }, 500);
-
-  console.log('V-FIX-DOUBLE LOADED');
 })();
   </script>
   <script>
-// V-FIX-DOUBLE-2 - Wipe ALL empty RETURN boxes + Show real data
-(function(){
-  function getName(p){
-    if(!p) return '';
-    return p.name || p.item || p.product || p.itemName || p.productName || p.title || '';
-  }
-  function getCost(p){
-    if(!p) return 0;
-    return p.cost || p.price || p.unitCost || p.buyPrice || 0;
-  }
-  function getQty(p){
-    if(!p) return 0;
-    return p.qty || p.quantity || p.count || 0;
-  }
-
-  // 1. SHOW ME what is inside - for debug
-  console.log('BEFORE CLEAN:', JSON.stringify(window.purchaseLog));
-
-  // 2. Clean - delete if NO name in ANY field OR qty 0
-  if(window.purchaseLog){
-    var clean = [];
-    for(var i=0;i<window.purchaseLog.length;i++){
-      var p = window.purchaseLog[i];
-      var nm = (getName(p)+'').trim();
-      var q = Number(getQty(p)||0);
-      // Keep ONLY if it has a real name AND qty > 0
-      if(nm==='' || q<=0){
-        console.log('DELETING EMPTY:', p);
-        continue;
-      }
-      clean.push(p);
-    }
-    window.purchaseLog = clean;
-    try{ localStorage.setItem('purchaseLog', JSON.stringify(clean)); }catch(e){}
-    console.log('AFTER CLEAN:', clean.length, 'left');
-  }
-
-  // 3. Replace render with FLEXIBLE version - works with any field name
-  window.renderPurchaseLog = function(){
-    var box = document.getElementById('purchaseLogBox');
-    if(!box) return;
-    box.innerHTML = '';
-    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
-    if(!window.purchaseLog || window.purchaseLog.length===0){
-      html += '<p>No purchases yet</p>';
-      box.innerHTML = html;
-      return;
-    }
-    for(var j=0;j<window.purchaseLog.length;j++){
-      var p2 = window.purchaseLog[j];
-      var nm2 = getName(p2);
-      var ct2 = Number(getCost(p2)||0);
-      var qt2 = Number(getQty(p2)||0);
-      var tt2 = Number(p2.total || (ct2*qt2) || 0);
-      var pay2 = p2.pay || p2.payWith || p2.payment || 'cash';
-      var sup2 = p2.supplier || p2.supplierName || '';
-      var dt2 = p2.date || p2.time || '';
-      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">' +
-        '<div><b>'+nm2+'</b> - '+qt2+' x $'+ct2.toFixed(2)+' = <b>$'+tt2.toFixed(2)+'</b><br><small>'+pay2.toUpperCase()+(pay2==='debit'?' - '+sup2:'')+' | '+dt2+'</small></div>' +
-        '<button onclick="window.deletePurchase('+(p2.id||j)+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;">🗑️ RETURN</button>' +
-        '</div>';
-    }
-    box.innerHTML = html;
-  };
-
-  // 4. Re-render + Save clean list to Cloud
-  setTimeout(function(){
-    if(typeof window.renderPurchaseLog==='function') window.renderPurchaseLog();
-    if(typeof window.save==='function') window.save();
-  }, 600);
-
-  console.log('V-FIX-DOUBLE-2 LOADED');
-})();
-      </script>
-  <script>
-// V-FINAL-FIX - Stop empty boxes FOREVER - overrides all old patches
+// V-ONE-FIX - The ONLY purchase fix - controls Cloud load too - REPLACES V-FIX-DOUBLE, V-FIX-DOUBLE-2, V-FINAL-FIX
 (function(){
   function isReal(p){
     if(!p) return false;
-    var n = (p.name || p.item || p.product || '') + '';
-    var q = Number(p.qty || p.quantity || 0);
-    return n.trim() !== '' && q > 0;
+    var n = (p.name||p.item||p.product||p.itemName||'')+'';
+    var q = Number(p.qty||p.quantity||0);
+    return n.trim()!=='' && q>0;
   }
-  function cleanList(list){
-    var out = [], seen = {};
+  function clean(list){
+    var out=[], seen={};
     for(var i=0;i<(list||[]).length;i++){
-      var p = list[i];
-      if(!isReal(p)) continue;
-      var k = p.name + '|' + p.qty + '|' + p.total + '|' + p.date;
-      if(seen[k]) continue;
-      seen[k]=true; out.push(p);
+      var p=list[i]; if(!isReal(p)) continue;
+      var k=p.name+'|'+p.qty+'|'+p.total+'|'+p.date;
+      if(seen[k]) continue; seen[k]=true; out.push(p);
     }
     return out;
   }
-  // 1. Clean NOW + every time we render
-  window.purchaseLog = cleanList(window.purchaseLog);
-  try{ localStorage.setItem('purchaseLog', JSON.stringify(window.purchaseLog)); }catch(e){}
-
-  // 2. Render - NEVER show empty box
   window.renderPurchaseLog = function(){
     var box = document.getElementById('purchaseLogBox');
     if(!box) return;
-    window.purchaseLog = cleanList(window.purchaseLog);
+    window.purchaseLog = clean(window.purchaseLog);
     var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
     if(window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
     for(var j=0;j<window.purchaseLog.length;j++){
-      var p = window.purchaseLog[j];
+      var p=window.purchaseLog[j];
       html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center">'
         + '<div><b>'+p.name+'</b> - '+p.qty+' x $'+Number(p.cost).toFixed(2)+' = <b>$'+Number(p.total).toFixed(2)+'</b><br><small>'+(p.pay||'cash').toUpperCase()+' | '+p.date+'</small></div>'
-        + '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold">🗑️ RETURN</button>'
-        + '</div>';
+        + '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold">🗑️ RETURN</button></div>';
     }
     box.innerHTML = html;
   };
-
-  // 3. Stop empty from EVER being saved to Cloud
-  var _origSaveCloud = window.saveToCloud;
-  if(typeof _origSaveCloud === 'function' && !window.saveToCloud.__finalFixed){
-    var wrapped = async function(){
-      window.purchaseLog = cleanList(window.purchaseLog);
-      return _origSaveCloud();
-    };
-    wrapped.__finalFixed = true;
-    window.saveToCloud = wrapped;
-  }
-
-  // 4. Re-render after cloud load
-  setTimeout(function(){ window.renderPurchaseLog(); if(typeof window.save==='function') window.save(); }, 1000);
-  console.log('V-FINAL-FIX LOADED - empty boxes blocked');
+  // KEY: Clean EVERY time Cloud loads - no more Console delete!
+  setInterval(function(){
+    var before = (window.purchaseLog||[]).length;
+    window.purchaseLog = clean(window.purchaseLog);
+    if((window.purchaseLog||[]).length !== before){
+      try{ localStorage.setItem('purchaseLog', JSON.stringify(window.purchaseLog)); }catch(e){}
+      window.renderPurchaseLog();
+      if(typeof window.save==='function') window.save();
+    }
+  }, 1000);
+  // Hide any empty box in DOM too, just in case
+  setInterval(function(){
+    var btns = document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      if(btns[i].textContent.indexOf('RETURN')===-1) continue;
+      var box = btns[i].parentElement;
+      if(!box) continue;
+      var txt = box.innerText.replace(/RETURN/g,'').replace(/🗑️/g,'').trim();
+      if(txt.length < 3) box.style.display='none';
+    }
+  }, 500);
+  console.log('V-ONE-FIX LOADED');
 })();
   </script>
-</body>
+  </body>
 </html>
