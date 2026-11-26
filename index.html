@@ -991,9 +991,9 @@ document.body.appendChild(s);
 
 </script>
 <script>
-// FINAL FIX V3 - MERGE, NEVER OVERWRITE, NO HANG
+// FINAL FIX A - CLOUD FIRST + LOCAL BACKUP - OPTION A LOCKED
 (function(){
-  function getDB(){ if(window.db) return window.db; try{ if(typeof db!=='undefined') return db; }catch(e){} return null; }
+  function getDB(){ if(window.db) return window.db; try{ if(typeof db!=='undefined') return db; }catch(e){} try{ if(typeof firebase!=='undefined' && firebase.database) return firebase.database(); }catch(e){} return null; }
   function collect(){ var d={};
     if(window.stock) d.stock=window.stock;
     if(window.wallet) d.wallet=window.wallet;
@@ -1016,25 +1016,24 @@ document.body.appendChild(s);
   window.getAllData=collect;
   var isSaving=false, needRetry=false;
   window.saveToCloud=async function(){
-    var dbRef=getDB(); 
+    var dbRef=getDB();
+    var st=document.getElementById('saveStatus');
+    var data=collect();
+    // 1. ALWAYS save Local Backup first - so no loss if WiFi drops mid-save
+    try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data)); }catch(e){}
     if(!dbRef){
-      var st0=document.getElementById('saveStatus');
-      if(st0){ st0.innerText='⚠️ No Cloud - Saved Locally Only'; st0.style.background='#ff9800'; }
+      if(st){ st.innerText='⚠️ No WiFi - Saved on Phone, Will Sync to Cloud When WiFi Returns'; st.style.background='#ff9800'; }
       return false;
     }
     if(isSaving){ needRetry=true; return false; }
     isSaving=true;
     try{
-      var data=collect();
-      try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data)); }catch(e){}
-      // update() MERGES - never deletes, and no need to read Cloud first (that was hanging)
+      // 2. Cloud - update() MERGES, never deletes
       await dbRef.ref('shop').update(data);
-      var st=document.getElementById('saveStatus');
-      if(st){ st.innerText='✅ Saved to Cloud - Safe to Close'; st.style.background='#4caf50'; }
+      if(st){ st.innerText='✅ Saved to Cloud + Phone Backup - Safe to Close'; st.style.background='#4caf50'; }
       return true;
     }catch(e){
-      var st2=document.getElementById('saveStatus');
-      if(st2){ st2.innerText='⚠️ Cloud Failed - Saved Locally, Retry'; st2.style.background='#ff9800'; }
+      if(st){ st.innerText='⚠️ Cloud Failed - Saved on Phone, Will Retry'; st.style.background='#ff9800'; }
       return false;
     } finally{
       isSaving=false;
@@ -1045,13 +1044,13 @@ document.body.appendChild(s);
   window.save=function(){
     var st=document.getElementById('saveStatus');
     if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; }
-    try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(collect())); }catch(e){}
     clearTimeout(saveTimer);
     saveTimer=setTimeout(function(){ window.saveToCloud(); }, 400);
   };
-  console.log('FINAL-FIX V3 LOADED - MERGE MODE, NO HANG');
+  // When WiFi comes back, auto-sync phone backup to Cloud
+  window.addEventListener('online', function(){ setTimeout(function(){ window.saveToCloud(); }, 1000); });
+  console.log('FINAL-FIX A LOADED - CLOUD + LOCAL BACKUP - OPTION A');
 })();
 </script>
   </body>
-</html>
-  
+</html>  
