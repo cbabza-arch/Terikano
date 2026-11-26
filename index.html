@@ -985,5 +985,23 @@ document.body.appendChild(s);
   console.log('FINAL FIX NO-DELAY SAVE LOADED');
 })();
 </script>
- </body>
+  <script>
+// KILL OLD SERVICE WORKER + CACHE - FORCE FRESH APP
+(function(){
+  // 1. Unregister any Service Worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ r.unregister(); console.log('SW unregistered'); });
+    }).catch(function(){});
+  }
+  // 2. Clear all caches
+  if('caches' in window){
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){ caches.delete(k); });
+    }).catch(function(){});
+  }
+  console.log('CACHE KILLER LOADED');
+})();
+</script>
+  </body>
 </html>
