@@ -934,123 +934,28 @@ document.body.appendChild(s);
 })();
   </script>
 <script>
-// V-ONE-FIX + FINAL FIX V3 - MERGE, NO LOOP, NO HANG
+// FINAL FIX A - CORRECTED FOR TERIKANO - USES YOUR cloudRef + terikano_v1 - DO NOT USE db/shop
 (function(){
-  function isReal(p){
-    if(!p) return false;
-    var n = (p.name||p.item||p.product||p.itemName||'')+'';
-    var q = Number(p.qty||p.quantity||0);
-    return n.trim()!=='' && q>0;
-  }
-  function clean(list){
-    var out=[], seen={};
-    for(var i=0;i<(list||[]).length;i++){
-      var p=list[i]; if(!isReal(p)) continue;
-      var k=p.name+'|'+p.qty+'|'+p.total+'|'+p.date;
-      if(seen[k]) continue; seen[k]=true; out.push(p);
-    }
-    return out;
-  }
-  window.renderPurchaseLog = function(){
-    var box = document.getElementById('purchaseLogBox');
-    if(!box) return;
-    window.purchaseLog = clean(window.purchaseLog);
-    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
-    if(window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
-    for(var j=0;j<window.purchaseLog.length;j++){
-      var p=window.purchaseLog[j];
-      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center">'
-        + '<div><b>'+p.name+'</b> - '+p.qty+' x $'+Number(p.cost).toFixed(2)+' = <b>$'+Number(p.total).toFixed(2)+'</b><br><small>'+(p.pay||'cash').toUpperCase()+' | '+p.date+'</small></div>'
-        + '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold">🗑️ RETURN</button></div>';
-    }
-    box.innerHTML = html;
-  };
-  // CLEAN ONLY - NO auto-save here, this was causing Saving... loop
-  setInterval(function(){
-    var before = (window.purchaseLog||[]).length;
-    window.purchaseLog = clean(window.purchaseLog);
-    if((window.purchaseLog||[]).length !== before){
-      try{ localStorage.setItem('purchaseLog', JSON.stringify(window.purchaseLog)); }catch(e){}
-      window.renderPurchaseLog();
-      // DO NOT call window.save() here
-    }
-  }, 2000);
-  // Hide any empty box in DOM too, just in case
-  setInterval(function(){
-    var btns = document.querySelectorAll('button');
-    for(var i=0;i<btns.length;i++){
-      if(btns[i].textContent.indexOf('RETURN')===-1) continue;
-      var box = btns[i].parentElement;
-      if(!box) continue;
-      var txt = box.innerText.replace(/RETURN/g,'').replace(/🗑️/g,'').trim();
-      if(txt.length < 3) box.style.display='none';
-    }
-  }, 2000);
-  console.log('V-ONE-FIX LOADED - NO AUTO SAVE');
-})();
-
-</script>
-<script>
-// FINAL FIX A - CLOUD FIRST + LOCAL BACKUP - OPTION A LOCKED
-(function(){
-  function getDB(){ if(window.db) return window.db; try{ if(typeof db!=='undefined') return db; }catch(e){} try{ if(typeof firebase!=='undefined' && firebase.database) return firebase.database(); }catch(e){} return null; }
-  function collect(){ var d={};
-    if(window.stock) d.stock=window.stock;
-    if(window.wallet) d.wallet=window.wallet;
-    if(window.credits) d.credits=window.credits;
-    if(window.debits) d.debits=window.debits;
-    if(window.history) d.history=window.history;
-    if(window.notes) d.notes=window.notes;
-    if(window.badDebts) d.badDebts=window.badDebts;
-    if(window.cart) d.cart=window.cart;
-    if(window.storeName) d.storeName=window.storeName;
-    if(window.openingStockVal!==undefined) d.openingStockVal=window.openingStockVal;
-    if(window.ownerPass) d.ownerPass=window.ownerPass;
-    if(window.staffPass) d.staffPass=window.staffPass;
-    if(window.purchaseLog) d.purchaseLog=window.purchaseLog;
-    if(window.capital!==undefined) d.capital=window.capital;
-    if(window.bank!==undefined) d.bank=window.bank;
-    if(window.cash!==undefined) d.cash=window.cash;
-    d.updatedAt=Date.now(); return d;
-  }
-  window.getAllData=collect;
-  var isSaving=false, needRetry=false;
-  window.saveToCloud=async function(){
-    var dbRef=getDB();
-    var st=document.getElementById('saveStatus');
-    var data=collect();
-    // 1. ALWAYS save Local Backup first - so no loss if WiFi drops mid-save
-    try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data)); }catch(e){}
-    if(!dbRef){
-      if(st){ st.innerText='⚠️ No WiFi - Saved on Phone, Will Sync to Cloud When WiFi Returns'; st.style.background='#ff9800'; }
-      return false;
-    }
-    if(isSaving){ needRetry=true; return false; }
-    isSaving=true;
+  // Save the ORIGINAL good save() - do not break it
+  var _origSave = window.save;
+  window.save = function(){
+    // 1. ALWAYS Local Backup first - using YOUR real getAllData()
     try{
-      // 2. Cloud - update() MERGES, never deletes
-      await dbRef.ref('shop').update(data);
-      if(st){ st.innerText='✅ Saved to Cloud + Phone Backup - Safe to Close'; st.style.background='#4caf50'; }
-      return true;
-    }catch(e){
-      if(st){ st.innerText='⚠️ Cloud Failed - Saved on Phone, Will Retry'; st.style.background='#ff9800'; }
-      return false;
-    } finally{
-      isSaving=false;
-      if(needRetry){ needRetry=false; setTimeout(function(){ window.saveToCloud(); }, 500); }
-    }
+      var data = window.getAllData();
+      // Also backup purchaseLog + cart if they exist
+      try{ if(window.purchaseLog) data.purchaseLog = window.purchaseLog; }catch(e){}
+      try{ if(window.cart) data.cart = window.cart; }catch(e){}
+      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data));
+    }catch(e){}
+    // 2. Then call YOUR ORIGINAL Cloud save - cloudRef.set() to terikano_v1
+    if(typeof _origSave === 'function') return _origSave();
   };
-  var saveTimer=null;
-  window.save=function(){
-    var st=document.getElementById('saveStatus');
-    if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; }
-    clearTimeout(saveTimer);
-    saveTimer=setTimeout(function(){ window.saveToCloud(); }, 400);
-  };
-  // When WiFi comes back, auto-sync phone backup to Cloud
-  window.addEventListener('online', function(){ setTimeout(function(){ window.saveToCloud(); }, 1000); });
-  console.log('FINAL-FIX A LOADED - CLOUD + LOCAL BACKUP - OPTION A');
+  // When WiFi comes back, auto-sync
+  window.addEventListener('online', function(){
+    setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 1000);
+  });
+  console.log('FINAL-FIX A CORRECTED - USES cloudRef terikano_v1');
 })();
 </script>
   </body>
-</html>  
+</html>
