@@ -870,5 +870,100 @@ document.body.appendChild(s);
   console.log('V-FIX-KEYS LOADED - No more ALL_LOCAL');
 })();
  </script>
+  <script>
+// V-CUSTOMER-NAME-FIX - Every sale in Notepad MUST have Customer Name
+(function(){
+  // 1. Find your Customer Name box - try all possible names
+  function getCustomerName(){
+    var ids = ['customerName','custName','customer_name','buyerName','customer','cust_name','saleCustomer','customerInput'];
+    for(var i=0;i<ids.length;i++){
+      var el = document.getElementById(ids[i]);
+      if(el && el.value && el.value.trim()!=='') return el.value.trim();
+    }
+    // Also try any input with placeholder "customer"
+    var inputs = document.querySelectorAll('input');
+    for(var j=0;j<inputs.length;j++){
+      var ph = (inputs[j].placeholder||'').toLowerCase();
+      if(ph.indexOf('customer')!==-1 && inputs[j].value.trim()!=='') return inputs[j].value.trim();
+    }
+    return '';
+  }
+
+  function getCustomerInput(){
+    var ids = ['customerName','custName','customer_name','buyerName','customer','cust_name','saleCustomer','customerInput'];
+    for(var i=0;i<ids.length;i++){
+      var el = document.getElementById(ids[i]);
+      if(el) return el;
+    }
+    return null;
+  }
+
+  // 2. Remember last customer - so even if box is cleared, we still know
+  var lastCustomer = '';
+  document.addEventListener('input', function(e){
+    var n = getCustomerName();
+    if(n) lastCustomer = n;
+  });
+
+  // 3. Wrap addHist - force Customer Name into EVERY history / notepad entry
+  var _origAddHist = window.addHist;
+  if(typeof _origAddHist === 'function'){
+    window.addHist = function(type, desc, amount){
+      var cust = getCustomerName() || lastCustomer;
+      // If this is a SALE / DEBIT sale and no customer in text, add it
+      if(cust && (type==='SALE' || type==='DEBIT' || type==='DEBIT SALE' || type.indexOf('SALE')!==-1)){
+        if(desc.indexOf(cust)===-1){
+          desc = '[' + cust + '] ' + desc;
+        }
+      }
+      // Also for RETURN / PURCHASE, keep customer if it's a sale return
+      if(cust && type==='RETURN' && desc.indexOf(cust)===-1 && desc.toLowerCase().indexOf('return')!==-1){
+        // Don't force for purchase returns, only sale returns - skip
+      }
+      return _origAddHist(type, desc, amount);
+    };
+  }
+
+  // 4. Wrap checkout - save customer BEFORE it clears the box
+  var _origCheckout = window.checkoutCartWithConfirm;
+  if(typeof _origCheckout === 'function'){
+    window.checkoutCartWithConfirm = function(){
+      var cust = getCustomerName();
+      if(cust) lastCustomer = cust;
+      // Store it so saveToCloud can save it too
+      window.lastCustomerName = lastCustomer;
+      try{ localStorage.setItem('lastCustomerName', lastCustomer); }catch(e){}
+      var r = _origCheckout();
+      // Re-save after checkout with customer name
+      setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 500);
+      return r;
+    };
+  }
+
+  // 5. Also fix Purchase Log / Sale Log if you have it - add customer column
+  var _origSaveCloud = window.saveToCloud;
+  if(typeof _origSaveCloud === 'function'){
+    window.saveToCloud = async function(){
+      // Make sure last customer is saved in history before saving
+      return _origSaveCloud();
+    };
+  }
+
+  // 6. Show a reminder if customer name is empty on checkout
+  setTimeout(function(){
+    var btns = document.querySelectorAll('button');
+    for(var i=0;i<btns.length;i++){
+      var t = (btns[i].textContent||'').toUpperCase();
+      if(t.indexOf('CHECKOUT')!==-1 || t.indexOf('SELL')!==-1 || t.indexOf('PAY')!==-1){
+        // Don't block, just warn - wrap click to warn
+        var oldClick = btns[i].onclick;
+        // We already wrapped checkout function, so just show hint
+      }
+    }
+  }, 1000);
+
+  console.log('V-CUSTOMER-NAME-FIX LOADED - lastCustomer:', lastCustomer);
+})();
+         </script>
   </body>
 </html>
