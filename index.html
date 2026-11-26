@@ -1105,5 +1105,31 @@ document.body.appendChild(s);
   console.log('V-FIX-DOUBLE-2 LOADED');
 })();
       </script>
+  <script>
+// V-NUKE-CLOUD - Delete purchaseLog from Firebase Cloud
+(function(){
+  setTimeout(async function(){
+    try{
+      // Try all possible Firebase paths
+      if(window.firebase && firebase.database){
+        var db = firebase.database();
+        // Your app saves to 'shop'
+        await db.ref('shop/purchaseLog').remove();
+        await db.ref('shop/purchase_log').remove();
+        await db.ref('purchaseLog').remove();
+        console.log('DELETED purchaseLog FROM CLOUD ✅');
+        alert('Deleted 3 empty boxes from CLOUD! Now reload app.');
+      } else if(window.db){
+        await window.db.ref('shop/purchaseLog').remove();
+        alert('Deleted from Cloud! Reload app.');
+      } else {
+        alert('Firebase not found - use Option 1 in Console bro');
+      }
+    }catch(e){
+      alert('Cloud delete failed: ' + e.message + ' - Use Option 1 in Console bro');
+    }
+  }, 1000);
+})();
+  </script>
   </body>
 </html>
