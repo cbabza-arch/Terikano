@@ -932,29 +932,70 @@ document.body.appendChild(s);
   }
   console.log('V-CUSTOMER-NAME-FIX LOADED - lastCustomer:', lastCustomer);
 })();
-  </script>
-<script>
-// FINAL FIX A - CORRECTED FOR TERIKANO - USES YOUR cloudRef + terikano_v1 - DO NOT USE db/shop
+  </script><script>
+// FINAL FIX - REAL SAVE BEFORE CLOSE - FOR TERIKANO cloudRef terikano_v1
 (function(){
-  // Save the ORIGINAL good save() - do not break it
   var _origSave = window.save;
+  var _origLogout = window.doLogout;
+
+  // 1. Make save() also make a Local Backup instantly - no delay
   window.save = function(){
-    // 1. ALWAYS Local Backup first - using YOUR real getAllData()
     try{
-      var data = window.getAllData();
-      // Also backup purchaseLog + cart if they exist
-      try{ if(window.purchaseLog) data.purchaseLog = window.purchaseLog; }catch(e){}
-      try{ if(window.cart) data.cart = window.cart; }catch(e){}
-      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data));
+      var d = window.getAllData();
+      try{ if(window.purchaseLog) d.purchaseLog = window.purchaseLog; }catch(e){}
+      try{ if(window.cart) d.cart = window.cart; }catch(e){}
+      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d));
     }catch(e){}
-    // 2. Then call YOUR ORIGINAL Cloud save - cloudRef.set() to terikano_v1
     if(typeof _origSave === 'function') return _origSave();
   };
-  // When WiFi comes back, auto-sync
-  window.addEventListener('online', function(){
-    setTimeout(function(){ if(typeof window.save==='function') window.save(); }, 1000);
-  });
-  console.log('FINAL-FIX A CORRECTED - USES cloudRef terikano_v1');
+
+  // 2. Force a REAL immediate save - no 2-sec throttle
+  window.saveNow = function(){
+    try{
+      if(typeof window.cloudReady !== 'undefined' && !window.cloudReady && typeof cloudReady !== 'undefined' && !cloudReady) return false;
+      // Use your real cloudRef
+      if(typeof cloudRef !== 'undefined' && cloudRef){
+        var d2 = window.getAllData();
+        try{ if(window.purchaseLog) d2.purchaseLog = window.purchaseLog; }catch(e){}
+        localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d2));
+        return cloudRef.set(d2); // returns a Promise - real Cloud write
+      }
+    }catch(e){ console.log('saveNow err', e); }
+    return false;
+  };
+
+  // 3. When you press LOGOUT - force save FIRST, then logout
+  window.doLogout = function(){
+    try{ window.saveNow(); }catch(e){}
+    // Give Cloud 600ms to finish, then logout
+    setTimeout(function(){ if(typeof _origLogout === 'function') _origLogout(); }, 600);
+  };
+
+  // 4. When you CLOSE the app fully - try to save
+  window.addEventListener('pagehide', function(){ try{ window.saveNow(); }catch(e){} });
+  window.addEventListener('beforeunload', function(){ try{ window.saveNow(); }catch(e){} });
+
+  // 5. On REOPEN - if Cloud is empty, restore from Phone Backup
+  setTimeout(function(){
+    try{
+      // If after 3 sec we still have empty stock + empty wallet, but backup exists, restore it
+      var bak = localStorage.getItem('Terikano_REAL_BACKUP');
+      if(!bak) return;
+      var b = JSON.parse(bak);
+      var cloudEmpty = (!window.stock || window.stock.length===0) && (!window.history || window.history.length===0) && (!window.wallet || (window.wallet.cash===0 && window.wallet.bank===0));
+      var backupHasData = (b.stock && b.stock.length>0) || (b.history && b.history.length>0) || (b.wallet && (b.wallet.cash>0 || b.wallet.bank>0));
+      if(cloudEmpty && backupHasData){
+        if(confirm('Cloud empty but Phone Backup found ($'+(b.wallet?b.wallet.cash:0)+' Cash). Restore from Phone Backup?')){
+          if(typeof window.applyCloudData === 'function') window.applyCloudData(b);
+          else if(typeof applyCloudData === 'function') applyCloudData(b);
+          window.saveNow();
+          alert('Restored from Phone Backup bro!');
+        }
+      }
+    }catch(e){}
+  }, 3000);
+
+  console.log('FINAL FIX REAL-SAVE LOADED - saveNow + logout + close + restore');
 })();
 </script>
   </body>
