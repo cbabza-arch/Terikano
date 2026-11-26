@@ -442,5 +442,122 @@ document.body.appendChild(s);
   console.log('V-AUTO-SAVE LOADED');
 })();
   </script>
+  <script>
+// V-REAL-SAVE - Save REAL data + Show REAL error
+(function(){
+  var status = document.getElementById('saveStatus');
+  if(!status){
+    status = document.createElement('div');
+    status.id = 'saveStatus';
+    status.style.cssText = 'position:fixed;top:5px;left:5px;z-index:999999;background:#333;color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;font-weight:bold;';
+    document.body.appendChild(status);
+  }
+  function setStatus(t,c){ status.innerText=t; status.style.background=c; }
+
+  // 1. Collect REAL data from YOUR file
+  function realData(){
+    var d = {};
+    try{
+      // Your real variables
+      if(typeof stock !== 'undefined') d.stock = stock;
+      if(typeof wallet !== 'undefined') d.wallet = wallet;
+      if(typeof debits !== 'undefined') d.debits = debits;
+      if(typeof history !== 'undefined') d.history = history;
+      if(typeof cart !== 'undefined') d.cart = cart;
+      // Also keep old ones if they exist
+      if(typeof window.purchases !== 'undefined') d.purchases = window.purchases;
+      if(typeof window.sales !== 'undefined') d.sales = window.sales;
+      // Also save ALL localStorage as backup
+      d.ALL_LOCAL = {};
+      for(var i=0;i<localStorage.length;i++){
+        var k = localStorage.key(i);
+        d.ALL_LOCAL[k] = localStorage.getItem(k);
+      }
+      d.time = new Date().toISOString();
+      d.ownerPw = localStorage.getItem('terikano_owner_pw')||'9999';
+    }catch(e){ console.log('realData err', e); }
+    return d;
+  }
+
+  // 2. REAL SAVE - waits for Firebase, shows REAL result
+  window.saveToCloud = async function(){
+    setStatus('● Saving...', '#ff9800');
+    try{
+      if(!window.db && typeof db !== 'undefined') window.db = db;
+      if(!window.db && typeof db === 'undefined'){
+        throw new Error('No Firebase db! Check firebase config / internet');
+      }
+      var data = realData();
+      console.log('SAVING THIS:', data);
+      await window.db.ref('shop').set(data);
+      setStatus('✅ REALLY Saved to Cloud', '#4caf50');
+      console.log('✅ SAVE SUCCESS');
+      return true;
+    }catch(e){
+      console.log('❌ SAVE FAILED:', e);
+      setStatus('❌ SAVE FAILED: ' + e.message, '#d32f2f');
+      alert('❌ SAVE FAILED!\n\n' + e.message + '\n\nCheck Internet / Firebase Rules.\nData NOT saved - do NOT close app!');
+      return false;
+    }
+  };
+
+  window.save = function(){
+    // Also save to phone localStorage as backup - so even if Cloud fails, phone has it
+    try{
+      var d = realData();
+      localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(d));
+    }catch(e){}
+    window.saveToCloud();
+  };
+
+  // 3. REAL LOAD - load stock/wallet back
+  window.load = async function(){
+    setStatus('● Loading...', '#ff9800');
+    try{
+      var snap = await window.db.ref('shop').once('value');
+      var cloud = snap.val();
+      if(!cloud){ setStatus('⚠️ Cloud Empty', '#ff9800'); if(typeof render==='function') render(); return; }
+      if(cloud.stock) stock = cloud.stock;
+      if(cloud.wallet) wallet = cloud.wallet;
+      if(cloud.debits) debits = cloud.debits;
+      if(cloud.history) history = cloud.history;
+      if(cloud.cart) cart = cloud.cart;
+      // Restore localStorage backup too
+      if(cloud.ALL_LOCAL){
+        for(var k in cloud.ALL_LOCAL){
+          try{ localStorage.setItem(k, cloud.ALL_LOCAL[k]); }catch(e){}
+        }
+      }
+      setStatus('✅ Loaded from Cloud', '#4caf50');
+      if(typeof render==='function') render();
+      if(typeof renderAll==='function') renderAll();
+      if(typeof updateWallet==='function') updateWallet();
+      console.log('✅ LOAD SUCCESS', cloud);
+    }catch(e){
+      console.log('❌ LOAD FAILED', e);
+      setStatus('❌ LOAD FAILED: ' + e.message, '#d32f2f');
+      // Fallback to phone backup
+      try{
+        var local = JSON.parse(localStorage.getItem('Terikano_REAL_BACKUP')||'{}');
+        if(local.stock){ stock=local.stock; wallet=local.wallet; debits=local.debits; history=local.history; if(typeof render==='function') render(); alert('Cloud failed, loaded from PHONE backup'); }
+      }catch(err){}
+    }
+  };
+
+  // 4. Make SYNC button do REAL save + load
+  setTimeout(function(){
+    var btn = document.getElementById('v20SyncBtn');
+    if(btn){
+      btn.onclick = async function(){
+        btn.textContent = 'Saving...';
+        await window.saveToCloud();
+        btn.textContent = '🔄 SYNC CLOUD';
+      };
+    }
+  }, 1000);
+
+  console.log('V-REAL-SAVE LOADED');
+})();
+  </script>
   </body>
 </html>
