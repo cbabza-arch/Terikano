@@ -559,5 +559,142 @@ document.body.appendChild(s);
   console.log('V-REAL-SAVE LOADED');
 })();
   </script>
+  <script>
+// V-DELETE-PURCHASE - Return / Delete Purchase + Refund
+(function(){
+
+  // 1. Keep a proper Purchase Log - so we can delete it later
+  if(!window.purchaseLog) window.purchaseLog = [];
+  // Load old log if saved
+  try{
+    var savedLog = JSON.parse(localStorage.getItem('purchaseLog')||'[]');
+    if(savedLog.length>0) window.purchaseLog = savedLog;
+  }catch(e){}
+
+  function saveLog(){
+    try{ localStorage.setItem('purchaseLog', JSON.stringify(window.purchaseLog)); }catch(e){}
+    if(typeof window.save==='function') window.save();
+  }
+
+  // 2. Hook addPurchase - save details for delete later
+  // We already have your rounded addPurchase, we wrap it again to record
+  var _origAdd = window.addPurchase;
+  window.addPurchase = function(){
+    // Read values BEFORE it clears
+    var n = (document.getElementById('p_name')||{}).value || '';
+    var c = parseFloat((document.getElementById('p_cost')||{}).value)||0;
+    var q = parseInt((document.getElementById('p_qty')||{}).value)||0;
+    var pay = (document.getElementById('p_pay')||{}).value || 'cash';
+    var supp = (document.getElementById('supplierName')||{}).value || 'Wholesaler';
+    var tot = window.round5 ? window.round5(c*q) : c*q;
+
+    var r = null;
+    if(typeof _origAdd==='function') r = _origAdd();
+
+    // Only log if it actually added (n, c, q valid)
+    if(n && c>0 && q>0){
+      window.purchaseLog.unshift({
+        id: Date.now(),
+        name: n, cost: c, qty: q, total: tot,
+        pay: pay, supplier: supp,
+        date: new Date().toLocaleString()
+      });
+      saveLog();
+      renderPurchaseLog();
+    }
+    return r;
+  };
+
+  // 3. Render Purchase Log with DELETE button
+  function renderPurchaseLog(){
+    var box = document.getElementById('purchaseLogBox');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'purchaseLogBox';
+      box.style.cssText = 'margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
+      // Put it after Purchase section
+      var sec = document.getElementById('secPurchase') || document.body;
+      sec.appendChild(box);
+    }
+    var html = '<h3>🧾 Purchase Log - Tap 🗑️ to Return / Delete</h3>';
+    if(window.purchaseLog.length===0) html += '<p>No purchases yet</p>';
+    for(var i=0;i<window.purchaseLog.length;i++){
+      var p = window.purchaseLog[i];
+      html += '<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><b>'+p.name+'</b> - '+p.qty+' x $'+p.cost.toFixed(2)+' = <b>$'+p.total.toFixed(2)+'</b><br><small>'+p.pay.toUpperCase()+(p.pay==='debit'?' - '+p.supplier:'')+' | '+p.date+'</small></div>' +
+        '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;">🗑️ RETURN</button>' +
+        '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  // 4. THE DELETE - Reverse everything!
+  window.deletePurchase = function(id){
+    var idx = -1;
+    for(var i=0;i<window.purchaseLog.length;i++){ if(window.purchaseLog[i].id===id) idx=i; }
+    if(idx===-1) return;
+    var p = window.purchaseLog[idx];
+    if(!confirm('↩️ RETURN / DELETE this purchase?\n\n'+p.qty+' x '+p.name+' = $'+p.total.toFixed(2)+'\nPay: '+p.pay.toUpperCase()+'\n\nThis will:\n- Less '+p.qty+' from Stock\n'+(p.pay==='debit' ? '- Less $'+p.total.toFixed(2)+' from Wholesale Debit ('+p.supplier+')' : '- Add $'+p.total.toFixed(2)+' back to '+p.pay.toUpperCase())+'\n\nContinue?')) return;
+
+    // A. Less Stock
+    try{
+      var f = null;
+      if(typeof stock !== 'undefined'){
+        for(var s=0;s<stock.length;s++){ if(stock[s].name.toLowerCase()===p.name.toLowerCase()) f=stock[s]; }
+        if(f){
+          f.qty -= p.qty;
+          if(f.qty<=0){
+            // Remove item if qty 0
+            var si = stock.indexOf(f);
+            if(si!==-1) stock.splice(si,1);
+          }
+        }
+      }
+    }catch(e){ console.log('stock reverse err', e); }
+
+    // B. Refund Money
+    try{
+      if(p.pay==='debit'){
+        // Less Wholesale Debit
+        if(typeof debits !== 'undefined'){
+          // Find debit for this supplier + item + amount
+          for(var d=debits.length-1;d>=0;d--){
+            if(debits[d].supplier===p.supplier && debits[d].item===p.name && debits[d].amount===p.total){
+              debits.splice(d,1); break;
+            }
+          }
+          // Fallback: if not found by exact, reduce first debit from that supplier
+          // (only if still not removed - check by supplier total)
+        }
+        if(typeof addHist==='function') addHist('RETURN','Returned '+p.qty+' x '+p.name+' - Less Debit from '+p.supplier, -p.total);
+      } else {
+        // Add Cash / Bank back
+        if(typeof wallet !== 'undefined' && wallet[p.pay]!==undefined){
+          wallet[p.pay] += p.total;
+        }
+        if(typeof addHist==='function') addHist('RETURN','Returned '+p.qty+' x '+p.name+' - Refund to '+p.pay.toUpperCase(), p.total);
+      }
+    }catch(e){ console.log('refund err', e); }
+
+    // C. Remove from log
+    window.purchaseLog.splice(idx,1);
+    saveLog();
+    renderPurchaseLog();
+    if(typeof render==='function') render();
+    if(typeof updateWallet==='function') updateWallet();
+    alert('✅ Returned!\n\nStock -'+p.qty+' '+p.name+'\n'+(p.pay==='debit' ? 'Debit -$'+p.total.toFixed(2) : p.pay.toUpperCase()+' +$'+p.total.toFixed(2)));
+  };
+
+  // Show log on load
+  setTimeout(renderPurchaseLog, 800);
+  // Re-render after every render
+  var _origRender = window.render;
+  if(typeof _origRender==='function'){
+    window.render = function(){ _origRender(); renderPurchaseLog(); };
+  }
+
+  console.log('V-DELETE-PURCHASE LOADED');
+})();
+    </script>
   </body>
 </html>
