@@ -989,32 +989,57 @@ document.body.appendChild(s);
   console.log('V-ONE-FIX LOADED');
 })();
   </script>
-  <script>
-// FINAL FIX: One Save, All Fields
+<script>
+// FINAL FIX V2 - MERGE, NEVER OVERWRITE
 (function(){
   function getDB(){ if(window.db) return window.db; try{ if(typeof db!=='undefined') return db; }catch(e){} return null; }
   function collect(){ var d={};
-    if(typeof stock!=='undefined') d.stock=stock;
-    if(typeof wallet!=='undefined') d.wallet=wallet;
-    if(typeof credits!=='undefined') d.credits=credits;
-    if(typeof debits!=='undefined') d.debits=debits;
-    if(typeof history!=='undefined') d.history=history;
-    if(typeof notes!=='undefined') d.notes=notes;
-    if(typeof badDebts!=='undefined') d.badDebts=badDebts;
-    if(typeof cart!=='undefined') d.cart=cart;
-    if(typeof storeName!=='undefined') d.storeName=storeName;
-    if(typeof openingStockVal!=='undefined') d.openingStockVal=openingStockVal;
-    if(typeof ownerPass!=='undefined') d.ownerPass=ownerPass;
-    if(typeof staffPass!=='undefined') d.staffPass=staffPass;
-    if(typeof window.purchaseLog!=='undefined') d.purchaseLog=window.purchaseLog;
+    // Use window.* so we get the REAL live variables
+    if(window.stock) d.stock=window.stock;
+    if(window.wallet) d.wallet=window.wallet;
+    if(window.credits) d.credits=window.credits;
+    if(window.debits) d.debits=window.debits;
+    if(window.history) d.history=window.history;
+    if(window.notes) d.notes=window.notes;
+    if(window.badDebts) d.badDebts=window.badDebts;
+    if(window.cart) d.cart=window.cart;
+    if(window.storeName) d.storeName=window.storeName;
+    if(window.openingStockVal!==undefined) d.openingStockVal=window.openingStockVal;
+    if(window.ownerPass) d.ownerPass=window.ownerPass;
+    if(window.staffPass) d.staffPass=window.staffPass;
+    if(window.purchaseLog) d.purchaseLog=window.purchaseLog;
+    // Also grab capital/bank if they are separate
+    if(window.capital!==undefined) d.capital=window.capital;
+    if(window.bank!==undefined) d.bank=window.bank;
+    if(window.cash!==undefined) d.cash=window.cash;
     d.updatedAt=Date.now(); return d;
   }
   window.getAllData=collect;
   var saveTimer=null, isSaving=false;
-  window.saveToCloud=async function(){ var dbRef=getDB(); if(!dbRef) return false; if(isSaving) return false; isSaving=true; try{ var data=collect(); try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data)); }catch(e){} await dbRef.ref('shop').set(data); var st=document.getElementById('saveStatus'); if(st){ st.innerText='✅ Saved to Cloud - Safe to Close'; st.style.background='#4caf50'; } return true; }catch(e){ return false; }finally{ isSaving=false; } };
-  window.save=function(){ var st=document.getElementById('saveStatus'); if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; } try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(collect())); }catch(e){} clearTimeout(saveTimer); saveTimer=setTimeout(function(){ window.saveToCloud(); },600); };
-  console.log('FINAL-FIX LOADED');
+  window.saveToCloud=async function(){
+    var dbRef=getDB(); if(!dbRef) return false;
+    if(isSaving) return false; isSaving=true;
+    try{
+      var data=collect();
+      try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(data)); }catch(e){}
+      // MERGE: Get Cloud first, then merge, then update - NEVER set()
+      var snap = await dbRef.ref('shop').once('value');
+      var cloud = snap.val() || {};
+      var merged = Object.assign({}, cloud, data);
+      await dbRef.ref('shop').update(merged);
+      var st=document.getElementById('saveStatus');
+      if(st){ st.innerText='✅ Saved to Cloud - Safe to Close'; st.style.background='#4caf50'; }
+      return true;
+    }catch(e){ return false; } finally{ isSaving=false; }
+  };
+  window.save=function(){
+    var st=document.getElementById('saveStatus');
+    if(st){ st.innerText='● Saving...'; st.style.background='#ff9800'; }
+    try{ localStorage.setItem('Terikano_REAL_BACKUP', JSON.stringify(collect())); }catch(e){}
+    clearTimeout(saveTimer); saveTimer=setTimeout(function(){ window.saveToCloud(); },800);
+  };
+  console.log('FINAL-FIX V2 LOADED - MERGE MODE');
 })();
-  </script>
+</script>
   </body>
 </html>
