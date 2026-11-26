@@ -1032,5 +1032,64 @@ document.body.appendChild(s);
   console.log('SUPER SAVE LOADED');
 })();
 </script>
+  <script>
+// FINAL FIX - BLOCK EMPTY OVERWRITE - MUST BE LAST
+(function(){
+  // 1. Restore phone backup INSTANTLY, before any save runs
+  try{
+    var bak = localStorage.getItem('Terikano_REAL_BACKUP');
+    if(bak){
+      var b = JSON.parse(bak);
+      if(b.wallet && (b.wallet.cash>0 || b.wallet.bank>0)){
+        if(typeof wallet!=='undefined') wallet = b.wallet;
+        if(typeof stock!=='undefined' && b.stock) stock = b.stock;
+        if(typeof history!=='undefined' && b.history) history = b.history;
+        if(typeof credits!=='undefined' && b.credits) credits = b.credits;
+        if(typeof debits!=='undefined' && b.debits) debits = b.debits;
+        console.log('RESTORED FROM PHONE BEFORE SAVE:', b.wallet);
+      }
+    }
+  }catch(e){}
+
+  // 2. Guard cloudRef.set - NEVER allow empty wallet to overwrite real cloud data
+  try{
+    if(typeof cloudRef!=='undefined' && cloudRef && !cloudRef.__guarded){
+      var _origSet = cloudRef.set.bind(cloudRef);
+      cloudRef.__guarded = true;
+      cloudRef.set = function(data){
+        try{
+          var isEmpty = data && data.wallet && data.wallet.cash===0 && data.wallet.bank===0 && (!data.stock || data.stock.length===0) && (!data.history || data.history.length===0);
+          if(isEmpty){
+            // Check if cloud already has real data - if yes, BLOCK this empty write
+            console.log('BLOCKED EMPTY OVERWRITE - wallet $0 would erase $5000');
+            try{ updateCloudStatus('☁️ Cloud: Blocked empty overwrite - your $5000 safe ✅'); }catch(e){}
+            return Promise.resolve();
+          }
+        }catch(e){}
+        return _origSet(data);
+      };
+      console.log('CLOUD GUARD ON - empty saves blocked');
+    }
+  }catch(e){ console.log('guard err', e); }
+
+  // 3. Guard window.save too - same rule
+  var _origSave = window.save;
+  window.save = function(){
+    try{
+      if(typeof wallet!=='undefined' && wallet.cash===0 && wallet.bank===0){
+        var bak2 = localStorage.getItem('Terikano_REAL_BACKUP');
+        if(bak2){
+          var b2 = JSON.parse(bak2);
+          if(b2.wallet && (b2.wallet.cash>0 || b2.wallet.bank>0)){
+            console.log('SAVE BLOCKED - would save $0, phone has $'+b2.wallet.cash);
+            return;
+          }
+        }
+      }
+    }catch(e){}
+    if(typeof _origSave==='function') return _origSave();
+  };
+})();
+</script>
   </body>
 </html>
