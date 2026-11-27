@@ -1396,5 +1396,52 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('PURCHASE FIX ON - Auto Price + Auto Clear + 1x RETURN');
 })();
   </script>
+  <script>
+// FIX - Show Name in Purchase Log ONLY - NO Stock Del
+(function(){
+  function fixNames(){
+    if(!window.purchaseLog) return;
+    for(var i=0;i<window.purchaseLog.length;i++){
+      var p=window.purchaseLog[i];
+      if(!p.name || p.name==='undefined'){
+        p.name = p.item || p.detail || '';
+        if(!p.name && typeof history!=='undefined'){
+          for(var h=0;h<history.length;h++){
+            var hh=history[h];
+            if((hh.type==='PURCHASE'||hh.type==='DEBIT') && Math.abs(Math.abs(hh.amount)-(p.total||0))<0.01){
+              var m2=(hh.detail||'').match(/x\s+(.+?)\s+from/i);
+              if(m2){ p.name=m2[1]; break; }
+            }
+          }
+        }
+        if(!p.name) p.name='Item '+(i+1)+' (old - no name saved)';
+      }
+      if(!p.total) p.total = p.amount||0;
+      if(!p.cost) p.cost = p.qty? (p.total/p.qty):0;
+    }
+  }
+
+  window.renderPurchaseLog = function(){
+    fixNames();
+    var box=document.getElementById('purchaseLogBox');
+    if(!box){ box=document.createElement('div'); box.id='purchaseLogBox'; box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;'; var sec=document.getElementById('secPurchase')||document.body; sec.appendChild(box); }
+    var html='<h3>🧾 Purchase Log - Tap RETURN to return to supplier</h3>';
+    if(!window.purchaseLog||window.purchaseLog.length===0) html+='<p>No purchases yet</p>';
+    for(var i=0;i<(window.purchaseLog||[]).length;i++){
+      var p=window.purchaseLog[i];
+      var nm=p.name||p.item||'Unknown Item';
+      var qq=p.qty||0, cc=p.cost||0, tt=p.total||0;
+      html+='<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;background:#fff;color:#000;">'+
+        '<div style="font-size:16px;color:#000;"><b>'+nm+'</b> - '+qq+' x $'+cc.toFixed(2)+' = <b>$'+tt.toFixed(2)+'</b><br><small style="color:#555;">'+(p.pay||'').toUpperCase()+' | '+(p.supplier||'')+' | '+(p.date||'')+'</small></div>'+
+        '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:10px;width:100%;border-radius:8px;font-weight:bold;margin-top:6px;">🗑️ RETURN - '+nm+'</button>'+
+        '</div>';
+    }
+    box.innerHTML=html;
+  };
+
+  setTimeout(function(){ fixNames(); window.renderPurchaseLog(); }, 800);
+  console.log('NAME FIX ONLY - NO Stock Del');
+})();
+  </script>
 </body>
 </html>
