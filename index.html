@@ -1692,5 +1692,64 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   setInterval(fixYellow, 800);
 })();
     </script>
+  <script>
+// FINAL v9 - KILL DOUBLE KARATIN
+(function(){
+  var st=document.createElement('style'); st.textContent='#purchaseLogBox{display:none!important;}'; document.head.appendChild(st);
+  function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
+  function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
+  function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
+  function restoreSup(){ var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return; if(!s.value) s.value=saved; }
+  document.addEventListener('input', function(e){ var s=findSup(); if(s && e.target===s && e.target.value) saveSup(e.target.value); });
+  setInterval(restoreSup, 500);
+  function fixQty(){ var q=document.getElementById('p_qty'); if(q && q.value==='1') q.value=''; }
+  setInterval(fixQty, 800);
+
+  // --- DROPDOWN - DEDUPE FIX ---
+  function clean(n){ return (n||'').toString().trim(); }
+  function getAllNames(){
+    var map={};
+    function add(nm, cost, sell){
+      nm=clean(nm); if(!nm) return;
+      var key=nm.toLowerCase(); // <-- Karatin + karatin + "Karatin " = SAME key now
+      if(!map[key]) map[key]={name:nm, cost:cost||'', sell:sell||''};
+    }
+    try{ if(typeof stock!=='undefined'){ stock.forEach(function(s){ add(s.name||s.item, s.cost, s.sell); }); } }catch(e){}
+    try{ if(typeof purchaseLog!=='undefined'){ purchaseLog.forEach(function(p){ var nm=p.name||''; if(!nm && p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) nm=m[2].trim(); } add(nm, p.cost, ''); }); } }catch(e){}
+    var arr=Object.keys(map).map(function(k){ return map[k]; }); arr.sort(function(a,b){ return a.name.localeCompare(b.name); }); return arr;
+  }
+  var lastHash='';
+  function buildDropdowns(){
+    var names=getAllNames(); var hash=JSON.stringify(names); if(hash===lastHash) return; lastHash=hash;
+    var pSels=document.querySelectorAll('#p_itemSelect'); for(var i=1;i<pSels.length;i++) pSels[i].remove();
+    var pSel=document.getElementById('p_itemSelect'); var pName=document.getElementById('p_name');
+    if(!pSel && pName){ pSel=document.createElement('select'); pSel.id='p_itemSelect'; pSel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;'; pName.parentNode.insertBefore(pSel, pName); pSel.addEventListener('change', function(){ if(pSel.value){ pName.value=pSel.value; var opt=pSel.options[pSel.selectedIndex]; var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost; var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell; } }); }
+    if(pSel){ var cur=pSel.value; pSel.innerHTML='<option value="">-- Pick Item --</option>'; names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; pSel.appendChild(o); }); pSel.value=cur; }
+  }
+  setInterval(buildDropdowns, 1000); setTimeout(buildDropdowns, 800);
+
+  function getName(p,i){
+    if(p.name && p.name!=='undefined' && p.name!=='') return clean(p.name);
+    if(p.item) return clean(p.item);
+    if(p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) return clean(m[2]); return p.detail; }
+    return 'Item '+(i+1);
+  }
+  function fixYellow(){
+    var list=window.purchaseLog||[];
+    var box=document.getElementById('myPurchaseBox');
+    if(!box){ box=document.createElement('div'); box.id='myPurchaseBox'; box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;'; (document.getElementById('secPurchase')||document.body).appendChild(box); }
+    if(!list.length){ box.innerHTML='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3><div style="color:#888;">No purchases yet</div>'; return; }
+    var html='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3>';
+    list.forEach(function(p,i){
+      var nm=getName(p,i); var qq=p.qty||1; var cc=p.cost||0; var tt=p.total||p.amount||(qq*cc);
+      if(p.detail && !p.qty){ var mm=p.detail.match(/(\d+)\s*x/i); if(mm) qq=mm[1]; }
+      var delId = (p.id!==undefined && p.id!==null) ? p.id : i;
+      html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;"><div style="font-size:18px;font-weight:bold;">'+nm+'</div><div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div><div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div><button onclick="deletePurchase('+delId+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>';
+    });
+    box.innerHTML=html;
+  }
+  setInterval(fixYellow, 800);
+})();
+ </script>
   </body>
   </html>
