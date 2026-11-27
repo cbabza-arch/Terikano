@@ -1701,5 +1701,22 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   setInterval(fixYellow, 800);
 })();
  </script>
+  <script>
+// TINY PATCH - ONLY SALES FLICKER - DOES NOT TOUCH v9
+(function(){
+  // Stop rebuilding Sales dropdown while you are using it
+  var origBuild = window._salesFix;
+  setInterval(function(){
+    var sSel = document.getElementById('s_itemSelect');
+    if(!sSel) return;
+    // If you are touching Sales dropdown, freeze it - no rebuild
+    if(document.activeElement === sSel){
+      sSel.dataset.frozen = '1';
+    } else {
+      sSel.dataset.frozen = '0';
+    }
+  }, 300);
+})();
+  </script>
   </body>
   </html>
