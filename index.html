@@ -1903,5 +1903,125 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('DROPDOWN + CHART ON');
 })();
   </script>
+  <script>
+// ALL IN ONE - Supplier Stay + QTY Override + Dropdown + Chart
+(function(){
+  try{ var m=setInterval(function(){},1000); for(var i=0;i<=m;i++){ clearInterval(i); clearTimeout(i); } }catch(e){}
+
+  // ===== 1. SUPPLIER STAY + NEW WINS =====
+  var savedSupplier='';
+  document.addEventListener('input', function(e){
+    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
+      if(e.target.value){ savedSupplier=e.target.value; }
+      else { savedSupplier=''; } // you cleared it to type new one, forget old
+    }
+  });
+  document.addEventListener('change', function(e){
+    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName') && e.target.value){
+      savedSupplier=e.target.value;
+    }
+  });
+
+  if(!window._allWrapped){
+    window._allWrapped=true;
+    var _origAdd=window.addPurchase;
+    window.addPurchase=function(){
+      var a=document.getElementById('p_supplier'); var b=document.getElementById('supplierName');
+      if(a && a.value) savedSupplier=a.value; if(b && b.value) savedSupplier=b.value;
+      var r=null; try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
+      setTimeout(function(){
+        if(savedSupplier){
+          if(a) a.value=savedSupplier; if(b) b.value=savedSupplier;
+        }
+        var n=document.getElementById('p_name'); if(n) n.value='';
+        var c=document.getElementById('p_cost'); if(c) c.value='';
+        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
+        var q=document.getElementById('p_qty'); if(q) q.value='1';
+        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
+      },200);
+      return r;
+    };
+  }
+
+  // ===== 2. QTY OVERRIDE =====
+  function fixQty(el){
+    if(!el || el.dataset.qtyFixed) return; el.dataset.qtyFixed='1';
+    el.addEventListener('focus', function(){ setTimeout(function(){ el.select(); },10); });
+    el.addEventListener('click', function(){ el.select(); });
+  }
+  function fixAllQty(){ ['p_qty','s_qty'].forEach(function(id){ var el=document.getElementById(id); if(el) fixQty(el); }); }
+
+  // ===== 3. PURCHASE DROPDOWN =====
+  function getStockNames(){
+    var names=[];
+    try{ if(typeof stock!=='undefined') stock.forEach(function(s){ if(s.name) names.push({name:s.name, cost:s.cost||'', sell:s.sell||s.price||''}); }); }catch(e){}
+    try{ if(typeof purchaseLog!=='undefined') purchaseLog.forEach(function(p){ if(p.name && !names.find(function(n){return n.name===p.name;})) names.push({name:p.name, cost:p.cost||'', sell:''}); }); }catch(e){}
+    return names;
+  }
+  function addDropdown(){
+    var nameInput=document.getElementById('p_name'); if(!nameInput || document.getElementById('p_itemSelect')) return;
+    var names=getStockNames();
+    var sel=document.createElement('select'); sel.id='p_itemSelect';
+    sel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
+    sel.innerHTML='<option value="">-- Pick Item (or type new below) --</option>';
+    names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; sel.appendChild(o); });
+    nameInput.parentNode.insertBefore(sel, nameInput);
+    sel.addEventListener('change', function(){
+      if(!sel.value) return; nameInput.value=sel.value;
+      var opt=sel.options[sel.selectedIndex];
+      var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost;
+      var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell;
+    });
+  }
+
+  // ===== 4. BAR GRAPH - WHERE TO FIND =====
+  function addChart(){
+    if(document.getElementById('bestSellerBox')) return;
+    var box=document.createElement('div'); box.id='bestSellerBox';
+    box.style.cssText='margin:15px;padding:15px;border:3px solid #2196F3;border-radius:12px;background:#fff;';
+    box.innerHTML=
+      '<h3 style="color:#000;margin:0 0 10px;">📊 Most Selling - Pick Time</h3>'+
+      '<select id="chartPeriod" style="width:100%;padding:12px;border-radius:8px;border:2px solid #000;font-size:16px;margin-bottom:10px;">'+
+      '<option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="all" selected>All Time</option></select>'+
+      '<canvas id="bestChart" width="340" height="220" style="width:100%;background:#f9f9f9;border-radius:8px;"></canvas>'+
+      '<div id="bestList" style="color:#000;margin-top:10px;"></div>';
+    var sec=document.getElementById('secSale')||document.body; sec.appendChild(box);
+    document.getElementById('chartPeriod').addEventListener('change', drawChart);
+    drawChart();
+  }
+  function getSales(period){
+    var map={}; var now=new Date(); var start=null;
+    if(period==='today') start=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if(period==='week'){ start=new Date(now); start.setDate(now.getDate()-7); }
+    if(period==='month') start=new Date(now.getFullYear(), now.getMonth(), 1);
+    var list=[]; try{ if(typeof history!=='undefined') list=list.concat(history); }catch(e){}
+    list.forEach(function(h){
+      var detail=h.detail||''; var d=new Date(h.date||h.time||Date.now());
+      if(start && d<start) return; if(!/sold/i.test(detail)) return;
+      var m=detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(!m) return;
+      var name=m[2].trim(); var qty=parseFloat(m[1])||1;
+      if(!map[name]) map[name]={qty:0, total:0}; map[name].qty+=qty; map[name].total+=Math.abs(h.amount||0);
+    });
+    var arr=Object.keys(map).map(function(k){ return {name:k, qty:map[k].qty, total:map[k].total}; });
+    arr.sort(function(a,b){ return b.qty-a.qty; }); return arr.slice(0,5);
+  }
+  function drawChart(){
+    var period=document.getElementById('chartPeriod')?document.getElementById('chartPeriod').value:'all';
+    var data=getSales(period); var cv=document.getElementById('bestChart'); if(!cv) return;
+    var ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
+    var listEl=document.getElementById('bestList');
+    if(!data.length){ ctx.fillStyle='#000'; ctx.font='16px sans-serif'; ctx.fillText('No sales for this period',20,110); listEl.innerHTML='No sales yet'; return; }
+    var maxQty=Math.max.apply(null, data.map(function(d){return d.qty;}));
+    var colors=['#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336']; var x=15;
+    ctx.font='12px sans-serif';
+    data.forEach(function(d,i){ var h=(d.qty/maxQty)*150; var y=180-h; ctx.fillStyle=colors[i%colors.length]; ctx.fillRect(x,y,50,h); ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.fillText(d.qty+' pcs',x+25,y-6); ctx.fillText(d.name.length>10?d.name.slice(0,10)+'..':d.name,x+25,198); x+=62; });
+    var html='<b>🏆 Top Sellers:</b><br>'; data.forEach(function(d,i){ html+=(i+1)+'. <b>'+d.name+'</b> - '+d.qty+' pcs - $'+d.total.toFixed(2)+'<br>'; }); listEl.innerHTML=html;
+  }
+
+  setTimeout(function(){ fixAllQty(); addDropdown(); addChart(); },600);
+  document.addEventListener('click', function(){ setTimeout(function(){ fixAllQty(); addDropdown(); addChart(); drawChart(); },300); });
+  console.log('ALL IN ONE ON');
+})();
+</script>
 </body>
 </html>
