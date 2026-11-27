@@ -1641,6 +1641,89 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('FINAL ONE ON');
 })();
 </script>
+<script>
+// v12 = v11 EXACT + STABLE SALES DROPDOWN - nothing else changed
+(function(){
+  window._freezeUntil = 0;
+  document.addEventListener('touchstart', function(e){ if(e.target && e.target.tagName==='SELECT'){ window._freezeUntil = Date.now() + 5000; } }, true);
+  document.addEventListener('mousedown', function(e){ if(e.target && e.target.tagName==='SELECT'){ window._freezeUntil = Date.now() + 5000; } }, true);
+  document.addEventListener('focusin', function(e){ if(e.target && e.target.tagName==='SELECT'){ window._freezeUntil = Date.now() + 5000; } }, true);
+  function isFrozen(){ return Date.now() < window._freezeUntil; }
 
+  var st=document.createElement('style'); st.textContent='#purchaseLogBox{display:none!important;}'; document.head.appendChild(st);
+  function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
+  function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
+  function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
+  function restoreSup(){ if(isFrozen()) return; var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return; if(!s.value) s.value=saved; }
+  document.addEventListener('input', function(e){ var s=findSup(); if(s && e.target===s && e.target.value) saveSup(e.target.value); });
+  setInterval(restoreSup, 500);
+  function fixQty(){ if(isFrozen()) return; var q=document.getElementById('p_qty'); if(q && q.value==='1') q.value=''; }
+  setInterval(fixQty, 800);
+  function clean(n){ return (n||'').toString().trim(); }
+  function getAllNames(){
+    var map={};
+    function add(nm, cost, sell){ nm=clean(nm); if(!nm) return; var key=nm.toLowerCase(); if(!map[key]) map[key]={name:nm, cost:cost||'', sell:sell||''}; }
+    try{ if(typeof stock!=='undefined'){ stock.forEach(function(s){ add(s.name||s.item, s.cost, s.sell); }); } }catch(e){}
+    try{ if(typeof purchaseLog!=='undefined'){ purchaseLog.forEach(function(p){ var nm=p.name||''; if(!nm && p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) nm=m[2].trim(); } add(nm, p.cost, ''); }); } }catch(e){}
+    var arr=Object.keys(map).map(function(k){ return map[k]; }); arr.sort(function(a,b){ return a.name.localeCompare(b.name); }); return arr;
+  }
+  var lastHash='';
+  function buildDropdowns(){ if(isFrozen()) return; var names=getAllNames(); var hash=JSON.stringify(names); if(hash===lastHash) return; lastHash=hash; var pSels=document.querySelectorAll('#p_itemSelect'); for(var i=1;i<pSels.length;i++) pSels[i].remove(); var pSel=document.getElementById('p_itemSelect'); var pName=document.getElementById('p_name'); if(!pSel && pName){ pSel=document.createElement('select'); pSel.id='p_itemSelect'; pSel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;'; pName.parentNode.insertBefore(pSel, pName); pSel.addEventListener('change', function(){ if(pSel.value){ pName.value=pSel.value; var opt=pSel.options[pSel.selectedIndex]; var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost; var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell; } }); } if(pSel){ var cur=pSel.value; pSel.innerHTML='<option value="">-- Pick Item --</option>'; names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; pSel.appendChild(o); }); pSel.value=cur; } }
+  setInterval(buildDropdowns, 1000); setTimeout(buildDropdowns, 800);
+  function getName(p,i){ if(p.name && p.name!=='undefined' && p.name!=='') return clean(p.name); if(p.item) return clean(p.item); if(p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) return clean(m[2]); return p.detail; } return 'Item '+(i+1); }
+  function fixYellow(){ if(isFrozen()) return; if(document.activeElement && document.activeElement.tagName==='SELECT') return; var list=window.purchaseLog||[]; var box=document.getElementById('myPurchaseBox'); if(!box){ box=document.createElement('div'); box.id='myPurchaseBox'; box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;'; (document.getElementById('secPurchase')||document.body).appendChild(box); } if(!list.length){ var emptyHtml='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3><div style="color:#888;">No purchases yet</div>'; if(box.dataset.hash===emptyHtml) return; box.dataset.hash=emptyHtml; box.innerHTML=emptyHtml; return; } var html='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3>'; list.forEach(function(p,i){ var nm=getName(p,i); var qq=p.qty||1; var cc=p.cost||0; var tt=p.total||p.amount||(qq*cc); if(p.detail && !p.qty){ var mm=p.detail.match(/(\d+)\s*x/i); if(mm) qq=mm[1]; } var delId = (p.id!==undefined && p.id!==null) ? p.id : i; html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;"><div style="font-size:18px;font-weight:bold;">'+nm+'</div><div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div><div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div><button onclick="deletePurchase('+delId+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>'; }); if(box.dataset.hash===html) return; box.dataset.hash=html; box.innerHTML=html; }
+  setInterval(fixYellow, 800);
+
+  // *** NEW - ONLY THIS PART IS NEW - STABLE SALES DROPDOWN ***
+  function fixSalesDropdown(){
+    // Find original Sales select - inside Sales section
+    var salesSec = document.getElementById('secSales') || document.getElementById('secSale');
+    var allSelects = salesSec ? salesSec.querySelectorAll('select') : document.querySelectorAll('select');
+    var orig = null;
+    for(var i=0;i<allSelects.length;i++){
+      var s = allSelects[i];
+      if(s.id==='stableSalesSelect') continue;
+      if(s.id==='p_itemSelect') continue;
+      // Sales select is the one with "Stock:" in options, or first select in Sales section
+      orig = s; break;
+    }
+    if(!orig) return;
+    var stable = document.getElementById('stableSalesSelect');
+    if(!stable){
+      stable = document.createElement('select');
+      stable.id = 'stableSalesSelect';
+      stable.style.cssText = orig.style.cssText + ';width:100%;padding:12px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
+      // Copy class so it looks same
+      stable.className = orig.className;
+      orig.parentNode.insertBefore(stable, orig);
+      // When you pick in STABLE, copy to ORIGINAL + trigger its change
+      stable.addEventListener('change', function(){
+        orig.value = stable.value;
+        orig.dispatchEvent(new Event('change', {bubbles:true}));
+        orig.dispatchEvent(new Event('input', {bubbles:true}));
+        // Also try to fill price / cost fields if original app does it on change
+        // We trigger click on original's onchange if exists
+        if(typeof orig.onchange === 'function'){ try{ orig.onchange(); }catch(e){} }
+      });
+      // Also keep original in sync if user code changes it
+      orig.addEventListener('change', function(){ if(stable.value !== orig.value) stable.value = orig.value; });
+    }
+    // Hide the flickering original - your app still uses it in background, but you see stable one
+    orig.style.display = 'none';
+    // Only copy options when NOT using it and when they REALLY changed
+    if(isFrozen()) return;
+    if(document.activeElement === stable) return;
+    var optsHtml = orig.innerHTML;
+    if(stable.dataset.hash === optsHtml) return;
+    stable.dataset.hash = optsHtml;
+    var cur = stable.value || orig.value;
+    stable.innerHTML = optsHtml;
+    stable.value = cur;
+    if(!cur && orig.value) stable.value = orig.value;
+  }
+  setInterval(fixSalesDropdown, 1000);
+  setTimeout(fixSalesDropdown, 500);
+})();
+</script>
   </body>
   </html>
