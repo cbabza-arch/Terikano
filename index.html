@@ -1642,23 +1642,77 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
 })();
 </script>
   <script>
-// FINAL ONE - EVERYTHING INSIDE
+// FINAL v3 - SUPPLIER + HIDE BLANK + QTY REMOVED
 (function(){
-  // 1. SUPPLIER STAY
+  // --- SUPPLIER ---
   function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
   function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
   function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
+  function restoreSup(){
+    var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return;
+    if(!s.value) s.value=saved;
+  }
   document.addEventListener('input', function(e){
     var s=findSup();
-    if(s && e.target===s){ if(e.target.value) saveSup(e.target.value); else { window._keepSup=''; try{localStorage.removeItem('KEEP_SUPPLIER');}catch(e){} } }
+    if(s && e.target===s){ if(e.target.value) saveSup(e.target.value); }
   });
-  setInterval(function(){
-    var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return;
-    if(document.activeElement===s) return;
-    if(!s.value) s.value=saved;
-  }, 250);
+  setInterval(restoreSup, 250);
+  setTimeout(restoreSup, 100); setTimeout(restoreSup, 500); setTimeout(restoreSup, 1500);
+  document.addEventListener('click', function(e){
+    var b=e.target.closest ? e.target.closest('button') : null;
+    if(b && (b.textContent||'').indexOf('ADD TO STOCK')!==-1){
+      setTimeout(restoreSup, 100); setTimeout(restoreSup, 400); setTimeout(restoreSup, 1000); setTimeout(restoreSup, 2000);
+    }
+  });
 
-  // 2. YELLOW BOX - SHOW NAMES
+  // --- QTY = 1 REMOVED ---
+  function fixQty(){
+    var q=document.getElementById('p_qty');
+    if(q){
+      // 1. Remove the 1 - make it empty
+      if(q.value==='1') q.value='';
+      q.placeholder='Qty';
+      // 2. Tap = Select All, so you can type fast
+      if(!q.dataset.qtyFixed){
+        q.dataset.qtyFixed='1';
+        q.addEventListener('focus', function(){ setTimeout(function(){ q.select(); },10); });
+        q.addEventListener('click', function(){ q.select(); });
+      }
+    }
+    // Also Sale qty if you have it
+    var sq=document.getElementById('s_qty');
+    if(sq && sq.value==='1') sq.value='';
+  }
+  setInterval(fixQty, 500);
+  // After ADD, clear Qty too - not back to 1
+  document.addEventListener('click', function(e){
+    var b=e.target.closest ? e.target.closest('button') : null;
+    if(b && (b.textContent||'').indexOf('ADD TO STOCK')!==-1){
+      setTimeout(function(){
+        var q=document.getElementById('p_qty'); if(q) q.value='';
+        var n=document.getElementById('p_name'); if(n) n.value='';
+        var c=document.getElementById('p_cost'); if(c) c.value='';
+        var s=document.getElementById('p_sell'); if(s) s.value='';
+        restoreSup();
+      }, 300);
+    }
+  });
+
+  // --- HIDE BLANK RED LANES ---
+  function hideBlank(){
+    document.querySelectorAll('div').forEach(function(d){
+      var txt=(d.textContent||'').trim();
+      var hasReturn = txt.indexOf('RETURN')!==-1;
+      var hasPrice = txt.indexOf('x $')!==-1;
+      if(hasReturn && !hasPrice && d.id!=='myPurchaseBox' && !d.closest('#myPurchaseBox')){
+        if(d.querySelector('button') && txt.length < 30) d.style.display='none';
+      }
+    });
+    var old=document.getElementById('purchaseLogBox');
+    if(old && old.id!=='myPurchaseBox') old.style.display='none';
+  }
+
+  // --- GOOD LOG ---
   function getName(p,i){
     if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
     if(p.item) return p.item;
@@ -1689,9 +1743,9 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
     });
     box.innerHTML=html;
   }
-  setInterval(fixYellow, 800);
-  console.log('FINAL ONE ON');
+  setInterval(function(){ hideBlank(); fixYellow(); }, 500);
+  console.log('FINAL v3 ON - QTY 1 REMOVED');
 })();
-  </script>
+</script>
   </body>
   </html>
