@@ -1272,5 +1272,37 @@ document.body.appendChild(s);
   console.log('DELETE V3 ON - Sales + Purchases reverse');
 })();
   </script>
+  <script>
+// FIX CLEAR DATA - CLEAR PHONE + CLOUD BOTH - MUST BE LAST
+(function(){
+  window.clearData = window.resetData = window.clearAllData = function(){
+    try{
+      if(!confirm('CLEAR ALL DATA?\n\nThis will delete:\n- All Sales\n- All Stock\n- All Credits / Debits\n- All Wallet money\n- Ledger\n\nFrom PHONE + CLOUD. Cannot undo.\n\nAre you sure?')) return;
+      // 1. Clear local
+      var keys = Object.keys(localStorage);
+      keys.forEach(function(k){ 
+        if(k.toLowerCase().indexOf('teri')!==-1 || k.toLowerCase().indexOf('store')!==-1 || k.toLowerCase().indexOf('wallet')!==-1 || k.toLowerCase().indexOf('history')!==-1 || k.toLowerCase().indexOf('stock')!==-1) localStorage.removeItem(k);
+      });
+      // 2. Reset in-memory data
+      if(typeof history!=='undefined') history.length=0;
+      if(typeof stock!=='undefined') stock.length=0;
+      if(typeof credits!=='undefined') credits.length=0;
+      if(typeof debits!=='undefined') debits.length=0;
+      if(typeof wallet!=='undefined'){ wallet.cash=0; wallet.bank=0; wallet.debit=0; }
+      if(typeof purchaseLog!=='undefined') purchaseLog.length=0;
+      if(typeof capital!=='undefined') capital=0;
+      // 3. Save EMPTY to Cloud - this is the key! Overwrite cloud with empty
+      if(typeof save==='function') save();
+      // 4. Stop auto-sync for 5 seconds so it doesn't bring back old data
+      window._clearing = true;
+      setTimeout(function(){ window._clearing=false; }, 5000);
+      // 5. Force reload clean
+      setTimeout(function(){ location.reload(); }, 800);
+      alert('✅ Cleared Phone + Cloud. Reloading empty...');
+    }catch(e){ alert('Clear failed: '+e.message); }
+  };
+  console.log('CLEAR DATA FIX ON - Phone + Cloud');
+})();
+  </script>
   </body>
 </html>
