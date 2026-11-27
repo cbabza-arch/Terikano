@@ -1443,10 +1443,10 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('NAME FIX ONLY - NO Stock Del');
 })();
   </script>
-  <script>
-// FINAL FIX - Force Name + Lock Supplier - Must be LAST script
+<script>
+// NO-FLICKER FIX - Name + Supplier Locked - No Interval
 (function(){
-  // --- 1. LOCK SUPPLIER - Save it, restore it after ANY add ---
+  // --- 1. LOCK SUPPLIER - No interval, only on typing + on ADD ---
   var savedSupplier = '';
   function keepSupplier(){
     var a=document.getElementById('p_supplier');
@@ -1457,37 +1457,39 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
       if(a) a.value=savedSupplier;
       if(b) b.value=savedSupplier;
     }
+    return savedSupplier;
   }
-  // Save supplier whenever you type it
   document.addEventListener('input', function(e){
     if(e.target && (e.target.id==='p_supplier' || e.target.id==='supplierName')){
       if(e.target.value) savedSupplier=e.target.value;
     }
   });
-  // Wrap addPurchase to restore supplier
+
   var _origAdd = window.addPurchase;
-  window.addPurchase = function(){
-    keepSupplier();
-    var r=null;
-    try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
-    // Restore 5 times - beats all old clear scripts
-    [100,300,600,1000,1500].forEach(function(t){
+  // Only wrap once
+  if(!window._addWrapped){
+    window._addWrapped = true;
+    window.addPurchase = function(){
+      keepSupplier();
+      var r=null;
+      try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
+      // Restore supplier once after add - no loop
       setTimeout(function(){
         keepSupplier();
-        // Clear other fields for next item, but NOT supplier
         var n=document.getElementById('p_name'); if(n) n.value='';
         var c=document.getElementById('p_cost'); if(c) c.value='';
         var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
         var q=document.getElementById('p_qty'); if(q) q.value='1';
         var ex=document.getElementById('p_exp'); if(ex) ex.value='';
-      }, t);
-    });
-    return r;
-  };
+        try{ window.renderPurchaseLog(); }catch(e){}
+      }, 200);
+      return r;
+    };
+  }
 
-  // --- 2. FORCE NAME - Show ANY field that has name ---
+  // --- 2. NAME - Only re-draw if data CHANGED - stops flicker ---
+  var lastHash = '';
   function getName(p, i){
-    // Try every possible field
     if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
     if(p.item && p.item!=='') return p.item;
     if(p.detail && p.detail!=='') {
@@ -1495,21 +1497,25 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
       if(m) return m[1];
       return p.detail;
     }
-    // Try history by total
     if(typeof history!=='undefined'){
       for(var h=0;h<history.length;h++){
         var hh=history[h];
         if(Math.abs(Math.abs(hh.amount||0)-(p.total||p.amount||0))<0.01 && hh.detail){
           var m2=hh.detail.match(/x\s+(.+?)\s+from/i);
           if(m2) return m2[1];
-          if(hh.detail) return hh.detail;
+          return hh.detail;
         }
       }
     }
-    return 'OLD ITEM '+(i+1)+' - No name was saved before';
+    return 'OLD ITEM '+(i+1);
   }
 
   function renderForce(){
+    var list=window.purchaseLog||[];
+    var hash=JSON.stringify(list);
+    if(hash===lastHash) return; // SAME - DO NOT REDRAW = NO FLICKER
+    lastHash=hash;
+
     var box=document.getElementById('purchaseLogBox');
     if(!box){
       box=document.createElement('div'); box.id='purchaseLogBox';
@@ -1517,9 +1523,7 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
       var sec=document.getElementById('secPurchase')||document.body;
       sec.appendChild(box);
     }
-    // Hide old trash-only buttons inside box
     var html='<h3 style="color:#000;">🧾 Purchase Log - Tap RETURN</h3>';
-    var list=window.purchaseLog||[];
     if(list.length===0) html+='<p style="color:#000;">No purchases yet</p>';
     for(var i=0;i<list.length;i++){
       var p=list[i];
@@ -1537,20 +1541,20 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   }
 
   window.renderPurchaseLog = renderForce;
-  // Force every 1 sec - beats old renderer
-  setInterval(function(){
-    try{ renderForce(); keepSupplier(); }catch(e){}
-  }, 1000);
 
-  // Also after normal render
-  var _origRender=window.render;
-  window.render=function(){
-    try{ if(typeof _origRender==='function') _origRender(); }catch(e){}
-    try{ renderForce(); }catch(e){}
-  };
-
-  console.log('FINAL FIX ON - Name Forced + Supplier Locked');
+  // Only render when main render runs, and only if changed
+  if(!window._renderWrapped2){
+    window._renderWrapped2=true;
+    var _origRender=window.render;
+    window.render=function(){
+      try{ if(typeof _origRender==='function') _origRender(); }catch(e){}
+      try{ renderForce(); }catch(e){}
+    };
+  }
+  // One initial draw only
+  setTimeout(renderForce, 500);
+  console.log('NO-FLICKER FIX ON');
 })();
-        </script>
+</script>
 </body>
 </html>
