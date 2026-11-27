@@ -1642,109 +1642,134 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
 })();
 </script>
   <script>
-// FINAL v3 - SUPPLIER + HIDE BLANK + QTY REMOVED
+// FINAL v4 - DROPDOWN FIX - NO FLICKER, NO DUPLICATES
 (function(){
-  // --- SUPPLIER ---
+  // --- SUPPLIER + QTY (keep from v3) ---
   function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
   function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
   function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
-  function restoreSup(){
-    var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return;
-    if(!s.value) s.value=saved;
-  }
-  document.addEventListener('input', function(e){
-    var s=findSup();
-    if(s && e.target===s){ if(e.target.value) saveSup(e.target.value); }
-  });
-  setInterval(restoreSup, 250);
-  setTimeout(restoreSup, 100); setTimeout(restoreSup, 500); setTimeout(restoreSup, 1500);
-  document.addEventListener('click', function(e){
-    var b=e.target.closest ? e.target.closest('button') : null;
-    if(b && (b.textContent||'').indexOf('ADD TO STOCK')!==-1){
-      setTimeout(restoreSup, 100); setTimeout(restoreSup, 400); setTimeout(restoreSup, 1000); setTimeout(restoreSup, 2000);
-    }
-  });
-
-  // --- QTY = 1 REMOVED ---
+  function restoreSup(){ var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return; if(!s.value) s.value=saved; }
+  document.addEventListener('input', function(e){ var s=findSup(); if(s && e.target===s && e.target.value) saveSup(e.target.value); });
+  setInterval(restoreSup, 500);
   function fixQty(){
-    var q=document.getElementById('p_qty');
-    if(q){
-      // 1. Remove the 1 - make it empty
-      if(q.value==='1') q.value='';
-      q.placeholder='Qty';
-      // 2. Tap = Select All, so you can type fast
-      if(!q.dataset.qtyFixed){
-        q.dataset.qtyFixed='1';
-        q.addEventListener('focus', function(){ setTimeout(function(){ q.select(); },10); });
-        q.addEventListener('click', function(){ q.select(); });
-      }
-    }
-    // Also Sale qty if you have it
-    var sq=document.getElementById('s_qty');
-    if(sq && sq.value==='1') sq.value='';
+    var q=document.getElementById('p_qty'); if(q){ if(q.value==='1') q.value=''; q.placeholder='Qty'; }
   }
-  setInterval(fixQty, 500);
-  // After ADD, clear Qty too - not back to 1
-  document.addEventListener('click', function(e){
-    var b=e.target.closest ? e.target.closest('button') : null;
-    if(b && (b.textContent||'').indexOf('ADD TO STOCK')!==-1){
-      setTimeout(function(){
-        var q=document.getElementById('p_qty'); if(q) q.value='';
-        var n=document.getElementById('p_name'); if(n) n.value='';
-        var c=document.getElementById('p_cost'); if(c) c.value='';
-        var s=document.getElementById('p_sell'); if(s) s.value='';
-        restoreSup();
-      }, 300);
-    }
-  });
+  setInterval(fixQty, 800);
 
-  // --- HIDE BLANK RED LANES ---
+  // --- GET ALL STOCK NAMES - FROM STOCK + PURCHASE LOG ---
+  function getAllNames(){
+    var map={};
+    try{
+      if(typeof stock!=='undefined' && stock.length){
+        stock.forEach(function(s){
+          var nm=s.name||s.item||''; if(nm) map[nm]={name:nm, cost:s.cost||s.buy||'', sell:s.sell||s.price||''};
+        });
+      }
+    }catch(e){}
+    // Fallback: from purchaseLog - Oil 30, Bentin, Karatin are here even if stock array is empty
+    try{
+      if(typeof purchaseLog!=='undefined'){
+        purchaseLog.forEach(function(p){
+          var nm=p.name||'';
+          if(!nm && p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) nm=m[2].trim(); }
+          if(nm && !map[nm]) map[nm]={name:nm, cost:p.cost||'', sell:''};
+        });
+      }
+    }catch(e){}
+    // Fallback: from localStorage stock
+    try{
+      var ls=localStorage.getItem('stock'); if(ls){ JSON.parse(ls).forEach(function(s){ var nm=s.name||''; if(nm && !map[nm]) map[nm]={name:nm, cost:s.cost||'', sell:s.sell||''}; }); }
+    }catch(e){}
+    var arr=Object.keys(map).map(function(k){ return map[k]; });
+    arr.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    return arr;
+  }
+
+  // --- BUILD DROPDOWN ONCE, UPDATE ONLY IF CHANGED ---
+  var lastHash='';
+  function buildDropdowns(){
+    var names=getAllNames();
+    var hash=JSON.stringify(names);
+    if(hash===lastHash) return; // NO CHANGE = NO REBUILD = NO FLICKER
+    lastHash=hash;
+
+    // 1. PURCHASE DROPDOWN - remove duplicates, keep 1
+    var pInputs=document.querySelectorAll('#p_itemSelect');
+    // If more than 1, delete extras
+    for(var i=1;i<pInputs.length;i++) pInputs[i].remove();
+    var pSel=document.getElementById('p_itemSelect');
+    var pName=document.getElementById('p_name');
+    if(!pSel && pName){
+      pSel=document.createElement('select'); pSel.id='p_itemSelect';
+      pSel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
+      pName.parentNode.insertBefore(pSel, pName);
+      pSel.addEventListener('change', function(){
+        if(!pSel.value) return; pName.value=pSel.value;
+        var opt=pSel.options[pSel.selectedIndex];
+        var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost;
+        var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell;
+      });
+    }
+    if(pSel){
+      var curVal=pSel.value;
+      pSel.innerHTML='<option value="">-- Pick Item --</option>';
+      names.forEach(function(n){
+        var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; pSel.appendChild(o);
+      });
+      pSel.value=curVal; // keep what you picked
+    }
+
+    // 2. SALE DROPDOWN - same fix, find it by id or near sale name input
+    var sSel=document.getElementById('s_itemSelect')||document.getElementById('saleItemSelect');
+    var sName=document.getElementById('s_name')||document.getElementById('saleName');
+    if(!sSel && sName){
+      sSel=document.createElement('select'); sSel.id='s_itemSelect';
+      sSel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
+      sName.parentNode.insertBefore(sSel, sName);
+      sSel.addEventListener('change', function(){ if(sSel.value) sName.value=sSel.value; });
+    }
+    if(sSel){
+      var cur2=sSel.value;
+      sSel.innerHTML='<option value="">-- Pick Item --</option>';
+      names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; sSel.appendChild(o); });
+      sSel.value=cur2;
+    }
+  }
+
+  // Check every 1 sec, but rebuild ONLY if stock changed = no flicker
+  setInterval(buildDropdowns, 1000);
+  setTimeout(buildDropdowns, 800);
+  setTimeout(buildDropdowns, 2000);
+
+  // --- HIDE BLANK RED + GOOD LOG (from v3) ---
   function hideBlank(){
     document.querySelectorAll('div').forEach(function(d){
       var txt=(d.textContent||'').trim();
-      var hasReturn = txt.indexOf('RETURN')!==-1;
-      var hasPrice = txt.indexOf('x $')!==-1;
-      if(hasReturn && !hasPrice && d.id!=='myPurchaseBox' && !d.closest('#myPurchaseBox')){
+      if(txt.indexOf('RETURN')!==-1 && txt.indexOf('x $')===-1 && d.id!=='myPurchaseBox' && !d.closest('#myPurchaseBox')){
         if(d.querySelector('button') && txt.length < 30) d.style.display='none';
       }
     });
-    var old=document.getElementById('purchaseLogBox');
-    if(old && old.id!=='myPurchaseBox') old.style.display='none';
   }
-
-  // --- GOOD LOG ---
   function getName(p,i){
     if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
     if(p.item) return p.item;
-    if(p.detail){
-      var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i);
-      if(m) return m[2].trim();
-      return p.detail;
-    }
+    if(p.detail){ var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(m) return m[2].trim(); return p.detail; }
     return 'Item '+(i+1);
   }
   function fixYellow(){
     var list=window.purchaseLog||[]; if(!list.length) return;
     var box=document.getElementById('myPurchaseBox');
-    if(!box){
-      box=document.createElement('div'); box.id='myPurchaseBox';
-      box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
-      (document.getElementById('secPurchase')||document.body).appendChild(box);
-    }
+    if(!box){ box=document.createElement('div'); box.id='myPurchaseBox'; box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;'; (document.getElementById('secPurchase')||document.body).appendChild(box); }
     var html='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3>';
     list.forEach(function(p,i){
       var nm=getName(p,i); var qq=p.qty||1; var cc=p.cost||0; var tt=p.total||p.amount||(qq*cc);
       if(p.detail && !p.qty){ var mm=p.detail.match(/(\d+)\s*x/i); if(mm) qq=mm[1]; }
-      html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;">'+
-      '<div style="font-size:18px;font-weight:bold;">'+nm+'</div>'+
-      '<div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div>'+
-      '<div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div>'+
-      '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>';
+      html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;"><div style="font-size:18px;font-weight:bold;">'+nm+'</div><div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div><div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div><button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>';
     });
     box.innerHTML=html;
   }
-  setInterval(function(){ hideBlank(); fixYellow(); }, 500);
-  console.log('FINAL v3 ON - QTY 1 REMOVED');
+  setInterval(function(){ hideBlank(); fixYellow(); }, 1000);
+  console.log('FINAL v4 ON - DROPDOWN NO FLICKER');
 })();
 </script>
   </body>
