@@ -1304,29 +1304,6 @@ document.body.appendChild(s);
   console.log('CLEAR DATA FIX ON - Phone + Cloud');
 })();
   </script>
-  <script>
-// FIND CLOUD - SHOWS WHERE DATA LIVES
-(function(){
-  var info = '=== WHERE IS CLOUD? ===\n\n';
-  info += 'LocalStorage keys:\n';
-  for(var i=0;i<localStorage.length;i++){
-    var k = localStorage.key(i);
-    info += '- ' + k + ' = ' + (localStorage.getItem(k)||'').substring(0,80) + '\n';
-  }
-  info += '\nPage HTML has:\n';
-  var html = document.documentElement.innerHTML.toLowerCase();
-  if(html.indexOf('firebase')!==-1) info += '- FIREBASE found\n';
-  if(html.indexOf('firestore')!==-1) info += '- FIRESTORE found\n';
-  if(html.indexOf('jsonbin')!==-1) info += '- JSONBIN found\n';
-  if(html.indexOf('supabase')!==-1) info += '- SUPABASE found\n';
-  if(html.indexOf('github')!==-1) info += '- GITHUB found\n';
-  if(html.indexOf('api.')!==-1) info += '- API found\n';
-  if(html.indexOf('cloud')!==-1) info += '- word CLOUD found\n';
-  // Show all fetch URLs
-  info += '\nCopy this whole popup and send to me bro';
-  alert(info);
-  console.log(info);
-})();
-  </script>
+
   </body>
 </html>
