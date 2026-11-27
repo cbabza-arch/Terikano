@@ -2023,5 +2023,81 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('ALL IN ONE ON');
 })();
 </script>
+  <script>
+// SUPPLIER FORCE STAY - v2
+(function(){
+  // Save supplier to phone memory, survives reload
+  function saveSup(v){
+    if(v) { try{ localStorage.setItem('KEEP_SUPPLIER', v); }catch(e){} window._keepSup=v; }
+  }
+  function getSavedSup(){
+    if(window._keepSup) return window._keepSup;
+    try{ return localStorage.getItem('KEEP_SUPPLIER')||''; }catch(e){ return ''; }
+  }
+  function getSupEls(){
+    var els=[];
+    ['p_supplier','supplierName','supplier','supName'].forEach(function(id){
+      var el=document.getElementById(id); if(el) els.push(el);
+    });
+    // Also find any input with placeholder Supplier
+    document.querySelectorAll('input').forEach(function(el){
+      if((el.placeholder||'').toLowerCase().indexOf('supplier')!==-1 && els.indexOf(el)===-1) els.push(el);
+    });
+    return els;
+  }
+
+  // 1. When YOU type, save it instantly
+  document.addEventListener('input', function(e){
+    var els=getSupEls();
+    if(els.indexOf(e.target)!==-1){
+      if(e.target.value) saveSup(e.target.value);
+      // If you cleared it YOURSELF to type new, clear memory too - so old won't come back
+      else { window._keepSup=''; try{ localStorage.removeItem('KEEP_SUPPLIER'); }catch(e){} }
+    }
+  });
+  document.addEventListener('change', function(e){
+    var els=getSupEls();
+    if(els.indexOf(e.target)!==-1 && e.target.value) saveSup(e.target.value);
+  });
+
+  // 2. Watchdog - every 300ms, if supplier is EMPTY but we have saved one,
+  // AND you are NOT currently typing in supplier box, put it back.
+  // This kills auto-clear after Purchase, but lets you clear to change.
+  setInterval(function(){
+    var els=getSupEls(); if(!els.length) return;
+    var saved=getSavedSup(); if(!saved) return;
+    var active=document.activeElement;
+    els.forEach(function(el){
+      if(el===active) return; // you are typing, don't fight you
+      if(!el.value){
+        el.value=saved;
+        // trigger so other code knows
+        el.dispatchEvent(new Event('input', {bubbles:true}));
+        // Re-save because our own input handler above would clear it? No, we set value then save
+        saveSup(saved);
+      }
+    });
+  }, 300);
+
+  // 3. Also restore right after Purchase button click
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest ? e.target.closest('button') : null;
+    if(btn && (btn.textContent||'').toLowerCase().indexOf('purchase')!==-1){
+      var saved=getSavedSup();
+      setTimeout(function(){
+        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
+      }, 100);
+      setTimeout(function(){
+        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
+      }, 500);
+      setTimeout(function(){
+        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
+      }, 1000);
+    }
+  });
+
+  console.log('SUPPLIER FORCE STAY v2 ON');
+})();
+  </script>
 </body>
 </html>
