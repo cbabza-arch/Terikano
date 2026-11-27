@@ -1648,5 +1648,96 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('CLEAN FIX ON - Flicker Killed');
 })();
       </script>
+  <script>
+// SUPPLIER OVERRIDE FIX - New Supplier Wins
+(function(){
+  // Kill old interval that was forcing old supplier back
+  try{
+    var maxId=setInterval(function(){},1000);
+    for(var i=0;i<=maxId;i++){ clearInterval(i); clearTimeout(i); }
+  }catch(e){}
+
+  var savedSupplier='';
+  var userIsTyping=false;
+  var typingTimer=null;
+
+  function getSupInputs(){
+    var a=document.getElementById('p_supplier');
+    var b=document.getElementById('supplierName');
+    return [a,b];
+  }
+
+  // When you TYPE, new value becomes the saved one immediately
+  document.addEventListener('input',function(e){
+    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
+      userIsTyping=true;
+      clearTimeout(typingTimer);
+      typingTimer=setTimeout(function(){ userIsTyping=false; }, 800);
+      // If you type new name, THAT is now the saved one
+      if(e.target.value){
+        savedSupplier=e.target.value;
+        // Sync both fields to new one
+        getSupInputs().forEach(function(el){ if(el && el!==e.target) el.value=savedSupplier; });
+      } else {
+        // If you clear it to type new one, forget old one - don't bring it back
+        savedSupplier='';
+      }
+    }
+  });
+
+  // Also on change (dropdown / autocomplete)
+  document.addEventListener('change',function(e){
+    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
+      if(e.target.value){
+        savedSupplier=e.target.value;
+        getSupInputs().forEach(function(el){ if(el) el.value=savedSupplier; });
+      }
+    }
+  });
+
+  if(!window._supOverrideWrapped){
+    window._supOverrideWrapped=true;
+    var _origAdd=window.addPurchase;
+    window.addPurchase=function(){
+      // Capture CURRENT supplier right before Purchase - this is the recent one
+      getSupInputs().forEach(function(el){ if(el && el.value) savedSupplier=el.value; });
+      var r=null;
+      try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
+      // After Purchase, restore ONLY the recent one, once
+      setTimeout(function(){
+        if(savedSupplier){
+          getSupInputs().forEach(function(el){ if(el) el.value=savedSupplier; });
+        }
+        var n=document.getElementById('p_name'); if(n) n.value='';
+        var c=document.getElementById('p_cost'); if(c) c.value='';
+        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
+        var q=document.getElementById('p_qty'); if(q) q.value='1';
+        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
+      }, 200);
+      return r;
+    };
+  }
+
+  // QTY Override - Tap = Select All
+  function fixQty(el){
+    if(!el || el.dataset.qtyFixed) return;
+    el.dataset.qtyFixed='1';
+    el.addEventListener('focus', function(){ setTimeout(function(){ el.select(); },10); });
+    el.addEventListener('click', function(){ el.select(); });
+  }
+  ['p_qty','s_qty'].forEach(function(id){
+    var el=document.getElementById(id); if(el) fixQty(el);
+  });
+  document.addEventListener('click', function(){
+    setTimeout(function(){
+      ['p_qty','s_qty'].forEach(function(id){
+        var el=document.getElementById(id); if(el) fixQty(el);
+      });
+    },100);
+  });
+
+  console.log('SUPPLIER OVERRIDE ON - New Wins');
+})();
+</script>
 </body>
 </html>
