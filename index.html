@@ -1321,5 +1321,80 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('FLICKER FIX ON');
 })();
   </script>
+  <script>
+// FIX PURCHASE - Auto Price + Auto Clear + Remove Duplicate Delete
+(function(){
+  // 1. FIX AUTO PRICE - reset overridden after every add
+  var sellEl = document.getElementById('p_sell');
+  var costEl = document.getElementById('p_cost');
+  function resetAuto(){
+    if(sellEl) sellEl.dataset.overridden = '';
+  }
+  if(costEl && sellEl){
+    costEl.addEventListener('input', function(){
+      if(sellEl.dataset.overridden !== '1'){
+        var c = parseFloat(costEl.value)||0;
+        if(c>0 && typeof window.calcMySell==='function') sellEl.value = window.calcMySell(c);
+      }
+    });
+  }
+
+  // 2. WRAP addPurchase - after add, clear all BUT supplier, reset auto
+  var _orig = window.addPurchase;
+  window.addPurchase = function(){
+    var r = null;
+    if(typeof _orig==='function') r = _orig();
+    setTimeout(function(){
+      try{
+        // Clear for next item
+        var name=document.getElementById('p_name'); if(name) name.value='';
+        var cost=document.getElementById('p_cost'); if(cost) cost.value='';
+        var sell=document.getElementById('p_sell'); if(sell){ sell.value=''; sell.dataset.overridden=''; }
+        var qty=document.getElementById('p_qty'); if(qty) qty.value='1';
+        var exp=document.getElementById('p_exp'); if(exp) exp.value='';
+        var pay=document.getElementById('p_pay'); if(pay) pay.value='cash';
+        if(typeof window.showDebitBox==='function') window.showDebitBox();
+        var prev=document.getElementById('p_totalPreview'); if(prev) prev.innerText='';
+        // DO NOT clear p_supplier - stays for next item
+        // Focus next item
+        if(name) name.focus();
+        console.log('Purchase cleared - Supplier KEPT, Auto Price RESET');
+      }catch(e){}
+    }, 250);
+    return r;
+  };
+
+  // 3. REMOVE DUPLICATE DELETE - Keep only RETURN, hide all 🗑️ in Purchase Log
+  window.renderPurchaseLog = function(){
+    var box = document.getElementById('purchaseLogBox');
+    if(!box){
+      box = document.createElement('div');
+      box.id='purchaseLogBox';
+      box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
+      var sec=document.getElementById('secPurchase')||document.body;
+      sec.appendChild(box);
+    }
+    var html='<h3>🧾 Purchase Log - Tap RETURN to return to supplier</h3>';
+    if(!window.purchaseLog || window.purchaseLog.length===0) html+='<p>No purchases yet</p>';
+    for(var i=0;i<(window.purchaseLog||[]).length;i++){
+      var p=window.purchaseLog[i];
+      html+='<div style="border:1px solid #ddd;padding:8px;margin:5px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;">'+
+        '<div><b>'+p.name+'</b> - '+p.qty+' x $'+(p.cost||0).toFixed(2)+' = <b>$'+(p.total||0).toFixed(2)+'</b><br><small>'+(p.pay||'').toUpperCase()+' | '+(p.supplier||'')+' | '+(p.date||'')+'</small></div>'+
+        '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold;white-space:nowrap;">🗑️ RETURN</button>'+
+        '</div>';
+    }
+    box.innerHTML=html;
+    // Kill any stray trash-only buttons outside this box
+    document.querySelectorAll('button').forEach(function(b){
+      if(b.textContent.trim()==='🗑️' && b.closest('#purchaseLogBox')===null){
+        // Only if inside purchase section
+        if(b.closest('#secPurchase')) b.style.display='none';
+      }
+    });
+  };
+  setTimeout(function(){ if(typeof window.renderPurchaseLog==='function') window.renderPurchaseLog(); }, 800);
+  console.log('PURCHASE FIX ON - Auto Price + Auto Clear + 1x RETURN');
+})();
+  </script>
 </body>
 </html>
