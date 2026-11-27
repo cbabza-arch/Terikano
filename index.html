@@ -1295,5 +1295,31 @@ function clearAllData(){
 }
 window.clearData = window.resetData = window.clearAllData = clearAllData;
 </script>
+  <script>
+// FIX FLICKER - Don't rebuild dropdown while you use it
+(function(){
+  var origRender = window.render;
+  var lastRun = 0;
+  window.render = function(){
+    var sel = document.getElementById('saleItem');
+    var isUsing = sel && (document.activeElement === sel);
+    // If you are picking item, skip this render - stop flicker
+    if(isUsing) return;
+    var now = Date.now();
+    // Max 1 render per 1 sec - stop spam
+    if(now - lastRun < 1000) return;
+    lastRun = now;
+    // Save what you picked
+    var saved = sel ? sel.value : '';
+    try{ origRender(); }catch(e){}
+    // Restore what you picked
+    if(sel && saved){
+      try{ sel.value = saved; }catch(e){}
+      if(typeof window.fillSalePrice === 'function'){ try{ window.fillSalePrice(); }catch(e){} }
+    }
+  };
+  console.log('FLICKER FIX ON');
+})();
+  </script>
 </body>
 </html>
