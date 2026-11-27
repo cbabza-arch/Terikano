@@ -1641,5 +1641,57 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('FINAL ONE ON');
 })();
 </script>
+  <script>
+// FINAL ONE - EVERYTHING INSIDE
+(function(){
+  // 1. SUPPLIER STAY
+  function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
+  function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
+  function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
+  document.addEventListener('input', function(e){
+    var s=findSup();
+    if(s && e.target===s){ if(e.target.value) saveSup(e.target.value); else { window._keepSup=''; try{localStorage.removeItem('KEEP_SUPPLIER');}catch(e){} } }
+  });
+  setInterval(function(){
+    var s=findSup(); if(!s) return; var saved=getSaved(); if(!saved) return;
+    if(document.activeElement===s) return;
+    if(!s.value) s.value=saved;
+  }, 250);
+
+  // 2. YELLOW BOX - SHOW NAMES
+  function getName(p,i){
+    if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
+    if(p.item) return p.item;
+    if(p.detail){
+      var m=p.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i);
+      if(m) return m[2].trim();
+      return p.detail;
+    }
+    return 'Item '+(i+1);
+  }
+  function fixYellow(){
+    var list=window.purchaseLog||[]; if(!list.length) return;
+    var box=document.getElementById('myPurchaseBox');
+    if(!box){
+      box=document.createElement('div'); box.id='myPurchaseBox';
+      box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
+      (document.getElementById('secPurchase')||document.body).appendChild(box);
+    }
+    var html='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3>';
+    list.forEach(function(p,i){
+      var nm=getName(p,i); var qq=p.qty||1; var cc=p.cost||0; var tt=p.total||p.amount||(qq*cc);
+      if(p.detail && !p.qty){ var mm=p.detail.match(/(\d+)\s*x/i); if(mm) qq=mm[1]; }
+      html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;">'+
+      '<div style="font-size:18px;font-weight:bold;">'+nm+'</div>'+
+      '<div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div>'+
+      '<div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div>'+
+      '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>';
+    });
+    box.innerHTML=html;
+  }
+  setInterval(fixYellow, 800);
+  console.log('FINAL ONE ON');
+})();
+  </script>
   </body>
   </html>
