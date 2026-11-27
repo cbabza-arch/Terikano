@@ -1556,719 +1556,90 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('NO-FLICKER FIX ON');
 })();
 </script>
-  <script>
-// CLEAN FIX - Kill Flicker + Name + Supplier - ONLY THIS ONE
+    <script>
+// FINAL ONE - DO NOT ADD ANOTHER SCRIPT AFTER THIS
 (function(){
-  // KILL ALL OLD INTERVALS - this stops old flicker
-  try{
-    var maxId = setInterval(function(){}, 1000);
-    for(var i=0;i<=maxId;i++){ clearInterval(i); clearTimeout(i); }
-  }catch(e){}
-
-  var savedSupplier = '';
-  function keepSupplier(){
-    var a=document.getElementById('p_supplier');
-    var b=document.getElementById('supplierName');
-    if(a && a.value) savedSupplier=a.value;
-    if(b && b.value) savedSupplier=b.value;
-    if(savedSupplier){
-      if(a) a.value=savedSupplier;
-      if(b) b.value=savedSupplier;
-    }
-  }
-  document.addEventListener('input', function(e){
-    if(e.target && (e.target.id==='p_supplier' || e.target.id==='supplierName')){
-      if(e.target.value) savedSupplier=e.target.value;
-    }
-  });
-
-  // Wrap addPurchase ONLY ONCE
-  if(!window._cleanAddWrapped){
-    window._cleanAddWrapped=true;
-    var _origAdd = window.addPurchase;
-    window.addPurchase = function(){
-      keepSupplier();
-      var r=null;
-      try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
-      setTimeout(function(){
-        keepSupplier();
-        var n=document.getElementById('p_name'); if(n) n.value='';
-        var c=document.getElementById('p_cost'); if(c) c.value='';
-        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
-        var q=document.getElementById('p_qty'); if(q) q.value='1';
-        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
-        try{ window.renderPurchaseLog(); }catch(e){}
-      }, 200);
-      return r;
-    };
-  }
-
-  var lastHash='';
-  function getName(p,i){
-    if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
-    if(p.item && p.item!=='') return p.item;
-    if(p.detail && p.detail!=='') {
-      var m=p.detail.match(/x\s+(.+?)\s+from/i);
-      if(m) return m[1];
-      return p.detail;
-    }
-    return 'OLD ITEM '+(i+1);
-  }
-
-  function renderForce(){
-    var list=window.purchaseLog||[];
-    var hash=JSON.stringify(list);
-    if(hash===lastHash) return;
-    lastHash=hash;
-    var box=document.getElementById('purchaseLogBox');
-    if(!box){
-      box=document.createElement('div'); box.id='purchaseLogBox';
-      box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
-      var sec=document.getElementById('secPurchase')||document.body;
-      sec.appendChild(box);
-    }
-    var html='<h3 style="color:#000;">🧾 Purchase Log - Tap RETURN</h3>';
-    if(list.length===0) html+='<p style="color:#000;">No purchases yet</p>';
-    for(var i=0;i<list.length;i++){
-      var p=list[i];
-      var nm=getName(p,i);
-      var qq=p.qty||0, cc=p.cost||0, tt=p.total||p.amount||0;
-      if(!cc && qq && tt) cc=tt/qq;
-      html+='<div style="border:2px solid #000;padding:10px;margin:8px 0;border-radius:10px;background:#fff;color:#000;">'+
-        '<div style="font-size:18px;font-weight:bold;color:#000;">'+nm+'</div>'+
-        '<div style="color:#000;">'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div>'+
-        '<div style="color:#555;font-size:12px;">'+(p.pay||'')+' | '+(p.supplier||savedSupplier||'')+' | '+(p.date||'')+'</div>'+
-        '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;font-size:16px;">🗑️ RETURN - '+nm+'</button>'+
-        '</div>';
-    }
-    box.innerHTML=html;
-  }
-  window.renderPurchaseLog=renderForce;
-  setTimeout(renderForce,500);
-  console.log('CLEAN FIX ON - Flicker Killed');
-})();
-      </script>
-  <script>
-// SUPPLIER OVERRIDE FIX - New Supplier Wins
-(function(){
-  // Kill old interval that was forcing old supplier back
-  try{
-    var maxId=setInterval(function(){},1000);
-    for(var i=0;i<=maxId;i++){ clearInterval(i); clearTimeout(i); }
-  }catch(e){}
-
-  var savedSupplier='';
-  var userIsTyping=false;
-  var typingTimer=null;
-
-  function getSupInputs(){
-    var a=document.getElementById('p_supplier');
-    var b=document.getElementById('supplierName');
-    return [a,b];
-  }
-
-  // When you TYPE, new value becomes the saved one immediately
-  document.addEventListener('input',function(e){
-    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
-      userIsTyping=true;
-      clearTimeout(typingTimer);
-      typingTimer=setTimeout(function(){ userIsTyping=false; }, 800);
-      // If you type new name, THAT is now the saved one
-      if(e.target.value){
-        savedSupplier=e.target.value;
-        // Sync both fields to new one
-        getSupInputs().forEach(function(el){ if(el && el!==e.target) el.value=savedSupplier; });
-      } else {
-        // If you clear it to type new one, forget old one - don't bring it back
-        savedSupplier='';
-      }
-    }
-  });
-
-  // Also on change (dropdown / autocomplete)
-  document.addEventListener('change',function(e){
-    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
-      if(e.target.value){
-        savedSupplier=e.target.value;
-        getSupInputs().forEach(function(el){ if(el) el.value=savedSupplier; });
-      }
-    }
-  });
-
-  if(!window._supOverrideWrapped){
-    window._supOverrideWrapped=true;
-    var _origAdd=window.addPurchase;
-    window.addPurchase=function(){
-      // Capture CURRENT supplier right before Purchase - this is the recent one
-      getSupInputs().forEach(function(el){ if(el && el.value) savedSupplier=el.value; });
-      var r=null;
-      try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
-      // After Purchase, restore ONLY the recent one, once
-      setTimeout(function(){
-        if(savedSupplier){
-          getSupInputs().forEach(function(el){ if(el) el.value=savedSupplier; });
-        }
-        var n=document.getElementById('p_name'); if(n) n.value='';
-        var c=document.getElementById('p_cost'); if(c) c.value='';
-        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
-        var q=document.getElementById('p_qty'); if(q) q.value='1';
-        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
-      }, 200);
-      return r;
-    };
-  }
-
-  // QTY Override - Tap = Select All
-  function fixQty(el){
-    if(!el || el.dataset.qtyFixed) return;
-    el.dataset.qtyFixed='1';
-    el.addEventListener('focus', function(){ setTimeout(function(){ el.select(); },10); });
-    el.addEventListener('click', function(){ el.select(); });
-  }
-  ['p_qty','s_qty'].forEach(function(id){
-    var el=document.getElementById(id); if(el) fixQty(el);
-  });
-  document.addEventListener('click', function(){
-    setTimeout(function(){
-      ['p_qty','s_qty'].forEach(function(id){
-        var el=document.getElementById(id); if(el) fixQty(el);
-      });
-    },100);
-  });
-
-  console.log('SUPPLIER OVERRIDE ON - New Wins');
-})();
-</script>
-  <script>
-// PURCHASE DROPDOWN + BEST SELLER CHART
-(function(){
-  // --- 1. PURCHASE DROPDOWN ---
-  function getStockNames(){
-    var names=[];
-    try{
-      if(typeof stock!=='undefined' && stock.length){
-        stock.forEach(function(s){ if(s.name) names.push({name:s.name, cost:s.cost||s.buy||'', sell:s.sell||s.price||''}); });
-      }
-    }catch(e){}
-    // Also from history / purchaseLog
-    try{
-      if(typeof purchaseLog!=='undefined'){
-        purchaseLog.forEach(function(p){ if(p.name && !names.find(function(n){return n.name===p.name;})) names.push({name:p.name, cost:p.cost||'', sell:''}); });
-      }
-    }catch(e){}
-    // Also from sale history names
-    try{
-      if(typeof history!=='undefined'){
-        history.forEach(function(h){
-          var m=(h.detail||'').match(/(?:Sold|Bought)\s+\d+\s+x\s+(.+?)(?:\s+from|\s+to|$)/i);
-          if(m && !names.find(function(n){return n.name===m[1];})) names.push({name:m[1], cost:'', sell:''});
-        });
-      }
-    }catch(e){}
-    return names;
-  }
-
-  function addPurchaseDropdown(){
-    var nameInput=document.getElementById('p_name');
-    if(!nameInput || document.getElementById('p_itemSelect')) return;
-    var names=getStockNames();
-    var sel=document.createElement('select');
-    sel.id='p_itemSelect';
-    sel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
-    sel.innerHTML='<option value="">-- Pick Item (or type new below) --</option>';
-    names.forEach(function(n){
-      var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; sel.appendChild(o);
-    });
-    // + Add datalist for typing too
-    var dl=document.createElement('datalist'); dl.id='p_nameList';
-    names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; dl.appendChild(o); });
-    nameInput.setAttribute('list','p_nameList');
-    nameInput.parentNode.insertBefore(sel, nameInput);
-    nameInput.parentNode.insertBefore(dl, nameInput);
-
-    sel.addEventListener('change', function(){
-      if(!sel.value) return;
-      nameInput.value=sel.value;
-      var opt=sel.options[sel.selectedIndex];
-      var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost;
-      var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell;
-    });
-    // Refresh list when you switch to Purchase tab
-    document.addEventListener('click', function(){ setTimeout(function(){
-      var cur=document.getElementById('p_itemSelect'); if(!cur) return;
-      var fresh=getStockNames(); var val=cur.value;
-      cur.innerHTML='<option value="">-- Pick Item (or type new below) --</option>';
-      fresh.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; cur.appendChild(o); });
-      cur.value=val;
-    }, 200); });
-  }
-
-  // --- 2. BEST SELLER CHART ---
-  function addChart(){
-    if(document.getElementById('bestSellerBox')) return;
-    var box=document.createElement('div');
-    box.id='bestSellerBox';
-    box.style.cssText='margin:15px 0;padding:15px;border:2px solid #000;border-radius:12px;background:#fff;';
-    box.innerHTML=
-      '<h3 style="color:#000;margin:0 0 10px;">📊 Most Selling - Pick Time</h3>'+
-      '<select id="chartPeriod" style="width:100%;padding:12px;border-radius:8px;border:2px solid #000;font-size:16px;margin-bottom:10px;">'+
-      '<option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="all" selected>All Time</option></select>'+
-      '<canvas id="bestChart" width="340" height="220" style="width:100%;background:#f9f9f9;border-radius:8px;"></canvas>'+
-      '<div id="bestList" style="color:#000;margin-top:10px;"></div>';
-    // Put after Sale section or at end of body
-    var sec=document.getElementById('secSale')||document.body;
-    sec.appendChild(box);
-    document.getElementById('chartPeriod').addEventListener('change', drawChart);
-    drawChart();
-  }
-
-  function getSales(period){
-    var map={}; // name -> {qty, total}
-    var now=new Date(); var start=null;
-    if(period==='today'){ start=new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
-    if(period==='week'){ start=new Date(now); start.setDate(now.getDate()-7); }
-    if(period==='month'){ start=new Date(now.getFullYear(), now.getMonth(), 1); }
-
-    var list=[];
-    try{ if(typeof history!=='undefined') list=list.concat(history); }catch(e){}
-    // If you have saleLog, add it too
-    try{ if(typeof saleLog!=='undefined') list=list.concat(saleLog); }catch(e){}
-
-    list.forEach(function(h){
-      var detail=h.detail||h.name||'';
-      var d=new Date(h.date||h.time||Date.now());
-      if(start && d < start) return;
-      // Only sales - Sold, or negative amount, or type sale
-      var isSale = /sold/i.test(detail) || (h.amount||0)<0 || h.type==='sale';
-      if(period==='all' && !isSale && /bought/i.test(detail)) return;
-      if(!isSale) return;
-      var m=detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i);
-      var qty=1, name='Unknown';
-      if(m){ qty=parseFloat(m[1])||1; name=m[2].trim(); }
-      else if(h.name){ name=h.name; qty=h.qty||1; }
-      else return;
-      if(!map[name]) map[name]={qty:0, total:0};
-      map[name].qty+=qty;
-      map[name].total+=Math.abs(h.amount||0)||0;
-    });
-    var arr=Object.keys(map).map(function(k){ return {name:k, qty:map[k].qty, total:map[k].total}; });
-    arr.sort(function(a,b){ return b.qty-a.qty; });
-    return arr.slice(0,5); // Top 5
-  }
-
-  function drawChart(){
-    var period=document.getElementById('chartPeriod') ? document.getElementById('chartPeriod').value : 'all';
-    var data=getSales(period);
-    var cv=document.getElementById('bestChart'); if(!cv) return;
-    var ctx=cv.getContext('2d');
-    ctx.clearRect(0,0,cv.width,cv.height);
-    var listEl=document.getElementById('bestList');
-    if(!data.length){
-      ctx.fillStyle='#000'; ctx.font='16px sans-serif'; ctx.fillText('No sales for this period', 20, 110);
-      listEl.innerHTML='<p>No sales yet for this period</p>'; return;
-    }
-    var maxQty=Math.max.apply(null, data.map(function(d){return d.qty;}));
-    var colors=['#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336'];
-    var barW=50, gap=12, x=15;
-    ctx.font='12px sans-serif';
-    data.forEach(function(d,i){
-      var h=(d.qty/maxQty)*150;
-      var y=180-h;
-      ctx.fillStyle=colors[i%colors.length];
-      ctx.fillRect(x, y, barW, h);
-      ctx.fillStyle='#000'; ctx.textAlign='center';
-      ctx.fillText(d.qty+' pcs', x+barW/2, y-6);
-      // Name wrapped
-      var nm=d.name.length>10 ? d.name.slice(0,10)+'..' : d.name;
-      ctx.fillText(nm, x+barW/2, 198);
-      x+=barW+gap;
-    });
-    var html='<b>🏆 Top Sellers:</b><br>';
-    data.forEach(function(d,i){ html+=(i+1)+'. <b>'+d.name+'</b> - '+d.qty+' pcs - $'+d.total.toFixed(2)+'<br>'; });
-    listEl.innerHTML=html;
-  }
-
-  // Init
-  setTimeout(function(){ addPurchaseDropdown(); addChart(); }, 500);
-  document.addEventListener('click', function(){ setTimeout(function(){ addPurchaseDropdown(); addChart(); drawChart(); }, 300); });
-  // Redraw after any sale/purchase
-  if(!window._chartWrapped){
-    window._chartWrapped=true;
-    var _origRender=window.render;
-    window.render=function(){
-      try{ if(typeof _origRender==='function') _origRender(); }catch(e){}
-      try{ addPurchaseDropdown(); drawChart(); }catch(e){}
-    };
-  }
-  console.log('DROPDOWN + CHART ON');
-})();
-  </script>
-  <script>
-// ALL IN ONE - Supplier Stay + QTY Override + Dropdown + Chart
-(function(){
-  try{ var m=setInterval(function(){},1000); for(var i=0;i<=m;i++){ clearInterval(i); clearTimeout(i); } }catch(e){}
-
-  // ===== 1. SUPPLIER STAY + NEW WINS =====
-  var savedSupplier='';
-  document.addEventListener('input', function(e){
-    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName')){
-      if(e.target.value){ savedSupplier=e.target.value; }
-      else { savedSupplier=''; } // you cleared it to type new one, forget old
-    }
-  });
-  document.addEventListener('change', function(e){
-    if(e.target && (e.target.id==='p_supplier'||e.target.id==='supplierName') && e.target.value){
-      savedSupplier=e.target.value;
-    }
-  });
-
-  if(!window._allWrapped){
-    window._allWrapped=true;
-    var _origAdd=window.addPurchase;
-    window.addPurchase=function(){
-      var a=document.getElementById('p_supplier'); var b=document.getElementById('supplierName');
-      if(a && a.value) savedSupplier=a.value; if(b && b.value) savedSupplier=b.value;
-      var r=null; try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
-      setTimeout(function(){
-        if(savedSupplier){
-          if(a) a.value=savedSupplier; if(b) b.value=savedSupplier;
-        }
-        var n=document.getElementById('p_name'); if(n) n.value='';
-        var c=document.getElementById('p_cost'); if(c) c.value='';
-        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
-        var q=document.getElementById('p_qty'); if(q) q.value='1';
-        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
-      },200);
-      return r;
-    };
-  }
-
-  // ===== 2. QTY OVERRIDE =====
-  function fixQty(el){
-    if(!el || el.dataset.qtyFixed) return; el.dataset.qtyFixed='1';
-    el.addEventListener('focus', function(){ setTimeout(function(){ el.select(); },10); });
-    el.addEventListener('click', function(){ el.select(); });
-  }
-  function fixAllQty(){ ['p_qty','s_qty'].forEach(function(id){ var el=document.getElementById(id); if(el) fixQty(el); }); }
-
-  // ===== 3. PURCHASE DROPDOWN =====
-  function getStockNames(){
-    var names=[];
-    try{ if(typeof stock!=='undefined') stock.forEach(function(s){ if(s.name) names.push({name:s.name, cost:s.cost||'', sell:s.sell||s.price||''}); }); }catch(e){}
-    try{ if(typeof purchaseLog!=='undefined') purchaseLog.forEach(function(p){ if(p.name && !names.find(function(n){return n.name===p.name;})) names.push({name:p.name, cost:p.cost||'', sell:''}); }); }catch(e){}
-    return names;
-  }
-  function addDropdown(){
-    var nameInput=document.getElementById('p_name'); if(!nameInput || document.getElementById('p_itemSelect')) return;
-    var names=getStockNames();
-    var sel=document.createElement('select'); sel.id='p_itemSelect';
-    sel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
-    sel.innerHTML='<option value="">-- Pick Item (or type new below) --</option>';
-    names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; sel.appendChild(o); });
-    nameInput.parentNode.insertBefore(sel, nameInput);
-    sel.addEventListener('change', function(){
-      if(!sel.value) return; nameInput.value=sel.value;
-      var opt=sel.options[sel.selectedIndex];
-      var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost;
-      var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell;
-    });
-  }
-
-  // ===== 4. BAR GRAPH - WHERE TO FIND =====
-  function addChart(){
-    if(document.getElementById('bestSellerBox')) return;
-    var box=document.createElement('div'); box.id='bestSellerBox';
-    box.style.cssText='margin:15px;padding:15px;border:3px solid #2196F3;border-radius:12px;background:#fff;';
-    box.innerHTML=
-      '<h3 style="color:#000;margin:0 0 10px;">📊 Most Selling - Pick Time</h3>'+
-      '<select id="chartPeriod" style="width:100%;padding:12px;border-radius:8px;border:2px solid #000;font-size:16px;margin-bottom:10px;">'+
-      '<option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="all" selected>All Time</option></select>'+
-      '<canvas id="bestChart" width="340" height="220" style="width:100%;background:#f9f9f9;border-radius:8px;"></canvas>'+
-      '<div id="bestList" style="color:#000;margin-top:10px;"></div>';
-    var sec=document.getElementById('secSale')||document.body; sec.appendChild(box);
-    document.getElementById('chartPeriod').addEventListener('change', drawChart);
-    drawChart();
-  }
-  function getSales(period){
-    var map={}; var now=new Date(); var start=null;
-    if(period==='today') start=new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if(period==='week'){ start=new Date(now); start.setDate(now.getDate()-7); }
-    if(period==='month') start=new Date(now.getFullYear(), now.getMonth(), 1);
-    var list=[]; try{ if(typeof history!=='undefined') list=list.concat(history); }catch(e){}
-    list.forEach(function(h){
-      var detail=h.detail||''; var d=new Date(h.date||h.time||Date.now());
-      if(start && d<start) return; if(!/sold/i.test(detail)) return;
-      var m=detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(!m) return;
-      var name=m[2].trim(); var qty=parseFloat(m[1])||1;
-      if(!map[name]) map[name]={qty:0, total:0}; map[name].qty+=qty; map[name].total+=Math.abs(h.amount||0);
-    });
-    var arr=Object.keys(map).map(function(k){ return {name:k, qty:map[k].qty, total:map[k].total}; });
-    arr.sort(function(a,b){ return b.qty-a.qty; }); return arr.slice(0,5);
-  }
-  function drawChart(){
-    var period=document.getElementById('chartPeriod')?document.getElementById('chartPeriod').value:'all';
-    var data=getSales(period); var cv=document.getElementById('bestChart'); if(!cv) return;
-    var ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
-    var listEl=document.getElementById('bestList');
-    if(!data.length){ ctx.fillStyle='#000'; ctx.font='16px sans-serif'; ctx.fillText('No sales for this period',20,110); listEl.innerHTML='No sales yet'; return; }
-    var maxQty=Math.max.apply(null, data.map(function(d){return d.qty;}));
-    var colors=['#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336']; var x=15;
-    ctx.font='12px sans-serif';
-    data.forEach(function(d,i){ var h=(d.qty/maxQty)*150; var y=180-h; ctx.fillStyle=colors[i%colors.length]; ctx.fillRect(x,y,50,h); ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.fillText(d.qty+' pcs',x+25,y-6); ctx.fillText(d.name.length>10?d.name.slice(0,10)+'..':d.name,x+25,198); x+=62; });
-    var html='<b>🏆 Top Sellers:</b><br>'; data.forEach(function(d,i){ html+=(i+1)+'. <b>'+d.name+'</b> - '+d.qty+' pcs - $'+d.total.toFixed(2)+'<br>'; }); listEl.innerHTML=html;
-  }
-
-  setTimeout(function(){ fixAllQty(); addDropdown(); addChart(); },600);
-  document.addEventListener('click', function(){ setTimeout(function(){ fixAllQty(); addDropdown(); addChart(); drawChart(); },300); });
-  console.log('ALL IN ONE ON');
-})();
-</script>
-  <script>
-// SUPPLIER FORCE STAY - v2
-(function(){
-  // Save supplier to phone memory, survives reload
-  function saveSup(v){
-    if(v) { try{ localStorage.setItem('KEEP_SUPPLIER', v); }catch(e){} window._keepSup=v; }
-  }
-  function getSavedSup(){
-    if(window._keepSup) return window._keepSup;
-    try{ return localStorage.getItem('KEEP_SUPPLIER')||''; }catch(e){ return ''; }
-  }
-  function getSupEls(){
-    var els=[];
-    ['p_supplier','supplierName','supplier','supName'].forEach(function(id){
-      var el=document.getElementById(id); if(el) els.push(el);
-    });
-    // Also find any input with placeholder Supplier
-    document.querySelectorAll('input').forEach(function(el){
-      if((el.placeholder||'').toLowerCase().indexOf('supplier')!==-1 && els.indexOf(el)===-1) els.push(el);
-    });
-    return els;
-  }
-
-  // 1. When YOU type, save it instantly
-  document.addEventListener('input', function(e){
-    var els=getSupEls();
-    if(els.indexOf(e.target)!==-1){
-      if(e.target.value) saveSup(e.target.value);
-      // If you cleared it YOURSELF to type new, clear memory too - so old won't come back
-      else { window._keepSup=''; try{ localStorage.removeItem('KEEP_SUPPLIER'); }catch(e){} }
-    }
-  });
-  document.addEventListener('change', function(e){
-    var els=getSupEls();
-    if(els.indexOf(e.target)!==-1 && e.target.value) saveSup(e.target.value);
-  });
-
-  // 2. Watchdog - every 300ms, if supplier is EMPTY but we have saved one,
-  // AND you are NOT currently typing in supplier box, put it back.
-  // This kills auto-clear after Purchase, but lets you clear to change.
-  setInterval(function(){
-    var els=getSupEls(); if(!els.length) return;
-    var saved=getSavedSup(); if(!saved) return;
-    var active=document.activeElement;
-    els.forEach(function(el){
-      if(el===active) return; // you are typing, don't fight you
-      if(!el.value){
-        el.value=saved;
-        // trigger so other code knows
-        el.dispatchEvent(new Event('input', {bubbles:true}));
-        // Re-save because our own input handler above would clear it? No, we set value then save
-        saveSup(saved);
-      }
-    });
-  }, 300);
-
-  // 3. Also restore right after Purchase button click
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest ? e.target.closest('button') : null;
-    if(btn && (btn.textContent||'').toLowerCase().indexOf('purchase')!==-1){
-      var saved=getSavedSup();
-      setTimeout(function(){
-        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
-      }, 100);
-      setTimeout(function(){
-        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
-      }, 500);
-      setTimeout(function(){
-        getSupEls().forEach(function(el){ if(saved && !el.value) el.value=saved; });
-      }, 1000);
-    }
-  });
-
-  console.log('SUPPLIER FORCE STAY v2 ON');
-})();
-  </script>
-  <script>
-// FIX DELETE PURCHASE + HIDE DELETE SUPPLIER + SHOW NAMES
-(function(){
-  // ===== 1. HIDE DELETE SUPPLIER BUTTON =====
-  function hideSupDel(){
-    document.querySelectorAll('button').forEach(function(b){
-      var t=(b.textContent||'').toLowerCase();
-      if(t.indexOf('delete supplier')!==-1 || t.indexOf('remove supplier')!==-1 || t.indexOf('clear supplier')!==-1){
-        b.style.display='none';
-      }
-      // Also if button is right next to supplier input and says Delete / X / Trash
-      if((b.id||'').toLowerCase().indexOf('supplier')!==-1 && (t.indexOf('delete')!==-1 || t==='x' || t==='🗑')){
-        b.style.display='none';
-      }
-    });
-    // Hide by id
-    ['delSupplier','deleteSupplier','removeSupplier','clearSupplier','supplierDelete'].forEach(function(id){
-      var el=document.getElementById(id); if(el) el.style.display='none';
-    });
-  }
-  setInterval(hideSupDel, 800);
-
-  // ===== 2. DELETE PURCHASE SHOULD ALSO DELETE STOCK =====
-  function fixDeletePurchase(name, qty){
-    // Find stock item with same name, reduce qty
-    try{
-      if(typeof stock!=='undefined' && stock.length){
-        for(var i=0;i<stock.length;i++){
-          if(stock[i].name && stock[i].name.toLowerCase()===String(name).toLowerCase()){
-            stock[i].qty=(parseFloat(stock[i].qty)||0) - (parseFloat(qty)||1);
-            if(stock[i].qty<=0){
-              stock.splice(i,1); // remove from stock if 0
-            }
-            break;
-          }
-        }
-        if(typeof saveData==='function') saveData();
-        if(typeof render==='function') render();
-        if(typeof save==='function') save();
-        try{ localStorage.setItem('stock', JSON.stringify(stock)); }catch(e){}
-      }
-    }catch(e){ console.log('stock fix err',e); }
-  }
-
-  // Wrap all possible delete functions
-  ['deletePurchase','removePurchase','delPurchase','deletePurchaseItem','removePurchaseItem','deleteHistory','deletePurchaseLog'].forEach(function(fnName){
-    if(typeof window[fnName]==='function' && !window[fnName]._fixed){
-      var orig=window[fnName];
-      var wrapped=function(idx){
-        var entry=null;
-        try{
-          if(typeof purchaseLog!=='undefined' && purchaseLog[idx]) entry=purchaseLog[idx];
-          else if(typeof history!=='undefined' && history[idx]) entry=history[idx];
-        }catch(e){}
-        var r=orig.apply(this, arguments);
-        // After original delete (cash already refunded), fix stock
-        if(entry){
-          var nm=entry.name||'';
-          var q=entry.qty||entry.quantity||1;
-          // Try parse from detail if no name
-          if(!nm && entry.detail){
-            var m=entry.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|$)/i);
-            if(m){ q=m[1]; nm=m[2]; }
-          }
-          if(nm) setTimeout(function(){ fixDeletePurchase(nm,q); }, 100);
-        }
-        return r;
-      };
-      wrapped._fixed=true; window[fnName]=wrapped;
-    }
-  });
-
-  // Also catch delete button clicks in Purchase History / Delete section
-  document.addEventListener('click', function(e){
-    var btn=e.target.closest ? e.target.closest('button') : null;
-    if(!btn) return;
-    var t=(btn.textContent||'').toLowerCase();
-    // If it's a delete button inside purchase/history list
-    if(t.indexOf('delete')!==-1 || t.indexOf('🗑')!==-1 || t==='x'){
-      // Find row text to get name + qty BEFORE it deletes
-      var row=btn.closest('div,li,tr');
-      var txt=row ? row.textContent : '';
-      var m=txt.match(/(\d+)\s*x\s+([A-Za-z0-9 ]+?)(?:\s+from|\s+from|\s+\$|Delete|$)/i);
-      if(m){
-        var qty=m[1]; var nm=m[2].trim();
-        // Wait for original delete to refund cash, then fix stock
-        setTimeout(function(){ fixDeletePurchase(nm, qty); }, 300);
-      }
-    }
-  });
-
-  // ===== 3. SHOW NAMES IN DELETE / PURCHASE HISTORY SECTION =====
-  function fixNames(){
-    // Find purchase history items that are blank / no name
-    document.querySelectorAll('[id*="purchase"], [id*="history"], [id*="delete"]').forEach(function(box){
-      // If box has buttons but no text, try to fill from purchaseLog
-      if(box.textContent.trim().length < 5) return;
-    });
-    // Force re-render names: if delete list uses purchaseLog but shows empty, rebuild it
-    var delBox=document.getElementById('purchaseDeleteList')||document.getElementById('deletePurchaseList')||document.getElementById('purchaseHistory');
-    if(delBox && typeof purchaseLog!=='undefined' && purchaseLog.length && delBox.textContent.trim().length<10){
-      var html='';
-      purchaseLog.forEach(function(p,i){
-        html+='<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #ccc;color:#000;">'+
-        '<span>'+(p.qty||1)+' x <b>'+(p.name||'Unknown')+'</b> - $'+(p.total||p.cost||'')+' - '+(p.supplier||'')+'</span>'+
-        '<button onclick="deletePurchase('+i+')" style="background:red;color:#fff;border:none;padding:4px 8px;border-radius:6px;">Delete</button></div>';
-      });
-      delBox.innerHTML=html;
-    }
-  }
-  setInterval(fixNames, 1000);
-
-  console.log('DELETE FIX ON');
-})();
-  </script>
-  <script>
-// SUPPLIER STAY - FIXED FOR YOUR BOX v3
-(function(){
+  // --- FIND SUPPLIER BY YOUR REAL PLACEHOLDER ---
   function findSup(){
-    // 1. By your real placeholder
     var el=document.querySelector('input[placeholder*="Who did you buy"]');
     if(el) return el;
-    // 2. By label "Supplier Name" - input right after it
-    var labels=document.querySelectorAll('label,div,span,p');
-    for(var i=0;i<labels.length;i++){
-      if((labels[i].textContent||'').indexOf('Supplier Name')!==-1){
-        var n=labels[i].nextElementSibling;
-        if(n && n.tagName==='INPUT') return n;
-        var inp=labels[i].parentElement ? labels[i].parentElement.querySelector('input') : null;
-        if(inp) return inp;
-      }
-    }
-    // 3. First input in Purchase section
-    var sec=document.getElementById('secPurchase')||document.body;
-    var inputs=sec.querySelectorAll('input');
-    if(inputs[0]) return inputs[0];
-    return null;
+    // fallback: first input in Purchase section
+    var sec=document.getElementById('secPurchase');
+    if(sec){ var ins=sec.querySelectorAll('input'); if(ins[0]) return ins[0]; }
+    return document.querySelector('input');
   }
+  function saveSup(v){ if(v){ try{localStorage.setItem('KEEP_SUPPLIER',v);}catch(e){} window._keepSup=v; } }
+  function getSaved(){ if(window._keepSup) return window._keepSup; try{return localStorage.getItem('KEEP_SUPPLIER')||'';}catch(e){return '';} }
 
-  function saveSup(v){
-    if(v){ try{ localStorage.setItem('KEEP_SUPPLIER', v); }catch(e){} window._keepSup=v; }
-  }
-  function getSaved(){
-    if(window._keepSup) return window._keepSup;
-    try{ return localStorage.getItem('KEEP_SUPPLIER')||''; }catch(e){ return ''; }
-  }
-
-  // When YOU type, save it
+  // When YOU type, save
   document.addEventListener('input', function(e){
     var s=findSup();
     if(s && e.target===s){
       if(e.target.value) saveSup(e.target.value);
-      else { window._keepSup=''; try{ localStorage.removeItem('KEEP_SUPPLIER'); }catch(e){} }
+      else { window._keepSup=''; try{localStorage.removeItem('KEEP_SUPPLIER');}catch(e){} }
     }
   });
 
-  // Watchdog every 200ms - if empty, put it back unless you are typing in it
+  // Watchdog - every 250ms, if empty put it back, unless you are typing
   setInterval(function(){
     var s=findSup(); if(!s) return;
     var saved=getSaved(); if(!saved) return;
-    if(document.activeElement===s) return; // you typing, don't fight
+    if(document.activeElement===s) return;
     if(!s.value){
       s.value=saved;
-      s.dispatchEvent(new Event('input',{bubbles:true}));
-      saveSup(saved); // re-save because event above may have cleared
+      // do NOT dispatch input here - that was triggering other scripts to clear it
     }
-  }, 200);
+  }, 250);
 
-  console.log('SUPPLIER v3 ON - found box:', !!findSup());
+  // --- DROPDOWN + CHART (keep your features) ---
+  function getStockNames(){
+    var names=[];
+    try{ if(typeof stock!=='undefined') stock.forEach(function(x){ if(x.name) names.push({name:x.name,cost:x.cost||'',sell:x.sell||x.price||''}); }); }catch(e){}
+    try{ if(typeof purchaseLog!=='undefined') purchaseLog.forEach(function(p){ if(p.name && !names.find(function(n){return n.name===p.name;})) names.push({name:p.name,cost:p.cost||'',sell:''}); }); }catch(e){}
+    return names;
+  }
+  function addDropdown(){
+    var ni=document.getElementById('p_name'); if(!ni || document.getElementById('p_itemSelect')) return;
+    var sel=document.createElement('select'); sel.id='p_itemSelect';
+    sel.style.cssText='width:100%;padding:12px;margin-bottom:8px;border-radius:8px;border:2px solid #000;font-size:16px;background:#fff;color:#000;';
+    sel.innerHTML='<option value="">-- Pick Item --</option>';
+    getStockNames().forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; sel.appendChild(o); });
+    ni.parentNode.insertBefore(sel, ni);
+    sel.addEventListener('change', function(){
+      if(!sel.value) return; ni.value=sel.value;
+      var opt=sel.options[sel.selectedIndex];
+      var c=document.getElementById('p_cost'); if(c && opt.dataset.cost) c.value=opt.dataset.cost;
+      var s=document.getElementById('p_sell'); if(s && opt.dataset.sell) s.value=opt.dataset.sell;
+    });
+  }
+  function addChart(){
+    if(document.getElementById('bestSellerBox')) return;
+    var box=document.createElement('div'); box.id='bestSellerBox';
+    box.style.cssText='margin:15px 0;padding:15px;border:2px solid #000;border-radius:12px;background:#fff;';
+    box.innerHTML='<h3 style="color:#000;">📊 Most Selling</h3><select id="chartPeriod" style="width:100%;padding:12px;border-radius:8px;border:2px solid #000;"><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option><option value="all" selected>All Time</option></select><canvas id="bestChart" width="340" height="220" style="width:100%;background:#f9f9f9;"></canvas><div id="bestList" style="color:#000;"></div>';
+    (document.getElementById('secSale')||document.body).appendChild(box);
+    document.getElementById('chartPeriod').addEventListener('change', drawChart); drawChart();
+  }
+  function drawChart(){
+    var period=document.getElementById('chartPeriod')?document.getElementById('chartPeriod').value:'all';
+    var map={}; var now=new Date(); var start=null;
+    if(period==='today') start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    if(period==='week'){ start=new Date(now); start.setDate(now.getDate()-7); }
+    if(period==='month') start=new Date(now.getFullYear(),now.getMonth(),1);
+    var list=[]; try{ if(typeof history!=='undefined') list=list.concat(history); }catch(e){}
+    list.forEach(function(h){ var d=h.detail||''; var dt=new Date(h.date||h.time||Date.now()); if(start && dt<start) return; if(!/sold/i.test(d)) return; var m=d.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|\s+-|$)/i); if(!m) return; var nm=m[2].trim(); var q=parseFloat(m[1])||1; if(!map[nm]) map[nm]={qty:0,total:0}; map[nm].qty+=q; map[nm].total+=Math.abs(h.amount||0); });
+    var arr=Object.keys(map).map(function(k){return {name:k,qty:map[k].qty,total:map[k].total};}); arr.sort(function(a,b){return b.qty-a.qty;}); arr=arr.slice(0,5);
+    var cv=document.getElementById('bestChart'); if(!cv) return; var ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); var le=document.getElementById('bestList');
+    if(!arr.length){ ctx.fillStyle='#000'; ctx.font='16px sans-serif'; ctx.fillText('No sales',20,110); le.innerHTML='No sales'; return; }
+    var max=Math.max.apply(null,arr.map(function(x){return x.qty;})); var cols=['#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336']; var x=15; ctx.font='12px sans-serif';
+    arr.forEach(function(d,i){ var h=(d.qty/max)*150; var y=180-h; ctx.fillStyle=cols[i%5]; ctx.fillRect(x,y,50,h); ctx.fillStyle='#000'; ctx.textAlign='center'; ctx.fillText(d.qty+' pcs',x+25,y-6); ctx.fillText(d.name.length>10?d.name.slice(0,10)+'..':d.name,x+25,198); x+=62; });
+    var html='<b>Top:</b><br>'; arr.forEach(function(d,i){ html+=(i+1)+'. <b>'+d.name+'</b> - '+d.qty+' pcs - $'+d.total.toFixed(2)+'<br>'; }); le.innerHTML=html;
+  }
+
+  setTimeout(function(){ addDropdown(); addChart(); },500);
+  document.addEventListener('click', function(){ setTimeout(function(){ addDropdown(); try{drawChart();}catch(e){} },300); });
+  console.log('FINAL ONE ON');
 })();
-  </script>
-</body>
-</html>
+</script>
+  </body>
+  </html>
