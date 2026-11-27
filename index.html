@@ -1443,5 +1443,114 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('NAME FIX ONLY - NO Stock Del');
 })();
   </script>
+  <script>
+// FINAL FIX - Force Name + Lock Supplier - Must be LAST script
+(function(){
+  // --- 1. LOCK SUPPLIER - Save it, restore it after ANY add ---
+  var savedSupplier = '';
+  function keepSupplier(){
+    var a=document.getElementById('p_supplier');
+    var b=document.getElementById('supplierName');
+    if(a && a.value) savedSupplier=a.value;
+    if(b && b.value) savedSupplier=b.value;
+    if(savedSupplier){
+      if(a) a.value=savedSupplier;
+      if(b) b.value=savedSupplier;
+    }
+  }
+  // Save supplier whenever you type it
+  document.addEventListener('input', function(e){
+    if(e.target && (e.target.id==='p_supplier' || e.target.id==='supplierName')){
+      if(e.target.value) savedSupplier=e.target.value;
+    }
+  });
+  // Wrap addPurchase to restore supplier
+  var _origAdd = window.addPurchase;
+  window.addPurchase = function(){
+    keepSupplier();
+    var r=null;
+    try{ if(typeof _origAdd==='function') r=_origAdd(); }catch(e){}
+    // Restore 5 times - beats all old clear scripts
+    [100,300,600,1000,1500].forEach(function(t){
+      setTimeout(function(){
+        keepSupplier();
+        // Clear other fields for next item, but NOT supplier
+        var n=document.getElementById('p_name'); if(n) n.value='';
+        var c=document.getElementById('p_cost'); if(c) c.value='';
+        var s=document.getElementById('p_sell'); if(s){ s.value=''; s.dataset.overridden=''; }
+        var q=document.getElementById('p_qty'); if(q) q.value='1';
+        var ex=document.getElementById('p_exp'); if(ex) ex.value='';
+      }, t);
+    });
+    return r;
+  };
+
+  // --- 2. FORCE NAME - Show ANY field that has name ---
+  function getName(p, i){
+    // Try every possible field
+    if(p.name && p.name!=='undefined' && p.name!=='') return p.name;
+    if(p.item && p.item!=='') return p.item;
+    if(p.detail && p.detail!=='') {
+      var m=p.detail.match(/x\s+(.+?)\s+from/i);
+      if(m) return m[1];
+      return p.detail;
+    }
+    // Try history by total
+    if(typeof history!=='undefined'){
+      for(var h=0;h<history.length;h++){
+        var hh=history[h];
+        if(Math.abs(Math.abs(hh.amount||0)-(p.total||p.amount||0))<0.01 && hh.detail){
+          var m2=hh.detail.match(/x\s+(.+?)\s+from/i);
+          if(m2) return m2[1];
+          if(hh.detail) return hh.detail;
+        }
+      }
+    }
+    return 'OLD ITEM '+(i+1)+' - No name was saved before';
+  }
+
+  function renderForce(){
+    var box=document.getElementById('purchaseLogBox');
+    if(!box){
+      box=document.createElement('div'); box.id='purchaseLogBox';
+      box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;';
+      var sec=document.getElementById('secPurchase')||document.body;
+      sec.appendChild(box);
+    }
+    // Hide old trash-only buttons inside box
+    var html='<h3 style="color:#000;">🧾 Purchase Log - Tap RETURN</h3>';
+    var list=window.purchaseLog||[];
+    if(list.length===0) html+='<p style="color:#000;">No purchases yet</p>';
+    for(var i=0;i<list.length;i++){
+      var p=list[i];
+      var nm=getName(p,i);
+      var qq=p.qty||0, cc=p.cost||0, tt=p.total||p.amount||0;
+      if(!cc && qq && tt) cc=tt/qq;
+      html+='<div style="border:2px solid #000;padding:10px;margin:8px 0;border-radius:10px;background:#fff;color:#000;">'+
+        '<div style="font-size:18px;font-weight:bold;color:#000;">'+nm+'</div>'+
+        '<div style="color:#000;">'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div>'+
+        '<div style="color:#555;font-size:12px;">'+(p.pay||'')+' | '+(p.supplier||savedSupplier||'')+' | '+(p.date||'')+'</div>'+
+        '<button onclick="window.deletePurchase('+p.id+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;font-size:16px;">🗑️ RETURN - '+nm+'</button>'+
+        '</div>';
+    }
+    box.innerHTML=html;
+  }
+
+  window.renderPurchaseLog = renderForce;
+  // Force every 1 sec - beats old renderer
+  setInterval(function(){
+    try{ renderForce(); keepSupplier(); }catch(e){}
+  }, 1000);
+
+  // Also after normal render
+  var _origRender=window.render;
+  window.render=function(){
+    try{ if(typeof _origRender==='function') _origRender(); }catch(e){}
+    try{ renderForce(); }catch(e){}
+  };
+
+  console.log('FINAL FIX ON - Name Forced + Supplier Locked');
+})();
+        </script>
 </body>
 </html>
