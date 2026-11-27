@@ -2214,5 +2214,61 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('DELETE FIX ON');
 })();
   </script>
+  <script>
+// SUPPLIER STAY - FIXED FOR YOUR BOX v3
+(function(){
+  function findSup(){
+    // 1. By your real placeholder
+    var el=document.querySelector('input[placeholder*="Who did you buy"]');
+    if(el) return el;
+    // 2. By label "Supplier Name" - input right after it
+    var labels=document.querySelectorAll('label,div,span,p');
+    for(var i=0;i<labels.length;i++){
+      if((labels[i].textContent||'').indexOf('Supplier Name')!==-1){
+        var n=labels[i].nextElementSibling;
+        if(n && n.tagName==='INPUT') return n;
+        var inp=labels[i].parentElement ? labels[i].parentElement.querySelector('input') : null;
+        if(inp) return inp;
+      }
+    }
+    // 3. First input in Purchase section
+    var sec=document.getElementById('secPurchase')||document.body;
+    var inputs=sec.querySelectorAll('input');
+    if(inputs[0]) return inputs[0];
+    return null;
+  }
+
+  function saveSup(v){
+    if(v){ try{ localStorage.setItem('KEEP_SUPPLIER', v); }catch(e){} window._keepSup=v; }
+  }
+  function getSaved(){
+    if(window._keepSup) return window._keepSup;
+    try{ return localStorage.getItem('KEEP_SUPPLIER')||''; }catch(e){ return ''; }
+  }
+
+  // When YOU type, save it
+  document.addEventListener('input', function(e){
+    var s=findSup();
+    if(s && e.target===s){
+      if(e.target.value) saveSup(e.target.value);
+      else { window._keepSup=''; try{ localStorage.removeItem('KEEP_SUPPLIER'); }catch(e){} }
+    }
+  });
+
+  // Watchdog every 200ms - if empty, put it back unless you are typing in it
+  setInterval(function(){
+    var s=findSup(); if(!s) return;
+    var saved=getSaved(); if(!saved) return;
+    if(document.activeElement===s) return; // you typing, don't fight
+    if(!s.value){
+      s.value=saved;
+      s.dispatchEvent(new Event('input',{bubbles:true}));
+      saveSup(saved); // re-save because event above may have cleared
+    }
+  }, 200);
+
+  console.log('SUPPLIER v3 ON - found box:', !!findSup());
+})();
+  </script>
 </body>
 </html>
