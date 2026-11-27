@@ -2099,5 +2099,120 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   console.log('SUPPLIER FORCE STAY v2 ON');
 })();
   </script>
+  <script>
+// FIX DELETE PURCHASE + HIDE DELETE SUPPLIER + SHOW NAMES
+(function(){
+  // ===== 1. HIDE DELETE SUPPLIER BUTTON =====
+  function hideSupDel(){
+    document.querySelectorAll('button').forEach(function(b){
+      var t=(b.textContent||'').toLowerCase();
+      if(t.indexOf('delete supplier')!==-1 || t.indexOf('remove supplier')!==-1 || t.indexOf('clear supplier')!==-1){
+        b.style.display='none';
+      }
+      // Also if button is right next to supplier input and says Delete / X / Trash
+      if((b.id||'').toLowerCase().indexOf('supplier')!==-1 && (t.indexOf('delete')!==-1 || t==='x' || t==='🗑')){
+        b.style.display='none';
+      }
+    });
+    // Hide by id
+    ['delSupplier','deleteSupplier','removeSupplier','clearSupplier','supplierDelete'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.display='none';
+    });
+  }
+  setInterval(hideSupDel, 800);
+
+  // ===== 2. DELETE PURCHASE SHOULD ALSO DELETE STOCK =====
+  function fixDeletePurchase(name, qty){
+    // Find stock item with same name, reduce qty
+    try{
+      if(typeof stock!=='undefined' && stock.length){
+        for(var i=0;i<stock.length;i++){
+          if(stock[i].name && stock[i].name.toLowerCase()===String(name).toLowerCase()){
+            stock[i].qty=(parseFloat(stock[i].qty)||0) - (parseFloat(qty)||1);
+            if(stock[i].qty<=0){
+              stock.splice(i,1); // remove from stock if 0
+            }
+            break;
+          }
+        }
+        if(typeof saveData==='function') saveData();
+        if(typeof render==='function') render();
+        if(typeof save==='function') save();
+        try{ localStorage.setItem('stock', JSON.stringify(stock)); }catch(e){}
+      }
+    }catch(e){ console.log('stock fix err',e); }
+  }
+
+  // Wrap all possible delete functions
+  ['deletePurchase','removePurchase','delPurchase','deletePurchaseItem','removePurchaseItem','deleteHistory','deletePurchaseLog'].forEach(function(fnName){
+    if(typeof window[fnName]==='function' && !window[fnName]._fixed){
+      var orig=window[fnName];
+      var wrapped=function(idx){
+        var entry=null;
+        try{
+          if(typeof purchaseLog!=='undefined' && purchaseLog[idx]) entry=purchaseLog[idx];
+          else if(typeof history!=='undefined' && history[idx]) entry=history[idx];
+        }catch(e){}
+        var r=orig.apply(this, arguments);
+        // After original delete (cash already refunded), fix stock
+        if(entry){
+          var nm=entry.name||'';
+          var q=entry.qty||entry.quantity||1;
+          // Try parse from detail if no name
+          if(!nm && entry.detail){
+            var m=entry.detail.match(/(\d+)\s*x\s+(.+?)(?:\s+from|\s+to|$)/i);
+            if(m){ q=m[1]; nm=m[2]; }
+          }
+          if(nm) setTimeout(function(){ fixDeletePurchase(nm,q); }, 100);
+        }
+        return r;
+      };
+      wrapped._fixed=true; window[fnName]=wrapped;
+    }
+  });
+
+  // Also catch delete button clicks in Purchase History / Delete section
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest ? e.target.closest('button') : null;
+    if(!btn) return;
+    var t=(btn.textContent||'').toLowerCase();
+    // If it's a delete button inside purchase/history list
+    if(t.indexOf('delete')!==-1 || t.indexOf('🗑')!==-1 || t==='x'){
+      // Find row text to get name + qty BEFORE it deletes
+      var row=btn.closest('div,li,tr');
+      var txt=row ? row.textContent : '';
+      var m=txt.match(/(\d+)\s*x\s+([A-Za-z0-9 ]+?)(?:\s+from|\s+from|\s+\$|Delete|$)/i);
+      if(m){
+        var qty=m[1]; var nm=m[2].trim();
+        // Wait for original delete to refund cash, then fix stock
+        setTimeout(function(){ fixDeletePurchase(nm, qty); }, 300);
+      }
+    }
+  });
+
+  // ===== 3. SHOW NAMES IN DELETE / PURCHASE HISTORY SECTION =====
+  function fixNames(){
+    // Find purchase history items that are blank / no name
+    document.querySelectorAll('[id*="purchase"], [id*="history"], [id*="delete"]').forEach(function(box){
+      // If box has buttons but no text, try to fill from purchaseLog
+      if(box.textContent.trim().length < 5) return;
+    });
+    // Force re-render names: if delete list uses purchaseLog but shows empty, rebuild it
+    var delBox=document.getElementById('purchaseDeleteList')||document.getElementById('deletePurchaseList')||document.getElementById('purchaseHistory');
+    if(delBox && typeof purchaseLog!=='undefined' && purchaseLog.length && delBox.textContent.trim().length<10){
+      var html='';
+      purchaseLog.forEach(function(p,i){
+        html+='<div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #ccc;color:#000;">'+
+        '<span>'+(p.qty||1)+' x <b>'+(p.name||'Unknown')+'</b> - $'+(p.total||p.cost||'')+' - '+(p.supplier||'')+'</span>'+
+        '<button onclick="deletePurchase('+i+')" style="background:red;color:#fff;border:none;padding:4px 8px;border-radius:6px;">Delete</button></div>';
+      });
+      delBox.innerHTML=html;
+    }
+  }
+  setInterval(fixNames, 1000);
+
+  console.log('DELETE FIX ON');
+})();
+  </script>
 </body>
 </html>
