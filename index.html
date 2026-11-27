@@ -1273,40 +1273,46 @@ document.body.appendChild(s);
 })();
   </script>
 <script>
-// FIX CLEAR - FORCE BUTTON - MUST BE LAST
+// FIX CLEAR V2 - CLEAR WALLET + CLOUD
 (function(){
+  var origSave = window.save;
   function doClear(){
-    if(!confirm('CLEAR ALL DATA?\nDelete ALL? Cannot undo.\nAre you sure?')) return;
-    try{ localStorage.clear(); }catch(e){}
-    try{ sessionStorage.clear(); }catch(e){}
-    // clear memory
+    if(!confirm('CLEAR ALL DATA?\nDelete ALL? Cannot undo.')) return;
     try{
+      // 1. Clear memory - ALL wallet keys to 0
+      if(window.wallet){
+        Object.keys(wallet).forEach(function(k){ wallet[k]=0; });
+      }
       if(typeof history!=='undefined') history.length=0;
       if(typeof stock!=='undefined') stock.length=0;
       if(typeof credits!=='undefined') credits.length=0;
       if(typeof debits!=='undefined') debits.length=0;
       if(typeof purchaseLog!=='undefined') purchaseLog.length=0;
-      if(window.wallet){ wallet.cash=0; wallet.bank=0; wallet.debit=0; }
       if(typeof capital!=='undefined') capital=0;
-    }catch(e){}
-    window._clearing = true;
-    // stop save from bringing back old data
-    window.save = function(){};
-    setTimeout(function(){ location.reload(); }, 800);
-    alert('Cleared. Reloading...');
+      if(typeof balance!=='undefined') balance=0;
+      if(typeof cash!=='undefined') cash=0;
+      if(typeof bank!=='undefined') bank=0;
+      // 2. Save EMPTY to Cloud FIRST - this is key
+      if(typeof origSave==='function'){ try{ origSave(); }catch(e){} }
+      // 3. Then clear phone
+      try{ localStorage.clear(); }catch(e){}
+      try{ sessionStorage.clear(); }catch(e){}
+      // 4. Save empty again after clear
+      setTimeout(function(){
+        if(typeof origSave==='function'){ try{ origSave(); }catch(e){} }
+        location.reload();
+      }, 800);
+    }catch(e){ alert('Clear failed: '+e.message); }
   }
   window.clearData = window.resetData = window.clearAllData = doClear;
-  // force ALL buttons with CLEAR text to use this
   setTimeout(function(){
-    var btns = document.querySelectorAll('button');
-    btns.forEach(function(b){
+    document.querySelectorAll('button').forEach(function(b){
       if(b.textContent.indexOf('CLEAR ALL DATA')!==-1){
         b.onclick = function(e){ e.preventDefault(); e.stopPropagation(); doClear(); };
       }
     });
   }, 500);
-  console.log('FORCE CLEAR ON');
 })();
-        </script>
+</script>
   </body>
 </html>
