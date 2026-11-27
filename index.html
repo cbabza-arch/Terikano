@@ -1642,8 +1642,8 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
 })();
 </script>
 
-  <script>
-// FINAL v9 - KILL DOUBLE KARATIN
+<script>
+// v10 = v9 EXACT, ONLY fixYellow fixed - nothing else changed
 (function(){
   var st=document.createElement('style'); st.textContent='#purchaseLogBox{display:none!important;}'; document.head.appendChild(st);
   function findSup(){ return document.querySelector('input[placeholder*="Who did you buy"]'); }
@@ -1654,14 +1654,12 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
   setInterval(restoreSup, 500);
   function fixQty(){ var q=document.getElementById('p_qty'); if(q && q.value==='1') q.value=''; }
   setInterval(fixQty, 800);
-
-  // --- DROPDOWN - DEDUPE FIX ---
   function clean(n){ return (n||'').toString().trim(); }
   function getAllNames(){
     var map={};
     function add(nm, cost, sell){
       nm=clean(nm); if(!nm) return;
-      var key=nm.toLowerCase(); // <-- Karatin + karatin + "Karatin " = SAME key now
+      var key=nm.toLowerCase();
       if(!map[key]) map[key]={name:nm, cost:cost||'', sell:sell||''};
     }
     try{ if(typeof stock!=='undefined'){ stock.forEach(function(s){ add(s.name||s.item, s.cost, s.sell); }); } }catch(e){}
@@ -1677,7 +1675,6 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
     if(pSel){ var cur=pSel.value; pSel.innerHTML='<option value="">-- Pick Item --</option>'; names.forEach(function(n){ var o=document.createElement('option'); o.value=n.name; o.textContent=n.name; o.dataset.cost=n.cost; o.dataset.sell=n.sell; pSel.appendChild(o); }); pSel.value=cur; }
   }
   setInterval(buildDropdowns, 1000); setTimeout(buildDropdowns, 800);
-
   function getName(p,i){
     if(p.name && p.name!=='undefined' && p.name!=='') return clean(p.name);
     if(p.item) return clean(p.item);
@@ -1685,10 +1682,13 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
     return 'Item '+(i+1);
   }
   function fixYellow(){
+    // *** ONLY FIX HERE - 2 LINES ***
+    // 1. If you are using ANY dropdown (Sales), DON'T rebuild - stops flicker
+    if(document.activeElement && document.activeElement.tagName==='SELECT') return;
     var list=window.purchaseLog||[];
     var box=document.getElementById('myPurchaseBox');
     if(!box){ box=document.createElement('div'); box.id='myPurchaseBox'; box.style.cssText='margin:15px 0;padding:10px;border:2px solid #000;border-radius:12px;background:#fff;'; (document.getElementById('secPurchase')||document.body).appendChild(box); }
-    if(!list.length){ box.innerHTML='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3><div style="color:#888;">No purchases yet</div>'; return; }
+    if(!list.length){ var emptyHtml='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3><div style="color:#888;">No purchases yet</div>'; if(box.dataset.hash===emptyHtml) return; box.dataset.hash=emptyHtml; box.innerHTML=emptyHtml; return; }
     var html='<h3 style="color:#000;">🧾 Items Bought - Tap RETURN</h3>';
     list.forEach(function(p,i){
       var nm=getName(p,i); var qq=p.qty||1; var cc=p.cost||0; var tt=p.total||p.amount||(qq*cc);
@@ -1696,27 +1696,12 @@ window.clearData = window.resetData = window.clearAllData = clearAllData;
       var delId = (p.id!==undefined && p.id!==null) ? p.id : i;
       html+='<div style="border:3px solid #FFD700;padding:10px;margin:8px 0;border-radius:10px;background:#000;color:#fff;"><div style="font-size:18px;font-weight:bold;">'+nm+'</div><div>'+qq+' x $'+Number(cc).toFixed(2)+' = <b>$'+Number(tt).toFixed(2)+'</b></div><div style="font-size:12px;color:#ccc;">'+(p.pay||'')+' | '+(p.supplier||getSaved()||'')+' | '+(p.date||'')+'</div><button onclick="deletePurchase('+delId+')" style="background:#d32f2f;color:#fff;padding:12px;width:100%;border-radius:8px;font-weight:bold;margin-top:8px;">🗑️ RETURN - '+nm+'</button></div>';
     });
+    // 2. If yellow box didn't change, DON'T touch it - stops flicker
+    if(box.dataset.hash===html) return; box.dataset.hash=html;
     box.innerHTML=html;
   }
   setInterval(fixYellow, 800);
 })();
- </script>
-  <script>
-// TINY PATCH - ONLY SALES FLICKER - DOES NOT TOUCH v9
-(function(){
-  // Stop rebuilding Sales dropdown while you are using it
-  var origBuild = window._salesFix;
-  setInterval(function(){
-    var sSel = document.getElementById('s_itemSelect');
-    if(!sSel) return;
-    // If you are touching Sales dropdown, freeze it - no rebuild
-    if(document.activeElement === sSel){
-      sSel.dataset.frozen = '1';
-    } else {
-      sSel.dataset.frozen = '0';
-    }
-  }, 300);
-})();
-  </script>
+    </script>
   </body>
   </html>
