@@ -2303,76 +2303,58 @@ setTimeout(()=>{
 }, 500);
   </script>
 <script>
-// ===== v16.17 - HIDE/SHOW CHANGE ONLY, LIST STAYS NORMAL =====
+// ===== v16.18 - HIDE/SHOW BUTTON ON NOTEPAD HEADER =====
 setTimeout(()=>{
-  if(window.changeHideFixed) return;
-  window.changeHideFixed = true;
+  if(window.notepadHideFixed) return;
+  window.notepadHideFixed = true;
 
-  // 1. Remove my old WRONG button that hides the whole list
-  // Find buttons with "Hide List" / "Show List" and delete them
-  document.querySelectorAll('button').forEach(b=>{
-    let t = (b.innerText || '').toLowerCase();
-    if(t.includes('hide list') || t.includes('show list')){
-      b.remove();
+  // 1. Find NOTEPAD by its text in your screenshot
+  let notepadBox = null;
+  document.querySelectorAll('div').forEach(d=>{
+    if((d.innerText||'').includes('NOTEPAD - Seen by BOTH')){
+      // Pick the smallest div that still contains NOTEPAD
+      if(!notepadBox || d.innerText.length < notepadBox.innerText.length){
+        notepadBox = d;
+      }
     }
   });
-  // Un-hide any list I hid before
-  document.querySelectorAll('div, ul, table, tbody').forEach(el=>{
-    if(el.style.display === 'none' && el.children.length > 5){
-      el.style.display = '';
-    }
-  });
-
-  // 2. Make CHANGE box small + with its own Hide/Show
-  let pay = document.getElementById('s_pay');
-  let changeBox = document.getElementById('myChangeBox');
-  if(!changeBox && pay){
-    changeBox = document.createElement('div');
-    changeBox.id = 'myChangeBox';
-    pay.parentNode.appendChild(changeBox);
+  if(!notepadBox){
+    console.log('NOTEPAD NOT FOUND');
+    return;
   }
-  if(!changeBox) return;
 
-  // Wrap Change in a small bar
-  changeBox.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#e8ffe8;padding:6px 8px;border-radius:6px;margin-top:5px;font-weight:bold;';
-
-  // Add small Hide button INSIDE Change box only
-  if(!document.getElementById('hideChangeBtn')){
-    let btn = document.createElement('button');
-    btn.id = 'hideChangeBtn';
-    btn.innerText = 'Hide';
-    btn.style.cssText = 'background:#222;color:#fff;border:none;padding:3px 10px;border-radius:5px;font-size:12px;';
-    let label = document.createElement('span');
-    label.id = 'changeLabel';
-    label.innerText = changeBox.innerText || 'Change: $0.00';
-    // Rebuild box: label + button
-    changeBox.innerHTML = '';
-    changeBox.appendChild(label);
-    changeBox.appendChild(btn);
-
-    let isHidden = false;
-    btn.addEventListener('click', ()=>{
-      isHidden = !isHidden;
-      label.style.display = isHidden ? 'none' : '';
-      btn.innerText = isHidden ? 'Show Change' : 'Hide';
-      // When hidden, box becomes tiny - not occupy screen
-      changeBox.style.padding = isHidden ? '3px 8px' : '6px 8px';
+  // 2. Find the content inside Notepad - the Write note... + No notes part
+  // We will hide everything EXCEPT the header
+  let header = notepadBox.children[0];
+  let contentParts = [];
+  for(let i=1; i<notepadBox.children.length; i++){
+    contentParts.push(notepadBox.children[i]);
+  }
+  // If no children, hide inner divs
+  if(contentParts.length === 0){
+    notepadBox.querySelectorAll('input, button').forEach(el=>{
+      if(el.parentNode !== notepadBox) contentParts.push(el.parentNode);
     });
-
-    // Keep Change value updating in label
-    setInterval(()=>{
-      let price = document.getElementById('s_price');
-      let qty = document.getElementById('s_qty');
-      let pVal = parseFloat(price ? price.value : 0) || 0;
-      let qVal = parseFloat(qty ? qty.value : 0) || 1;
-      let paid = parseFloat(pay ? pay.value : 0) || 0;
-      let ch = paid - (pVal * qVal);
-      label.innerText = 'Change: $' + (ch > 0 ? ch.toFixed(2) : '0.00');
-    }, 500);
   }
 
-  console.log('v16.17 CHANGE HIDE/SHOW ONLY ON');
-}, 500);
+  // 3. Create Hide/Show button RIGHT ON NOTEPAD header
+  let btn = document.createElement('button');
+  btn.innerText = 'Hide ⬆️';
+  btn.style.cssText = 'float:right;background:#222;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:13px;';
+  // Put button inside header / top of Notepad
+  if(header) header.appendChild(btn);
+  else notepadBox.prepend(btn);
+
+  let hidden = false;
+  btn.addEventListener('click', ()=>{
+    hidden = !hidden;
+    contentParts.forEach(el=>{ el.style.display = hidden ? 'none' : ''; });
+    // Also hide any "No notes" text node
+    btn.innerText = hidden ? 'Show ⬇️' : 'Hide ⬆️';
+  });
+
+  console.log('v16.18 NOTEPAD HIDE/SHOW ON');
+}, 1000);
 </script>
   </body>
   </html>
