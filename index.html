@@ -2066,5 +2066,71 @@ setTimeout(()=>{
   console.log('v16.11 DROPDOWN=SEARCH ON');
 }, 500);
 </script>
+  <script>
+// ===== v16.12 - QTY IN BACKGROUND - PLACEHOLDER ONLY, NOT ACTIVE VALUE =====
+setTimeout(()=>{
+  if(window.qtyBgFixed) return;
+  window.qtyBgFixed = true;
+
+  let qty = document.getElementById('s_qty');
+  let price = document.getElementById('s_price');
+  if(!qty) return;
+
+  // 1. Make Qty EMPTY with BACKGROUND faint text
+  qty.value = '';
+  qty.placeholder = '1 - type qty';
+  qty.style.color = '#000';
+
+  // 2. If anything (fillSale / render) tries to put ACTIVE 1, clear it back to background
+  // Watch for changes every 500ms
+  setInterval(()=>{
+    let q = document.getElementById('s_qty');
+    let p = document.getElementById('s_price');
+    if(!q) return;
+
+    // If qty has ACTIVE 1 but user never typed, make it background instead
+    if(q.value === '1' && q.dataset.userTyped !== '1'){
+      q.value = '';
+      q.placeholder = '1 - type qty';
+    }
+
+    // Keep placeholder always
+    if(!q.placeholder || q.placeholder === ''){
+      q.placeholder = '1 - type qty';
+    }
+
+    // 3. LIVE Total = Price x (Qty typed OR 1 if empty)
+    let tot = document.getElementById('saleTotal');
+    if(tot && p && p.value){
+      let qVal = parseFloat(q.value) || 1; // empty = 1 for total
+      let pVal = parseFloat(p.value) || 0;
+      tot.innerText = 'Total: $' + (pVal * qVal).toFixed(2);
+    }
+  }, 500);
+
+  // 4. When you type Qty, it OVERRIDES - not adds onto
+  qty.addEventListener('focus', ()=>{
+    // If somehow still has 1, clear on focus so typing 5 = 5, not 15
+    if(qty.value === '1' && qty.dataset.userTyped !== '1'){
+      qty.value = '';
+    }
+  });
+  qty.addEventListener('input', ()=>{
+    qty.dataset.userTyped = '1';
+    // Live total as you type
+    let p = document.getElementById('s_price');
+    let tot = document.getElementById('saleTotal');
+    if(tot && p){
+      let qVal = parseFloat(qty.value) || 1;
+      tot.innerText = 'Total: $' + ((parseFloat(p.value)||0) * qVal).toFixed(2);
+    }
+  });
+  qty.addEventListener('blur', ()=>{
+    if(qty.value === '') qty.dataset.userTyped = '';
+  });
+
+  console.log('v16.12 QTY BACKGROUND ON');
+}, 500);
+</script>
   </body>
   </html>
