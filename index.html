@@ -1821,5 +1821,66 @@ document.getElementById('r_cocoG2').addEventListener('input', function(){
 });
 console.log('COCO G2 FIX v13 ON');
   </script>
+  <script>
+// === STRICT NAME CHECK - v15 - CREDIT OR CHANGE MUST HAVE NAME ===
+function getSaleName(){
+  let el = document.getElementById('s_customer') || document.getElementById('custName') || document.getElementById('customerName');
+  return el ? {el: el, val: el.value.trim()} : {el: null, val: ''};
+}
+function getSaleChange(){
+  let change = 0;
+  let el = document.getElementById('changeAmt') || document.getElementById('saleChange') || document.getElementById('change');
+  if(el) change = parseFloat(el.innerText.replace(/[^0-9.-]/g,'')) || parseFloat(el.value) || 0;
+  return change;
+}
+function getPayType(){
+  let el = document.getElementById('s_pay') || document.getElementById('payType');
+  return el ? el.value.toLowerCase() : '';
+}
+
+// This runs BEFORE sale saves - BLOCKS it
+document.addEventListener('click', function(e){
+  let btn = e.target.closest('button');
+  if(!btn) return;
+  if(!/checkout|complete sale|save sale|done/i.test(btn.innerText)) return;
+
+  let name = getSaleName();
+  let pay = getPayType();
+  let change = getSaleChange();
+
+  let needsName = (pay === 'credit' || change > 0.01);
+
+  if(needsName && !name.val){
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    alert('⚠️ STOP BRO!\n\nThis sale has ' + (pay==='credit' ? 'CREDIT' : 'CHANGE $'+change.toFixed(2)) + '\n\nYou MUST enter Customer Name first.\n\nWho will come back for change / pay credit?');
+
+    if(name.el){
+      name.el.style.border = '3px solid red';
+      name.el.style.background = '#ffe0e0';
+      name.el.focus();
+      name.el.placeholder = 'TYPE NAME HERE - REQUIRED!';
+      // remove red after they type
+      name.el.addEventListener('input', function(){
+        this.style.border = '';
+        this.style.background = '';
+      }, {once:true});
+    }
+    return false;
+  }
+
+  // If no name and no credit/change, auto Walk-in so Notepad never blank
+  if(!name.val && name.el){
+    name.el.value = 'Walk-in';
+    let noteEl = document.getElementById('s_note') || document.getElementById('saleNote');
+    if(noteEl && !noteEl.value) noteEl.value = 'Walk-in - Cash Exact - No Change';
+  }
+
+}, true);
+
+console.log('STRICT NAME v15 ON - Credit/Change needs name');
+  </script>
   </body>
   </html>
