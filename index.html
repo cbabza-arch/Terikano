@@ -2044,5 +2044,46 @@ setInterval(()=>{
 }, 500);
 console.log('v16.6 FINAL BY REAL IDs ON - REPLACES v16.5');
 </script>
+  <script>
+// ===== TRAP - CATCH WHO PUTS $2.00 - NO SEARCH NEEDED =====
+setTimeout(()=>{
+  let price = document.getElementById('s_price');
+  let qty = document.getElementById('s_qty');
+  if(!price) return;
+
+  // Trap s_price - whenever ANY code tries to set s_price.value = 2.00, we catch it
+  let realValue = price.value;
+  Object.defineProperty(price, 'value', {
+    get(){ return realValue; },
+    set(v){
+      realValue = v;
+      // If app tries to put 2.00, show WHO did it
+      if(v == '2' || v == '2.00' || v == 2){
+        let stack = new Error().stack || 'no stack';
+        alert('CAUGHT IT!\n\nApp tried to set s_price = ' + v + '\n\nFrom:\n' + stack.slice(0, 800) + '\n\nCOPY THIS ALERT AND SEND TO ME');
+        console.log('TRAP CAUGHT s_price =', v, stack);
+      }
+    },
+    configurable: true
+  });
+
+  // Also trap s_qty
+  let realQty = qty.value;
+  Object.defineProperty(qty, 'value', {
+    get(){ return realQty; },
+    set(v){
+      realQty = v;
+      if(v == '1' || v == 1){
+        let stack = new Error().stack || 'no stack';
+        console.log('TRAP CAUGHT s_qty =', v, stack);
+      }
+    },
+    configurable: true
+  });
+
+  alert('TRAP IS ON\n\nNow:\n1. Select Oil-50\n2. If app puts $2.00, a second alert will pop with the function name\n3. Copy that and send to me');
+}, 1000);
+console.log('TRAP ON');
+</script>
   </body>
   </html>
