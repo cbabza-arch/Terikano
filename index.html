@@ -2061,18 +2061,19 @@ setTimeout(()=>{
 }, 500);
 </script>
   <script>
-// ===== DIAGNOSTIC - FIND SEARCH vs DROPDOWN IDs =====
+// ===== DIAGNOSTIC 2 - ONLY SALE / SEARCH CONTROLS =====
 setTimeout(()=>{
-  // List ALL inputs/selects near Sale form
   let all = document.querySelectorAll('input, select');
-  let msg = 'ALL CONTROLS:\n\n';
+  let msg = 'SALE CONTROLS ONLY:\n\n';
   all.forEach((el,i)=>{
-    if(el.id || el.placeholder || el.type==='search'){
-      msg += i + '. tag=' + el.tagName + ' id=' + el.id + ' placeholder=' + (el.placeholder||'') + ' type=' + el.type + '\n';
+    let id = el.id || '';
+    // Sale = starts with s_ OR contains sale / search / item
+    if(id.startsWith('s_') || id.toLowerCase().includes('sale') || id.toLowerCase().includes('search') || id.toLowerCase().includes('item')){
+      msg += i + '. tag=' + el.tagName + ' id=' + id + ' placeholder=' + (el.placeholder||'') + ' type=' + el.type + '\n';
     }
   });
   console.log(msg);
-  alert(msg + '\n\nCOPY THIS AND SEND TO ME\n\nEspecially: What is the SEARCH box id? And DROPDOWN id?');
+  alert(msg + '\n\nCOPY THIS - This is the Sale + Search list');
 }, 1000);
 </script>
   </body>
