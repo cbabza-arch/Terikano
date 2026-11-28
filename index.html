@@ -1973,13 +1973,27 @@ document.addEventListener('click', function(e){
 }, true);
 console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
-
-<script>
-// ===== v16.8 FINAL - LIVE ACTIVE PRICE - REPLACES v16.7 =====
+  <script>
+// ===== v16.9 FINAL - REMEMBER OIL-50 ACROSS RENDER - REPLACES v16.8 =====
 setTimeout(()=>{
   let origFillSale = window.fillSale;
-  if(!origFillSale || window.fillSaleLiveFixed) return;
-  window.fillSaleLiveFixed = true;
+  if(!origFillSale || window.fillSaleRememberFixed) return;
+  window.fillSaleRememberFixed = true;
+
+  // Remember what YOU picked - survives render + cloud sync
+  let lastPicked = ''; // e.g. "Oil-50"
+  let lastPickedValue = '';
+
+  let sel0 = document.getElementById('s_item');
+  if(sel0){
+    sel0.addEventListener('change', ()=>{
+      let opt = sel0.options[sel0.selectedIndex];
+      if(opt){
+        lastPicked = opt.text; // full text "Oil-50 - $10.00..."
+        lastPickedValue = opt.value;
+      }
+    });
+  }
 
   window.fillSale = function(){
     let result = origFillSale.apply(this, arguments);
@@ -1989,75 +2003,79 @@ setTimeout(()=>{
     let sel = document.getElementById('s_item');
     if(!price || !sel) return result;
 
-    // 1. Get LIVE price from SELECTED item text, NOT first item
-    // "Oil-50 - $10.00 (Stock: 20)" -> 10.00
-    // "Bentin - $2.00 (Stock: 600)" -> 2.00
+    // 1. RESTORE your selection if render reset it to Bentin
+    if(lastPicked){
+      let foundIdx = -1;
+      for(let i=0;i<sel.options.length;i++){
+        // Match by name "Oil-50" or by value
+        if(sel.options[i].text.includes(lastPicked.split(' - $')[0]) || sel.options[i].value === lastPickedValue){
+          foundIdx = i;
+          break;
+        }
+      }
+      if(foundIdx !== -1 && sel.selectedIndex !== foundIdx){
+        sel.selectedIndex = foundIdx;
+        // Also set value so render knows
+        sel.value = sel.options[foundIdx].value;
+      }
+    } else {
+      // First time - save current
+      let opt = sel.options[sel.selectedIndex];
+      if(opt){ lastPicked = opt.text; lastPickedValue = opt.value; }
+    }
+
+    // 2. LIVE price from RESTORED selection, not first item
     let opt = sel.options[sel.selectedIndex];
     let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
     let livePrice = m ? parseFloat(m[1]) : 0;
 
-    // 2. If you have NOT typed yet, set LIVE price ACTIVE
     if(price.dataset.userTyped !== '1'){
       price.value = livePrice.toFixed(2);
       price.placeholder = livePrice.toFixed(2) + ' - type to override';
-      price.style.color = '#000';
-      price.style.background = '#fff';
     }
-
-    // 3. Qty default 1 if you haven't typed
     if(qty && qty.dataset.userTyped !== '1'){
       if(!qty.value) qty.value = '1';
-      qty.placeholder = '1';
     }
-
-    // 4. LIVE Total = Price x Qty
     let tot = document.getElementById('saleTotal');
     if(tot && price.value && qty.value){
-      let total = parseFloat(price.value) * parseFloat(qty.value);
-      tot.innerText = 'Total: $' + total.toFixed(2);
+      tot.innerText = 'Total: $' + ((parseFloat(price.value)||0) * (parseFloat(qty.value)||0)).toFixed(2);
     }
-
     return result;
   };
 
-  // 5. When you TYPE price/qty, your typing wins
+  // 3. Keep remembering on every change - even after render rebuilds select
+  setInterval(()=>{
+    let sel = document.getElementById('s_item');
+    if(sel && !sel.dataset.rememberHooked){
+      sel.dataset.rememberHooked = '1';
+      sel.addEventListener('change', ()=>{
+        let opt = sel.options[sel.selectedIndex];
+        if(opt){ lastPicked = opt.text; lastPickedValue = opt.value; }
+        let p = document.getElementById('s_price');
+        let q = document.getElementById('s_qty');
+        if(p) p.dataset.userTyped = '';
+        if(q) q.dataset.userTyped = '';
+        setTimeout(()=>{ window.fillSale(); }, 50);
+      });
+    }
+  }, 500);
+
+  // 4. Your typing still wins
   let price = document.getElementById('s_price');
   let qty = document.getElementById('s_qty');
-  let sel = document.getElementById('s_item');
   if(price && !price.dataset.hooked){
     price.dataset.hooked = '1';
-    price.addEventListener('input', ()=>{
-      price.dataset.userTyped = '1';
-      // Live total as you type
-      let q = document.getElementById('s_qty');
-      let tot = document.getElementById('saleTotal');
-      if(tot && q) tot.innerText = 'Total: $' + ((parseFloat(price.value)||0) * (parseFloat(q.value)||0)).toFixed(2);
-    });
+    price.addEventListener('input', ()=>{ price.dataset.userTyped = '1'; });
     price.addEventListener('focus', ()=>{ price.dataset.userTyped = '1'; });
   }
   if(qty && !qty.dataset.hooked){
     qty.dataset.hooked = '1';
-    qty.addEventListener('input', ()=>{
-      qty.dataset.userTyped = '1';
-      let p = document.getElementById('s_price');
-      let tot = document.getElementById('saleTotal');
-      if(tot && p) tot.innerText = 'Total: $' + ((parseFloat(p.value)||0) * (parseFloat(qty.value)||0)).toFixed(2);
-    });
+    qty.addEventListener('input', ()=>{ qty.dataset.userTyped = '1'; });
     qty.addEventListener('focus', ()=>{ qty.dataset.userTyped = '1'; });
   }
 
-  // 6. New item = reset typing, show NEW live price
-  if(sel && !sel.dataset.hookedLive){
-    sel.dataset.hookedLive = '1';
-    sel.addEventListener('change', ()=>{
-      if(price) price.dataset.userTyped = '';
-      if(qty) qty.dataset.userTyped = '';
-      setTimeout(()=>{ window.fillSale(); }, 50);
-    });
-  }
-
   window.fillSale();
-  console.log('v16.8 LIVE PRICE ON');
+  console.log('v16.9 REMEMBER SELECTION ON');
 }, 500);
 </script>
   </body>
