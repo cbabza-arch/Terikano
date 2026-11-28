@@ -1974,26 +1974,31 @@ document.addEventListener('click', function(e){
 console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
   <script>
-// ===== v16.9 FINAL - REMEMBER OIL-50 ACROSS RENDER - REPLACES v16.8 =====
+// ===== v16.10 FINAL - NO LOCK - LET YOU CHANGE - REPLACES v16.9 =====
 setTimeout(()=>{
   let origFillSale = window.fillSale;
-  if(!origFillSale || window.fillSaleRememberFixed) return;
-  window.fillSaleRememberFixed = true;
+  if(!origFillSale || window.fillSaleNoLockFixed) return;
+  window.fillSaleNoLockFixed = true;
 
-  // Remember what YOU picked - survives render + cloud sync
-  let lastPicked = ''; // e.g. "Oil-50"
-  let lastPickedValue = '';
+  // NULL at start - we do NOT assume Bentin. Only remember AFTER YOU change.
+  let lastPickedText = null;
+  let lastPickedValue = null;
 
-  let sel0 = document.getElementById('s_item');
-  if(sel0){
-    sel0.addEventListener('change', ()=>{
-      let opt = sel0.options[sel0.selectedIndex];
+  // Use DOCUMENT listener - survives render rebuilding s_item
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id === 's_item'){
+      let opt = e.target.options[e.target.selectedIndex];
       if(opt){
-        lastPicked = opt.text; // full text "Oil-50 - $10.00..."
+        lastPickedText = opt.text;
         lastPickedValue = opt.value;
+        // Reset typing so new item gets its live price
+        let p = document.getElementById('s_price');
+        let q = document.getElementById('s_qty');
+        if(p) p.dataset.userTyped = '';
+        if(q) q.dataset.userTyped = '';
       }
-    });
-  }
+    }
+  }, true);
 
   window.fillSale = function(){
     let result = origFillSale.apply(this, arguments);
@@ -2003,35 +2008,29 @@ setTimeout(()=>{
     let sel = document.getElementById('s_item');
     if(!price || !sel) return result;
 
-    // 1. RESTORE your selection if render reset it to Bentin
-    if(lastPicked){
+    // 1. ONLY restore if YOU actually picked something before
+    // If lastPicked is null, DO NOT force - let app show what it shows
+    if(lastPickedText){
       let foundIdx = -1;
       for(let i=0;i<sel.options.length;i++){
-        // Match by name "Oil-50" or by value
-        if(sel.options[i].text.includes(lastPicked.split(' - $')[0]) || sel.options[i].value === lastPickedValue){
-          foundIdx = i;
-          break;
+        let name = lastPickedText.split(' - $')[0]; // "Oil-50"
+        if(sel.options[i].text.includes(name) || sel.options[i].value === lastPickedValue){
+          foundIdx = i; break;
         }
       }
+      // Only restore if render reset it to something else
       if(foundIdx !== -1 && sel.selectedIndex !== foundIdx){
         sel.selectedIndex = foundIdx;
-        // Also set value so render knows
-        sel.value = sel.options[foundIdx].value;
       }
-    } else {
-      // First time - save current
-      let opt = sel.options[sel.selectedIndex];
-      if(opt){ lastPicked = opt.text; lastPickedValue = opt.value; }
     }
 
-    // 2. LIVE price from RESTORED selection, not first item
+    // 2. LIVE price from CURRENT selection (whatever you picked)
     let opt = sel.options[sel.selectedIndex];
     let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
     let livePrice = m ? parseFloat(m[1]) : 0;
 
     if(price.dataset.userTyped !== '1'){
       price.value = livePrice.toFixed(2);
-      price.placeholder = livePrice.toFixed(2) + ' - type to override';
     }
     if(qty && qty.dataset.userTyped !== '1'){
       if(!qty.value) qty.value = '1';
@@ -2043,24 +2042,7 @@ setTimeout(()=>{
     return result;
   };
 
-  // 3. Keep remembering on every change - even after render rebuilds select
-  setInterval(()=>{
-    let sel = document.getElementById('s_item');
-    if(sel && !sel.dataset.rememberHooked){
-      sel.dataset.rememberHooked = '1';
-      sel.addEventListener('change', ()=>{
-        let opt = sel.options[sel.selectedIndex];
-        if(opt){ lastPicked = opt.text; lastPickedValue = opt.value; }
-        let p = document.getElementById('s_price');
-        let q = document.getElementById('s_qty');
-        if(p) p.dataset.userTyped = '';
-        if(q) q.dataset.userTyped = '';
-        setTimeout(()=>{ window.fillSale(); }, 50);
-      });
-    }
-  }, 500);
-
-  // 4. Your typing still wins
+  // 3. Your typing wins
   let price = document.getElementById('s_price');
   let qty = document.getElementById('s_qty');
   if(price && !price.dataset.hooked){
@@ -2075,8 +2057,23 @@ setTimeout(()=>{
   }
 
   window.fillSale();
-  console.log('v16.9 REMEMBER SELECTION ON');
+  console.log('v16.10 NO LOCK ON');
 }, 500);
+</script>
+  <script>
+// ===== DIAGNOSTIC - FIND SEARCH vs DROPDOWN IDs =====
+setTimeout(()=>{
+  // List ALL inputs/selects near Sale form
+  let all = document.querySelectorAll('input, select');
+  let msg = 'ALL CONTROLS:\n\n';
+  all.forEach((el,i)=>{
+    if(el.id || el.placeholder || el.type==='search'){
+      msg += i + '. tag=' + el.tagName + ' id=' + el.id + ' placeholder=' + (el.placeholder||'') + ' type=' + el.type + '\n';
+    }
+  });
+  console.log(msg);
+  alert(msg + '\n\nCOPY THIS AND SEND TO ME\n\nEspecially: What is the SEARCH box id? And DROPDOWN id?');
+}, 1000);
 </script>
   </body>
   </html>
