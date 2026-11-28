@@ -1975,76 +1975,89 @@ console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
 
 <script>
-// ===== v16.7 FINAL - OVERRIDE fillSale - THE REAL CULPRIT - REPLACES v16.5 / v16.6 =====
+// ===== v16.8 FINAL - LIVE ACTIVE PRICE - REPLACES v16.7 =====
 setTimeout(()=>{
-  // 1. Save original fillSale
   let origFillSale = window.fillSale;
-  if(!origFillSale){
-    console.log('fillSale NOT FOUND YET - retry');
-    return;
-  }
-  if(window.fillSaleFixed) return;
-  window.fillSaleFixed = true;
+  if(!origFillSale || window.fillSaleLiveFixed) return;
+  window.fillSaleLiveFixed = true;
 
-  // 2. Replace fillSale - let it do its job, then we force EMPTY
   window.fillSale = function(){
-    // Let original fillSale run first (so s_item options etc still work)
     let result = origFillSale.apply(this, arguments);
 
     let price = document.getElementById('s_price');
     let qty = document.getElementById('s_qty');
     let sel = document.getElementById('s_item');
+    if(!price || !sel) return result;
 
-    if(price && price.dataset.userTyped !== '1'){
-      // EMPTY value, background faint text only
-      // Use real property - bypass trap
-      let proto = Object.getPrototypeOf(price);
-      // Directly clear via original setter to avoid loop
-      price.value = '';
-      let opt = sel ? sel.options[sel.selectedIndex] : null;
-      let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
-      price.placeholder = m ? m[1] + ' - type to override' : '0.00 - type to override';
-      let tot = document.getElementById('saleTotal');
-      if(tot) tot.innerText = 'Total: $0.00';
+    // 1. Get LIVE price from SELECTED item text, NOT first item
+    // "Oil-50 - $10.00 (Stock: 20)" -> 10.00
+    // "Bentin - $2.00 (Stock: 600)" -> 2.00
+    let opt = sel.options[sel.selectedIndex];
+    let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
+    let livePrice = m ? parseFloat(m[1]) : 0;
+
+    // 2. If you have NOT typed yet, set LIVE price ACTIVE
+    if(price.dataset.userTyped !== '1'){
+      price.value = livePrice.toFixed(2);
+      price.placeholder = livePrice.toFixed(2) + ' - type to override';
+      price.style.color = '#000';
+      price.style.background = '#fff';
     }
+
+    // 3. Qty default 1 if you haven't typed
     if(qty && qty.dataset.userTyped !== '1'){
-      qty.value = '';
-      qty.placeholder = '0 - type qty';
+      if(!qty.value) qty.value = '1';
+      qty.placeholder = '1';
     }
+
+    // 4. LIVE Total = Price x Qty
+    let tot = document.getElementById('saleTotal');
+    if(tot && price.value && qty.value){
+      let total = parseFloat(price.value) * parseFloat(qty.value);
+      tot.innerText = 'Total: $' + total.toFixed(2);
+    }
+
     return result;
   };
 
-  // 3. Your typing wins - never overwrite after you type
+  // 5. When you TYPE price/qty, your typing wins
   let price = document.getElementById('s_price');
   let qty = document.getElementById('s_qty');
+  let sel = document.getElementById('s_item');
   if(price && !price.dataset.hooked){
     price.dataset.hooked = '1';
-    price.addEventListener('input', ()=>{ price.dataset.userTyped = '1'; });
+    price.addEventListener('input', ()=>{
+      price.dataset.userTyped = '1';
+      // Live total as you type
+      let q = document.getElementById('s_qty');
+      let tot = document.getElementById('saleTotal');
+      if(tot && q) tot.innerText = 'Total: $' + ((parseFloat(price.value)||0) * (parseFloat(q.value)||0)).toFixed(2);
+    });
     price.addEventListener('focus', ()=>{ price.dataset.userTyped = '1'; });
-    price.addEventListener('blur', ()=>{ if(price.value==='') price.dataset.userTyped=''; });
   }
   if(qty && !qty.dataset.hooked){
     qty.dataset.hooked = '1';
-    qty.addEventListener('input', ()=>{ qty.dataset.userTyped = '1'; });
+    qty.addEventListener('input', ()=>{
+      qty.dataset.userTyped = '1';
+      let p = document.getElementById('s_price');
+      let tot = document.getElementById('saleTotal');
+      if(tot && p) tot.innerText = 'Total: $' + ((parseFloat(p.value)||0) * (parseFloat(qty.value)||0)).toFixed(2);
+    });
     qty.addEventListener('focus', ()=>{ qty.dataset.userTyped = '1'; });
-    qty.addEventListener('blur', ()=>{ if(qty.value==='') qty.dataset.userTyped=''; });
   }
 
-  // 4. New item = EMPTY again
-  let sel = document.getElementById('s_item');
-  if(sel && !sel.dataset.hooked2){
-    sel.dataset.hooked2 = '1';
+  // 6. New item = reset typing, show NEW live price
+  if(sel && !sel.dataset.hookedLive){
+    sel.dataset.hookedLive = '1';
     sel.addEventListener('change', ()=>{
       if(price) price.dataset.userTyped = '';
       if(qty) qty.dataset.userTyped = '';
-      // fillSale will run via render, our override will make it empty
       setTimeout(()=>{ window.fillSale(); }, 50);
     });
   }
 
-  // Run once now
   window.fillSale();
-  console.log('v16.7 fillSale OVERRIDDEN - $2 KILLED');
+  console.log('v16.8 LIVE PRICE ON');
 }, 500);
 </script>
   </body>
