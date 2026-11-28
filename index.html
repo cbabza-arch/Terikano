@@ -2044,5 +2044,39 @@ document.addEventListener('click', function(e){
 }, true);
 console.log('v18.1 CLEAR EVERYTHING ON');
   </script>
+  <script>
+// ===== v16.1 - AUTO PRICE FOR *ALL* ITEMS, NOT JUST BENTIN/KARATIN =====
+let itemSel2 = document.querySelector('select');
+document.querySelectorAll('select').forEach(s=>{
+  if(s.options.length > 5) itemSel2 = s; // the big Select Item dropdown
+});
+if(itemSel2){
+  let priceEl2 = null;
+  document.querySelectorAll('label').forEach(l=>{
+    if(l.innerText.includes('Sell Price')){
+      let p = l.parentElement.querySelector('input');
+      if(p) priceEl2 = p;
+    }
+  });
+  if(priceEl2){
+    // On EVERY change, force price to item price
+    itemSel2.addEventListener('change', function(){
+      let opt = this.options[this.selectedIndex];
+      let txt = opt ? opt.text : '';
+      // Find $10.00 or $2.00 in "Oil 50 - $10.00 (Stock: 20)"
+      let m = txt.match(/\$([\d.]+)/);
+      if(m){
+        priceEl2.value = m[1];
+        priceEl2.style.border = '2px solid green';
+        setTimeout(()=>{ priceEl2.style.border=''; }, 800);
+        // Trigger total recalc
+        priceEl2.dispatchEvent(new Event('input', {bubbles:true}));
+        priceEl2.dispatchEvent(new Event('change', {bubbles:true}));
+      }
+    });
+  }
+}
+console.log('v16.1 ALL ITEMS AUTO PRICE ON');
+  </script>
   </body>
   </html>
