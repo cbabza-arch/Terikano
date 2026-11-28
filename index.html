@@ -1882,5 +1882,80 @@ document.addEventListener('click', function(e){
 
 console.log('STRICT NAME v15 ON - Credit/Change needs name');
   </script>
+  <script>
+// ===== COMBINED v15.1 + v16 + OWE TRACK - PASTE ONCE =====
+
+// --- PART 1: STRICT NAME + OWE NOTE (v15.1) ---
+document.addEventListener('click', function(e){
+  let btn = e.target.closest('button');
+  if(!btn) return;
+  if(!/checkout|complete sale|save sale|done/i.test(btn.innerText)) return;
+
+  let nameEl = document.getElementById('s_customer') || document.getElementById('custName') || document.getElementById('customerName');
+  let name = nameEl ? nameEl.value.trim() : '';
+  let payEl = document.getElementById('s_pay') || document.getElementById('payType');
+  let pay = payEl ? payEl.value.toLowerCase() : '';
+
+  function getNum(ids){
+    for(let id of ids){
+      let el = document.getElementById(id);
+      if(el){ let v = parseFloat((el.innerText||el.value||'').replace(/[^0-9.-]/g,''))||0; if(v>0) return v; }
+    } return 0;
+  }
+  let change = getNum(['changeAmt','saleChange','change']);
+  let owe = getNum(['oweAmt','saleOwe','owe','balance','due','remaining','toPay','payLater']);
+
+  let reason = '';
+  if(pay==='credit') reason='CREDIT';
+  else if(change>0.01) reason='CHANGE $'+change.toFixed(2);
+  else if(owe>0.01) reason='OWE $'+owe.toFixed(2)+' - Pay Later';
+  else if(pay.includes('later')||pay.includes('owe')) reason='PAY LATER / OWE';
+
+  if(reason && !name){
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    alert('⚠️ STOP BRO!\n\nSale has '+reason+'\n\nMUST enter Customer Name!\nWho will come back to pay / collect?');
+    if(nameEl){
+      nameEl.style.border='3px solid red'; nameEl.style.background='#ffe0e0'; nameEl.focus();
+      nameEl.placeholder='TYPE NAME HERE - REQUIRED!';
+      nameEl.addEventListener('input', function(){ this.style.border=''; this.style.background=''; }, {once:true});
+    }
+    return false;
+  }
+  if(!name && nameEl) nameEl.value='Walk-in';
+
+  // AUTO NOTE for Notepad - so Owe is never lost
+  if(reason){
+    let noteEl = document.getElementById('s_note') || document.getElementById('saleNote');
+    if(noteEl){
+      let finalName = nameEl ? nameEl.value : 'Walk-in';
+      let time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      if(!noteEl.value.includes('OWE') && !noteEl.value.includes('CHANGE')){
+        noteEl.value = (noteEl.value + ' ['+time+' - '+reason+' - '+finalName+']').trim();
+      }
+    }
+  }
+}, true);
+
+// --- PART 2: BENTIN / KARATIN + EMPTY PRICE (v16) ---
+let allSels = document.querySelectorAll('select');
+let itemSel = null;
+allSels.forEach(s=>{ if(s.innerHTML.includes('Bentin')||s.innerHTML.includes('Karatin')) itemSel=s; });
+if(itemSel){
+  let priceEl = null;
+  document.querySelectorAll('label').forEach(l=>{
+    if(l.innerText.includes('Sell Price')){ let p=l.parentElement.querySelector('input'); if(p) priceEl=p; }
+  });
+  if(priceEl){
+    priceEl.value=''; priceEl.placeholder='e.g. 2.00 - auto from item'; priceEl.dataset.manual='0';
+    priceEl.addEventListener('input', ()=>{ priceEl.dataset.manual='1'; });
+  }
+  itemSel.addEventListener('change', function(){
+    let opt=this.options[this.selectedIndex]; let txt=opt?opt.text:'';
+    let m=txt.match(/\$([\d.]+)/); let price=m?m[1]:'';
+    if(priceEl && priceEl.dataset.manual==='0'){ priceEl.value=price; priceEl.placeholder='e.g. '+price; }
+  });
+}
+console.log('COMBINED v15.1+v16 ON');
+  </script>
   </body>
   </html>
