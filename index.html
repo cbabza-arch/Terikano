@@ -2302,5 +2302,54 @@ setTimeout(()=>{
   console.log('v16.15 CHANGE ON');
 }, 500);
   </script>
+  <script>
+// ===== v16.16 - HIDE BIG LONG NOTEPAD LIST, KEEP CHANGE VISIBLE =====
+setTimeout(()=>{
+  if(window.hideListFixed) return;
+  window.hideListFixed = true;
+
+  // Find the BIG LONG list - the one with many items
+  // Usually it's a div / ul / table with > 10 children
+  let all = document.querySelectorAll('div, ul, table, tbody');
+  let bigList = null;
+  let maxKids = 0;
+  all.forEach(el=>{
+    if(el.children.length > maxKids && el.children.length > 5){
+      // Don't pick whole page
+      if(el.id !== '' || el.className !== ''){
+        maxKids = el.children.length;
+        bigList = el;
+      }
+    }
+  });
+
+  if(!bigList){
+    console.log('No big list found - send me screenshot of Notepad');
+    return;
+  }
+
+  // 1. Create HIDE / SHOW button on top of list
+  let btn = document.createElement('button');
+  btn.innerText = 'Hide List ⬆️ - Show Change Only';
+  btn.style.cssText = 'width:100%;padding:8px;background:#222;color:#fff;border:none;border-radius:6px;margin-bottom:5px;';
+  bigList.parentNode.insertBefore(btn, bigList);
+
+  let hidden = false;
+  btn.addEventListener('click', ()=>{
+    hidden = !hidden;
+    bigList.style.display = hidden ? 'none' : '';
+    btn.innerText = hidden ? 'Show List ⬇️' : 'Hide List ⬆️ - Show Change Only';
+  });
+
+  // 2. Auto-hide if list is VERY long ( > 15 items )
+  if(maxKids > 15){
+    bigList.style.display = 'none';
+    hidden = true;
+    btn.innerText = 'Show List ⬇️ (' + maxKids + ' items hidden)';
+  }
+
+  console.log('v16.16 HIDE LIST ON - ' + maxKids + ' items');
+}, 1000);
+  </script>
   </body>
   </html>
