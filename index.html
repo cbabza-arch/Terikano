@@ -2242,5 +2242,65 @@ setTimeout(()=>{
   console.log('v16.14 DECIMAL QTY ON');
 }, 500);
   </script>
+  <script>
+// ===== v16.15 - CHANGE ONLY - SMALL PATCH =====
+setTimeout(()=>{
+  if(window.changeFixed) return;
+  window.changeFixed = true;
+
+  let pay = document.getElementById('s_pay');
+  if(!pay) return;
+
+  pay.type = 'number';
+  pay.step = 'any';
+  pay.inputMode = 'decimal';
+  pay.placeholder = 'Pay e.g. 20';
+
+  function updateChange(){
+    let price = document.getElementById('s_price');
+    let qty = document.getElementById('s_qty');
+    let pVal = parseFloat(price ? price.value : 0) || 0;
+    let qVal = parseFloat(qty ? qty.value : 0) || 1;
+    let total = pVal * qVal;
+    let paid = parseFloat(pay.value) || 0;
+    let change = paid - total;
+
+    // 1. Update Total
+    let tot = document.getElementById('saleTotal');
+    if(tot) tot.innerText = 'Total: $' + total.toFixed(2);
+
+    // 2. Find ANY element that says Change - Notepad / Receipt
+    // and update it
+    let all = document.querySelectorAll('div, span, p, td, b');
+    all.forEach(el=>{
+      let t = (el.innerText || '').toLowerCase();
+      // Only leaf elements that say "change:" to avoid updating whole page
+      if(t.startsWith('change') && el.children.length === 0){
+        el.innerText = 'Change: $' + (change > 0 ? change.toFixed(2) : '0.00');
+      }
+    });
+
+    // 3. If NO Change element exists, show it under Pay box
+    if(!document.getElementById('myChangeBox') && paid > 0){
+      let box = document.createElement('div');
+      box.id = 'myChangeBox';
+      box.style.cssText = 'font-weight:bold;font-size:18px;margin-top:5px;color:green;';
+      box.innerText = 'Change: $' + (change > 0 ? change.toFixed(2) : '0.00');
+      pay.parentNode.appendChild(box);
+    } else {
+      let box = document.getElementById('myChangeBox');
+      if(box) box.innerText = 'Change: $' + (change > 0 ? change.toFixed(2) : '0.00');
+    }
+  }
+
+  pay.addEventListener('input', updateChange);
+  pay.addEventListener('change', updateChange);
+
+  // Also update when Price/Qty change
+  setInterval(updateChange, 1000);
+
+  console.log('v16.15 CHANGE ON');
+}, 500);
+  </script>
   </body>
   </html>
