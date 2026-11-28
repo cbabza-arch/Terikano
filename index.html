@@ -1837,65 +1837,45 @@ function getPayType(){
   let el = document.getElementById('s_pay') || document.getElementById('payType');
   return el ? el.value.toLowerCase() : '';
 }
-
-// This runs BEFORE sale saves - BLOCKS it
 document.addEventListener('click', function(e){
   let btn = e.target.closest('button');
   if(!btn) return;
   if(!/checkout|complete sale|save sale|done/i.test(btn.innerText)) return;
-
   let name = getSaleName();
   let pay = getPayType();
   let change = getSaleChange();
-
   let needsName = (pay === 'credit' || change > 0.01);
-
   if(needsName && !name.val){
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     alert('⚠️ STOP BRO!\n\nThis sale has ' + (pay==='credit' ? 'CREDIT' : 'CHANGE $'+change.toFixed(2)) + '\n\nYou MUST enter Customer Name first.\n\nWho will come back for change / pay credit?');
-
     if(name.el){
       name.el.style.border = '3px solid red';
       name.el.style.background = '#ffe0e0';
       name.el.focus();
       name.el.placeholder = 'TYPE NAME HERE - REQUIRED!';
-      // remove red after they type
-      name.el.addEventListener('input', function(){
-        this.style.border = '';
-        this.style.background = '';
-      }, {once:true});
+      name.el.addEventListener('input', function(){ this.style.border=''; this.style.background=''; }, {once:true});
     }
     return false;
   }
-
-  // If no name and no credit/change, auto Walk-in so Notepad never blank
   if(!name.val && name.el){
     name.el.value = 'Walk-in';
     let noteEl = document.getElementById('s_note') || document.getElementById('saleNote');
     if(noteEl && !noteEl.value) noteEl.value = 'Walk-in - Cash Exact - No Change';
   }
-
 }, true);
+console.log('STRICT NAME v15 ON');
+</script>
 
-console.log('STRICT NAME v15 ON - Credit/Change needs name');
-  </script>
-  <script>
-// ===== COMBINED v15.1 + v16 + OWE TRACK - PASTE ONCE =====
-
-// --- PART 1: STRICT NAME + OWE NOTE (v15.1) ---
+<script>
+// ===== COMBINED v15.1 - STRICT NAME + OWE TRACK - v16 REMOVED FROM HERE =====
 document.addEventListener('click', function(e){
   let btn = e.target.closest('button');
   if(!btn) return;
   if(!/checkout|complete sale|save sale|done/i.test(btn.innerText)) return;
-
   let nameEl = document.getElementById('s_customer') || document.getElementById('custName') || document.getElementById('customerName');
   let name = nameEl ? nameEl.value.trim() : '';
   let payEl = document.getElementById('s_pay') || document.getElementById('payType');
   let pay = payEl ? payEl.value.toLowerCase() : '';
-
   function getNum(ids){
     for(let id of ids){
       let el = document.getElementById(id);
@@ -1904,13 +1884,11 @@ document.addEventListener('click', function(e){
   }
   let change = getNum(['changeAmt','saleChange','change']);
   let owe = getNum(['oweAmt','saleOwe','owe','balance','due','remaining','toPay','payLater']);
-
   let reason = '';
   if(pay==='credit') reason='CREDIT';
   else if(change>0.01) reason='CHANGE $'+change.toFixed(2);
   else if(owe>0.01) reason='OWE $'+owe.toFixed(2)+' - Pay Later';
   else if(pay.includes('later')||pay.includes('owe')) reason='PAY LATER / OWE';
-
   if(reason && !name){
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     alert('⚠️ STOP BRO!\n\nSale has '+reason+'\n\nMUST enter Customer Name!\nWho will come back to pay / collect?');
@@ -1922,8 +1900,6 @@ document.addEventListener('click', function(e){
     return false;
   }
   if(!name && nameEl) nameEl.value='Walk-in';
-
-  // AUTO NOTE for Notepad - so Owe is never lost
   if(reason){
     let noteEl = document.getElementById('s_note') || document.getElementById('saleNote');
     if(noteEl){
@@ -1935,53 +1911,26 @@ document.addEventListener('click', function(e){
     }
   }
 }, true);
+console.log('COMBINED v15.1 ON - v16 REMOVED');
+</script>
 
-// --- PART 2: BENTIN / KARATIN + EMPTY PRICE (v16) ---
-let allSels = document.querySelectorAll('select');
-let itemSel = null;
-allSels.forEach(s=>{ if(s.innerHTML.includes('Bentin')||s.innerHTML.includes('Karatin')) itemSel=s; });
-if(itemSel){
-  let priceEl = null;
-  document.querySelectorAll('label').forEach(l=>{
-    if(l.innerText.includes('Sell Price')){ let p=l.parentElement.querySelector('input'); if(p) priceEl=p; }
-  });
-  if(priceEl){
-    priceEl.value=''; priceEl.placeholder='e.g. 2.00 - auto from item'; priceEl.dataset.manual='0';
-    priceEl.addEventListener('input', ()=>{ priceEl.dataset.manual='1'; });
-  }
-  itemSel.addEventListener('change', function(){
-    let opt=this.options[this.selectedIndex]; let txt=opt?opt.text:'';
-    let m=txt.match(/\$([\d.]+)/); let price=m?m[1]:'';
-    if(priceEl && priceEl.dataset.manual==='0'){ priceEl.value=price; priceEl.placeholder='e.g. '+price; }
-  });
-}
-console.log('COMBINED v15.1+v16 ON');
-  </script>
-  <script>
+<script>
 // ===== v17 - PAID BUTTON ADDS TO CASH, NOT TO SALES =====
 document.addEventListener('click', function(e){
   let btn = e.target.closest('button');
   if(!btn) return;
   if(!/paid/i.test(btn.innerText)) return;
-
-  // Find the note box - the OWE note
   let noteBox = btn.closest('div');
   let fullText = noteBox ? noteBox.innerText : document.body.innerText;
-  // Find $ amount in that note, like OWE $6.00 or OWE CHANGE $6.00
   let m = fullText.match(/OWE[^$]*\$([\d.]+)/i) || fullText.match(/\$([\d.]+)/);
   let amt = m ? parseFloat(m[1]) : 0;
-
   if(amt > 0){
-    // 1. Ask confirm so you don't double-add by mistake
     if(!confirm('Collect OWE $' + amt.toFixed(2) + ' ?\n\nCash will go UP by $' + amt.toFixed(2) + '\nSales will STAY SAME\nOwe will go to $0\n\nPress OK to confirm.')){
       e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
       return false;
     }
-
-    // 2. Add to CASH display
     let cashEls = document.querySelectorAll('*');
     cashEls.forEach(el=>{
-      // Find the Cash box on dashboard - looks like "Cash $30.00"
       if(el.children.length===0 && /cash/i.test(el.innerText) && el.innerText.includes('$')){
         let oldM = el.innerText.match(/\$([\d.]+)/);
         if(oldM){
@@ -1991,92 +1940,77 @@ document.addEventListener('click', function(e){
         }
       }
     });
-
-    // 3. Try to update stored cash in localStorage (if your app uses it)
     try{
-      for(let key of Object.keys(localStorage)){
-        let val = localStorage.getItem(key);
-        if(val && val.includes('cash') && val.includes('30')){
-          // Don't break it - just save a record of collection
-        }
-      }
-      // Save a collection log so you have proof
       let log = JSON.parse(localStorage.getItem('owe_collected_log') || '[]');
       log.push({amt: amt, time: new Date().toLocaleString(), note: fullText.slice(0,100)});
       localStorage.setItem('owe_collected_log', JSON.stringify(log));
     }catch(err){}
-
-    // 4. Let your old Paid code run to delete the note
-    setTimeout(()=>{
-      alert('✅ COLLECTED $' + amt.toFixed(2) + '\n\nCash is now UP by $' + amt.toFixed(2) + '\nSales did NOT change\nOwe is now $0');
-    }, 300);
+    setTimeout(()=>{ alert('✅ COLLECTED $' + amt.toFixed(2) + '\n\nCash is now UP by $' + amt.toFixed(2) + '\nSales did NOT change\nOwe is now $0'); }, 300);
   }
 }, true);
 console.log('v17 PAID TO CASH ON');
-  </script>
-  <script>
+</script>
+
+<script>
 // ===== v18.1 - CLEAR DATA CLEARS *EVERYTHING* - PROFIT + BANK + ALL =====
 document.addEventListener('click', function(e){
   let btn = e.target.closest('button');
   if(!btn) return;
   if(!/clear data|clear all|reset/i.test(btn.innerText)) return;
-
   if(!confirm('⚠️ CLEAR EVERYTHING?\n\nThis will CLEAR ALL:\n- Sales / Cash\n- Notepad / OWE\n- BANK Ledger\n- PROFIT Ledger\n- Coco / Credit / Debit\n- Person Ledger\n- Capital / Report / History\n\nALL will go to $0. Cannot undo.\n\nAre you SURE?')){
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     return false;
   }
-
   try{
-    // 1. Clear ALL localStorage - no filter, so Profit + Bank cannot hide
     localStorage.clear();
-    // 2. Clear session
     sessionStorage.clear();
-    // 3. Try to clear IndexedDB if app uses it
     if(window.indexedDB && indexedDB.databases){
-      indexedDB.databases().then(dbs=>{
-        dbs.forEach(db=>{ if(db.name) indexedDB.deleteDatabase(db.name); });
-      }).catch(()=>{});
+      indexedDB.databases().then(dbs=>{ dbs.forEach(db=>{ if(db.name) indexedDB.deleteDatabase(db.name); }); }).catch(()=>{});
     }
   }catch(err){}
-
   alert('✅ ALL CLEARED\n\n- Bank Ledger $0\n- Profit Ledger $0\n- Sales $0\n- Cash $0\n- Notepad Empty\n\nPage will reload now.');
   setTimeout(()=>{ location.reload(); }, 600);
 }, true);
 console.log('v18.1 CLEAR EVERYTHING ON');
-  </script>
-  <script>
-// ===== v16.1 - AUTO PRICE FOR *ALL* ITEMS, NOT JUST BENTIN/KARATIN =====
-let itemSel2 = document.querySelector('select');
+</script>
+
+<script>
+// ===== v16.2 - AUTO PRICE LOCK - STOPS SNAP BACK TO $2 - ONLY ONE PRICE SCRIPT =====
+let sel = null;
 document.querySelectorAll('select').forEach(s=>{
-  if(s.options.length > 5) itemSel2 = s; // the big Select Item dropdown
+  if(s.options.length > 5) sel = s;
 });
-if(itemSel2){
-  let priceEl2 = null;
+if(sel){
+  let freshSel = sel.cloneNode(true);
+  sel.parentNode.replaceChild(freshSel, sel);
+  sel = freshSel;
+  let priceInput = null;
   document.querySelectorAll('label').forEach(l=>{
     if(l.innerText.includes('Sell Price')){
       let p = l.parentElement.querySelector('input');
-      if(p) priceEl2 = p;
+      if(p) priceInput = p;
     }
   });
-  if(priceEl2){
-    // On EVERY change, force price to item price
-    itemSel2.addEventListener('change', function(){
-      let opt = this.options[this.selectedIndex];
-      let txt = opt ? opt.text : '';
-      // Find $10.00 or $2.00 in "Oil 50 - $10.00 (Stock: 20)"
-      let m = txt.match(/\$([\d.]+)/);
-      if(m){
-        priceEl2.value = m[1];
-        priceEl2.style.border = '2px solid green';
-        setTimeout(()=>{ priceEl2.style.border=''; }, 800);
-        // Trigger total recalc
-        priceEl2.dispatchEvent(new Event('input', {bubbles:true}));
-        priceEl2.dispatchEvent(new Event('change', {bubbles:true}));
-      }
-    });
+  function getItemPrice(){
+    let opt = sel.options[sel.selectedIndex];
+    if(!opt) return null;
+    let m = opt.text.match(/\$([\d.]+)/);
+    return m ? m[1] : null;
   }
+  function lockPrice(){
+    if(!priceInput) return;
+    let correct = getItemPrice();
+    if(correct && priceInput.value !== correct){
+      priceInput.value = correct;
+      priceInput.dispatchEvent(new Event('input', {bubbles:true}));
+      priceInput.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+  }
+  sel.addEventListener('change', lockPrice);
+  setInterval(lockPrice, 300);
+  if(priceInput){ priceInput.addEventListener('focus', lockPrice); }
 }
-console.log('v16.1 ALL ITEMS AUTO PRICE ON');
-  </script>
+console.log('v16.2 PRICE LOCK ON - ONLY ONE');
+</script>
   </body>
   </html>
