@@ -2178,5 +2178,69 @@ setTimeout(()=>{
   console.log('v16.13 AUTO CLEAR ON');
 }, 500);
   </script>
+ <script>
+// ===== v16.14 - DECIMAL QTY - 1.2, 0.5, 2.5 ALLOWED =====
+setTimeout(()=>{
+  if(window.decimalQtyFixed) return;
+  window.decimalQtyFixed = true;
+
+  let qty = document.getElementById('s_qty');
+  if(!qty) return;
+
+  // 1. Allow decimal in the input itself
+  qty.type = 'number';
+  qty.step = 'any'; // NOT 1 - allows 1.2, 0.5, 2.75
+  qty.min = '0';
+  qty.inputMode = 'decimal';
+  qty.placeholder = '1 - type qty e.g. 1.2';
+
+  // 2. Live Total with DECIMAL - use parseFloat, NEVER parseInt
+  function updateTotal(){
+    let price = document.getElementById('s_price');
+    let tot = document.getElementById('saleTotal');
+    if(!price || !tot) return;
+    let qVal = parseFloat(qty.value) || 1; // 1.2 stays 1.2
+    let pVal = parseFloat(price.value) || 0;
+    tot.innerText = 'Total: $' + (pVal * qVal).toFixed(2);
+  }
+
+  // 3. Stop app from rounding Qty to whole number
+  qty.addEventListener('input', ()=>{
+    qty.dataset.userTyped = '1';
+    updateTotal();
+  });
+  qty.addEventListener('change', ()=>{
+    // If app tried to round 1.2 -> 1, restore decimal
+    // No rounding here
+    updateTotal();
+  });
+
+  // 4. Also patch Add to Cart - make sure it reads decimal Qty
+  document.addEventListener('click', function(e){
+    let btn = e.target.closest('button');
+    if(!btn) return;
+    let txt = (btn.innerText || '').toLowerCase();
+    if(txt.includes('add to cart')){
+      // Force qty to stay decimal before app reads it
+      // e.g. if user typed 1.20, keep as 1.2
+      if(qty.value){
+        qty.value = String(parseFloat(qty.value));
+      }
+    }
+  }, true);
+
+  // 5. Keep decimal allowed even after render rebuilds
+  setInterval(()=>{
+    let q = document.getElementById('s_qty');
+    if(q && q.step !== 'any'){
+      q.step = 'any';
+      q.inputMode = 'decimal';
+      q.placeholder = '1 - type qty e.g. 1.2';
+    }
+  }, 1000);
+
+  console.log('v16.14 DECIMAL QTY ON');
+}, 500);
+  </script>
   </body>
   </html>
