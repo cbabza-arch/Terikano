@@ -1974,107 +1974,97 @@ document.addEventListener('click', function(e){
 console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
   <script>
-// ===== v16.10 FINAL - NO LOCK - LET YOU CHANGE - REPLACES v16.9 =====
+// ===== v16.11 FINAL - DROPDOWN ACTS LIKE SEARCH - REPLACES v16.10 =====
 setTimeout(()=>{
   let origFillSale = window.fillSale;
-  if(!origFillSale || window.fillSaleNoLockFixed) return;
-  window.fillSaleNoLockFixed = true;
+  if(!origFillSale || window.dropdownSearchFixed) return;
+  window.dropdownSearchFixed = true;
 
-  // NULL at start - we do NOT assume Bentin. Only remember AFTER YOU change.
-  let lastPickedText = null;
-  let lastPickedValue = null;
-
-  // Use DOCUMENT listener - survives render rebuilding s_item
+  // When YOU pick from Dropdown, copy it into Search - Search path never reverts
   document.addEventListener('change', function(e){
-    if(e.target && e.target.id === 's_item'){
-      let opt = e.target.options[e.target.selectedIndex];
-      if(opt){
-        lastPickedText = opt.text;
-        lastPickedValue = opt.value;
-        // Reset typing so new item gets its live price
-        let p = document.getElementById('s_price');
-        let q = document.getElementById('s_qty');
-        if(p) p.dataset.userTyped = '';
-        if(q) q.dataset.userTyped = '';
+    if(e.target && (e.target.id === 's_item' || e.target.id === 'stableSalesSelect')){
+      let sel = e.target;
+      let opt = sel.options[sel.selectedIndex];
+      if(!opt) return;
+      let itemName = opt.text.split(' - $')[0]; // "Oil-50"
+      let itemPrice = (opt.text.match(/\$([\d.]+)/)||[])[1] || '';
+
+      // 1. Put same item into SEARCH box - this is the WORKING path
+      let search = document.getElementById('searchItem');
+      if(search){
+        search.value = itemName;
+        // Trigger search's own logic
+        search.dispatchEvent(new Event('input', {bubbles:true}));
+        search.dispatchEvent(new Event('change', {bubbles:true}));
       }
+
+      // 2. Sync other dropdown to same item
+      let otherId = sel.id === 's_item' ? 'stableSalesSelect' : 's_item';
+      let other = document.getElementById(otherId);
+      if(other){
+        for(let i=0;i<other.options.length;i++){
+          if(other.options[i].text.includes(itemName)){
+            other.selectedIndex = i;
+            break;
+          }
+        }
+      }
+
+      // 3. Force LIVE price directly - don't wait for render to put $2
+      let price = document.getElementById('s_price');
+      let qty = document.getElementById('s_qty');
+      if(price && itemPrice){
+        price.dataset.userTyped = '';
+        price.value = parseFloat(itemPrice).toFixed(2);
+      }
+      if(qty && !qty.value) qty.value = '1';
+      let tot = document.getElementById('saleTotal');
+      if(tot && price && qty){
+        tot.innerText = 'Total: $' + ((parseFloat(price.value)||0) * (parseFloat(qty.value)||0)).toFixed(2);
+      }
+
+      // 4. Remember this pick so render can't reset it
+      window.__lastSalePick = itemName;
     }
   }, true);
 
+  // 5. Override fillSale - if render tries to reset, restore YOUR pick
   window.fillSale = function(){
     let result = origFillSale.apply(this, arguments);
+    let pick = window.__lastSalePick;
+    if(!pick) return result;
 
-    let price = document.getElementById('s_price');
-    let qty = document.getElementById('s_qty');
     let sel = document.getElementById('s_item');
-    if(!price || !sel) return result;
-
-    // 1. ONLY restore if YOU actually picked something before
-    // If lastPicked is null, DO NOT force - let app show what it shows
-    if(lastPickedText){
-      let foundIdx = -1;
-      for(let i=0;i<sel.options.length;i++){
-        let name = lastPickedText.split(' - $')[0]; // "Oil-50"
-        if(sel.options[i].text.includes(name) || sel.options[i].value === lastPickedValue){
-          foundIdx = i; break;
+    if(sel){
+      // If render reset to 1st item, restore your pick
+      let cur = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+      if(!cur.includes(pick)){
+        for(let i=0;i<sel.options.length;i++){
+          if(sel.options[i].text.includes(pick)){
+            sel.selectedIndex = i;
+            let m = sel.options[i].text.match(/\$([\d.]+)/);
+            let price = document.getElementById('s_price');
+            if(price && m && price.dataset.userTyped !== '1'){
+              price.value = parseFloat(m[1]).toFixed(2);
+            }
+            break;
+          }
         }
       }
-      // Only restore if render reset it to something else
-      if(foundIdx !== -1 && sel.selectedIndex !== foundIdx){
-        sel.selectedIndex = foundIdx;
-      }
-    }
-
-    // 2. LIVE price from CURRENT selection (whatever you picked)
-    let opt = sel.options[sel.selectedIndex];
-    let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
-    let livePrice = m ? parseFloat(m[1]) : 0;
-
-    if(price.dataset.userTyped !== '1'){
-      price.value = livePrice.toFixed(2);
-    }
-    if(qty && qty.dataset.userTyped !== '1'){
-      if(!qty.value) qty.value = '1';
-    }
-    let tot = document.getElementById('saleTotal');
-    if(tot && price.value && qty.value){
-      tot.innerText = 'Total: $' + ((parseFloat(price.value)||0) * (parseFloat(qty.value)||0)).toFixed(2);
     }
     return result;
   };
 
-  // 3. Your typing wins
+  // 6. Your typing still wins
   let price = document.getElementById('s_price');
-  let qty = document.getElementById('s_qty');
   if(price && !price.dataset.hooked){
     price.dataset.hooked = '1';
     price.addEventListener('input', ()=>{ price.dataset.userTyped = '1'; });
     price.addEventListener('focus', ()=>{ price.dataset.userTyped = '1'; });
   }
-  if(qty && !qty.dataset.hooked){
-    qty.dataset.hooked = '1';
-    qty.addEventListener('input', ()=>{ qty.dataset.userTyped = '1'; });
-    qty.addEventListener('focus', ()=>{ qty.dataset.userTyped = '1'; });
-  }
 
-  window.fillSale();
-  console.log('v16.10 NO LOCK ON');
+  console.log('v16.11 DROPDOWN=SEARCH ON');
 }, 500);
-</script>
-  <script>
-// ===== DIAGNOSTIC 2 - ONLY SALE / SEARCH CONTROLS =====
-setTimeout(()=>{
-  let all = document.querySelectorAll('input, select');
-  let msg = 'SALE CONTROLS ONLY:\n\n';
-  all.forEach((el,i)=>{
-    let id = el.id || '';
-    // Sale = starts with s_ OR contains sale / search / item
-    if(id.startsWith('s_') || id.toLowerCase().includes('sale') || id.toLowerCase().includes('search') || id.toLowerCase().includes('item')){
-      msg += i + '. tag=' + el.tagName + ' id=' + id + ' placeholder=' + (el.placeholder||'') + ' type=' + el.type + '\n';
-    }
-  });
-  console.log(msg);
-  alert(msg + '\n\nCOPY THIS - This is the Sale + Search list');
-}, 1000);
 </script>
   </body>
   </html>
