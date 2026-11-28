@@ -1975,79 +1975,70 @@ console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
 
 <script>
-// ===== v16.3 - PLACEHOLDER MODE - EMPTY BY DEFAULT, TYPE TO OVERRIDE =====
-let sel3 = null;
-document.querySelectorAll('select').forEach(s=>{
-  if(s.options.length > 5) sel3 = s;
-});
-if(sel3){
-  let freshSel3 = sel3.cloneNode(true);
-  sel3.parentNode.replaceChild(freshSel3, sel3);
-  sel3 = freshSel3;
-
-  let priceInput3 = null;
-  let qtyInput3 = null;
+// ===== v16.4 FINAL - EMPTY DEFAULT, APP CANNOT PUT $2 BACK - REPLACES v16.3 =====
+function fixEmptyDefaults(){
+  let priceInput = null, qtyInput = null, sel = null;
+  document.querySelectorAll('select').forEach(s=>{ if(s.options.length > 5) sel = s; });
   document.querySelectorAll('label').forEach(l=>{
-    if(l.innerText.includes('Sell Price')){
-      let p = l.parentElement.querySelector('input');
-      if(p) priceInput3 = p;
-    }
-    if(l.innerText.trim() === 'Qty' || l.innerText.includes('Qty')){
-      let q = l.parentElement.querySelector('input');
-      if(q) qtyInput3 = q;
-    }
+    if(l.innerText.includes('Sell Price')){ let p = l.parentElement.querySelector('input'); if(p) priceInput = p; }
+    if(l.innerText.trim() === 'Qty'){ let q = l.parentElement.querySelector('input'); if(q) qtyInput = q; }
   });
+  if(!priceInput) return;
 
-  // 1. DEFAULT = EMPTY, faint text behind
-  if(priceInput3){
-    priceInput3.value = '';
-    priceInput3.placeholder = '0.00 - type to override';
-    priceInput3.style.color = '#000';
-  }
-  if(qtyInput3){
-    qtyInput3.value = '';
-    qtyInput3.placeholder = '0 - type qty';
-  }
-
-  // 2. When you select item, ONLY change PLACEHOLDER, NOT value
-  // So you see "10.00" faint behind, but box is still empty
-  function updatePlaceholder(){
-    let opt = sel3.options[sel3.selectedIndex];
-    if(!opt) return;
-    let m = opt.text.match(/\$([\d.]+)/);
-    if(m && priceInput3){
-      // Only update placeholder if user hasn't typed yet
-      if(!priceInput3.value){
-        priceInput3.placeholder = 'e.g. ' + m[1] + ' - type to override';
+  // 1. If user has NOT typed yet, force EMPTY - kill app's $2.00
+  if(priceInput.dataset.typed !== '1'){
+    if(document.activeElement !== priceInput){
+      // Clear ANY auto value - $2.00, $10.00, $1.00 - all cleared until YOU type
+      if(priceInput.value !== ''){
+        priceInput.value = '';
       }
     }
+    // Show faint placeholder from selected item
+    if(sel){
+      let opt = sel.options[sel.selectedIndex];
+      let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
+      priceInput.placeholder = m ? 'e.g. ' + m[1] + ' - type to override' : '0.00 - type to override';
+    } else {
+      priceInput.placeholder = '0.00 - type to override';
+    }
+  }
+  if(qtyInput && qtyInput.dataset.typed !== '1'){
+    if(document.activeElement !== qtyInput){
+      if(qtyInput.value !== '') qtyInput.value = '';
+    }
+    qtyInput.placeholder = '0 - type qty';
   }
 
-  sel3.addEventListener('change', function(){
-    // On new item, CLEAR typed price so new placeholder shows
-    if(priceInput3) priceInput3.value = '';
-    if(qtyInput3) qtyInput3.value = '';
-    updatePlaceholder();
-  });
+  // 2. Mark as typed when user types - then we NEVER touch it again
+  if(!priceInput.dataset.listened){
+    priceInput.dataset.listened = '1';
+    priceInput.addEventListener('input', function(){ this.dataset.typed = '1'; });
+    priceInput.addEventListener('focus', function(){ this.dataset.typed = '1'; });
+  }
+  if(qtyInput && !qtyInput.dataset.listened){
+    qtyInput.dataset.listened = '1';
+    qtyInput.addEventListener('input', function(){ this.dataset.typed = '1'; });
+    qtyInput.addEventListener('focus', function(){ this.dataset.typed = '1'; });
+  }
 
-  // 3. When you TYPE, your typing wins - stop placeholder fighting
-  if(priceInput3){
-    priceInput3.addEventListener('input', function(){
-      // User typed, keep it, don't override
-      this.dataset.typed = '1';
+  // 3. When item changes, RESET typed flag so new item starts EMPTY again
+  if(sel && !sel.dataset.listened){
+    sel.dataset.listened = '1';
+    sel.addEventListener('change', function(){
+      if(priceInput){ priceInput.dataset.typed = ''; priceInput.value = ''; }
+      if(qtyInput){ qtyInput.dataset.typed = ''; qtyInput.value = ''; }
+      setTimeout(fixEmptyDefaults, 50);
     });
-    priceInput3.addEventListener('focus', function(){
-      // If you click, placeholder stays faint, value stays what you typed
-      this.select();
-    });
   }
-  if(qtyInput3){
-    qtyInput3.addEventListener('input', function(){ this.dataset.typed = '1'; });
-  }
-
-  updatePlaceholder();
 }
-console.log('v16.3 PLACEHOLDER MODE ON - EMPTY DEFAULT, TYPE TO OVERRIDE');
+
+// Run NOW, run after app loads, and KEEP CHECKING every 300ms so app cannot put $2 back
+fixEmptyDefaults();
+setTimeout(fixEmptyDefaults, 500);
+setTimeout(fixEmptyDefaults, 1000);
+setTimeout(fixEmptyDefaults, 2000);
+setInterval(fixEmptyDefaults, 300);
+console.log('v16.4 FINAL EMPTY DEFAULT ON');
 </script>
   </body>
   </html>
