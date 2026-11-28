@@ -2132,5 +2132,51 @@ setTimeout(()=>{
   console.log('v16.12 QTY BACKGROUND ON');
 }, 500);
 </script>
+  <script>
+// ===== v16.13 - AUTO CLEAR AFTER ADD TO CART =====
+setTimeout(()=>{
+  if(window.autoClearFixed) return;
+  window.autoClearFixed = true;
+
+  // Find Add to Cart button - by text, not by ID (ID unknown)
+  function clearSaleForm(){
+    setTimeout(()=>{
+      let search = document.getElementById('searchItem');
+      let sel = document.getElementById('s_item');
+      let stable = document.getElementById('stableSalesSelect');
+      let price = document.getElementById('s_price');
+      let qty = document.getElementById('s_qty');
+      let tot = document.getElementById('saleTotal');
+      let pay = document.getElementById('s_pay');
+
+      if(search) search.value = '';
+      if(sel) sel.selectedIndex = 0; // back to first / Select...
+      if(stable) stable.selectedIndex = 0;
+      if(price){ price.value = ''; price.placeholder = '0.00 - select item'; price.dataset.userTyped = ''; }
+      if(qty){ qty.value = ''; qty.placeholder = '1 - type qty'; qty.dataset.userTyped = ''; }
+      if(pay) pay.value = '';
+      if(tot) tot.innerText = 'Total: $0.00';
+
+      // Forget last pick so fillSale doesn't restore old Oil-50
+      window.__lastSalePick = null;
+
+      console.log('SALE FORM AUTO CLEARED');
+    }, 300); // wait 300ms for app to add to cart first, then clear
+  }
+
+  // Hook ANY click on Add to Cart button
+  document.addEventListener('click', function(e){
+    let btn = e.target.closest('button');
+    if(!btn) return;
+    let txt = (btn.innerText || btn.textContent || '').toLowerCase();
+    // Matches: "Add to Cart", "Add", "Add Sale"
+    if(txt.includes('add to cart') || txt === 'add' || txt.includes('add sale')){
+      clearSaleForm();
+    }
+  }, true);
+
+  console.log('v16.13 AUTO CLEAR ON');
+}, 500);
+  </script>
   </body>
   </html>
