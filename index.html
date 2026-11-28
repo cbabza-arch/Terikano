@@ -2014,5 +2014,35 @@ document.addEventListener('click', function(e){
 }, true);
 console.log('v17 PAID TO CASH ON');
   </script>
+  <script>
+// ===== v18.1 - CLEAR DATA CLEARS *EVERYTHING* - PROFIT + BANK + ALL =====
+document.addEventListener('click', function(e){
+  let btn = e.target.closest('button');
+  if(!btn) return;
+  if(!/clear data|clear all|reset/i.test(btn.innerText)) return;
+
+  if(!confirm('⚠️ CLEAR EVERYTHING?\n\nThis will CLEAR ALL:\n- Sales / Cash\n- Notepad / OWE\n- BANK Ledger\n- PROFIT Ledger\n- Coco / Credit / Debit\n- Person Ledger\n- Capital / Report / History\n\nALL will go to $0. Cannot undo.\n\nAre you SURE?')){
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    return false;
+  }
+
+  try{
+    // 1. Clear ALL localStorage - no filter, so Profit + Bank cannot hide
+    localStorage.clear();
+    // 2. Clear session
+    sessionStorage.clear();
+    // 3. Try to clear IndexedDB if app uses it
+    if(window.indexedDB && indexedDB.databases){
+      indexedDB.databases().then(dbs=>{
+        dbs.forEach(db=>{ if(db.name) indexedDB.deleteDatabase(db.name); });
+      }).catch(()=>{});
+    }
+  }catch(err){}
+
+  alert('✅ ALL CLEARED\n\n- Bank Ledger $0\n- Profit Ledger $0\n- Sales $0\n- Cash $0\n- Notepad Empty\n\nPage will reload now.');
+  setTimeout(()=>{ location.reload(); }, 600);
+}, true);
+console.log('v18.1 CLEAR EVERYTHING ON');
+  </script>
   </body>
   </html>
