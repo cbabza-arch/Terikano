@@ -2302,54 +2302,77 @@ setTimeout(()=>{
   console.log('v16.15 CHANGE ON');
 }, 500);
   </script>
-  <script>
-// ===== v16.16 - HIDE BIG LONG NOTEPAD LIST, KEEP CHANGE VISIBLE =====
+<script>
+// ===== v16.17 - HIDE/SHOW CHANGE ONLY, LIST STAYS NORMAL =====
 setTimeout(()=>{
-  if(window.hideListFixed) return;
-  window.hideListFixed = true;
+  if(window.changeHideFixed) return;
+  window.changeHideFixed = true;
 
-  // Find the BIG LONG list - the one with many items
-  // Usually it's a div / ul / table with > 10 children
-  let all = document.querySelectorAll('div, ul, table, tbody');
-  let bigList = null;
-  let maxKids = 0;
-  all.forEach(el=>{
-    if(el.children.length > maxKids && el.children.length > 5){
-      // Don't pick whole page
-      if(el.id !== '' || el.className !== ''){
-        maxKids = el.children.length;
-        bigList = el;
-      }
+  // 1. Remove my old WRONG button that hides the whole list
+  // Find buttons with "Hide List" / "Show List" and delete them
+  document.querySelectorAll('button').forEach(b=>{
+    let t = (b.innerText || '').toLowerCase();
+    if(t.includes('hide list') || t.includes('show list')){
+      b.remove();
+    }
+  });
+  // Un-hide any list I hid before
+  document.querySelectorAll('div, ul, table, tbody').forEach(el=>{
+    if(el.style.display === 'none' && el.children.length > 5){
+      el.style.display = '';
     }
   });
 
-  if(!bigList){
-    console.log('No big list found - send me screenshot of Notepad');
-    return;
+  // 2. Make CHANGE box small + with its own Hide/Show
+  let pay = document.getElementById('s_pay');
+  let changeBox = document.getElementById('myChangeBox');
+  if(!changeBox && pay){
+    changeBox = document.createElement('div');
+    changeBox.id = 'myChangeBox';
+    pay.parentNode.appendChild(changeBox);
+  }
+  if(!changeBox) return;
+
+  // Wrap Change in a small bar
+  changeBox.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#e8ffe8;padding:6px 8px;border-radius:6px;margin-top:5px;font-weight:bold;';
+
+  // Add small Hide button INSIDE Change box only
+  if(!document.getElementById('hideChangeBtn')){
+    let btn = document.createElement('button');
+    btn.id = 'hideChangeBtn';
+    btn.innerText = 'Hide';
+    btn.style.cssText = 'background:#222;color:#fff;border:none;padding:3px 10px;border-radius:5px;font-size:12px;';
+    let label = document.createElement('span');
+    label.id = 'changeLabel';
+    label.innerText = changeBox.innerText || 'Change: $0.00';
+    // Rebuild box: label + button
+    changeBox.innerHTML = '';
+    changeBox.appendChild(label);
+    changeBox.appendChild(btn);
+
+    let isHidden = false;
+    btn.addEventListener('click', ()=>{
+      isHidden = !isHidden;
+      label.style.display = isHidden ? 'none' : '';
+      btn.innerText = isHidden ? 'Show Change' : 'Hide';
+      // When hidden, box becomes tiny - not occupy screen
+      changeBox.style.padding = isHidden ? '3px 8px' : '6px 8px';
+    });
+
+    // Keep Change value updating in label
+    setInterval(()=>{
+      let price = document.getElementById('s_price');
+      let qty = document.getElementById('s_qty');
+      let pVal = parseFloat(price ? price.value : 0) || 0;
+      let qVal = parseFloat(qty ? qty.value : 0) || 1;
+      let paid = parseFloat(pay ? pay.value : 0) || 0;
+      let ch = paid - (pVal * qVal);
+      label.innerText = 'Change: $' + (ch > 0 ? ch.toFixed(2) : '0.00');
+    }, 500);
   }
 
-  // 1. Create HIDE / SHOW button on top of list
-  let btn = document.createElement('button');
-  btn.innerText = 'Hide List ⬆️ - Show Change Only';
-  btn.style.cssText = 'width:100%;padding:8px;background:#222;color:#fff;border:none;border-radius:6px;margin-bottom:5px;';
-  bigList.parentNode.insertBefore(btn, bigList);
-
-  let hidden = false;
-  btn.addEventListener('click', ()=>{
-    hidden = !hidden;
-    bigList.style.display = hidden ? 'none' : '';
-    btn.innerText = hidden ? 'Show List ⬇️' : 'Hide List ⬆️ - Show Change Only';
-  });
-
-  // 2. Auto-hide if list is VERY long ( > 15 items )
-  if(maxKids > 15){
-    bigList.style.display = 'none';
-    hidden = true;
-    btn.innerText = 'Show List ⬇️ (' + maxKids + ' items hidden)';
-  }
-
-  console.log('v16.16 HIDE LIST ON - ' + maxKids + ' items');
-}, 1000);
-  </script>
+  console.log('v16.17 CHANGE HIDE/SHOW ONLY ON');
+}, 500);
+</script>
   </body>
   </html>
