@@ -1975,113 +1975,74 @@ console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
 
 <script>
-// ===== v16.5 - USE REAL IDs - s_price / s_qty - NO LABEL GUESSING =====
-// Your app uses s_ IDs: s_customer, s_pay, s_note - so price/qty are s_price / s_qty
-function getSaleInputs(){
-  let price = document.getElementById('s_price') || document.getElementById('salePrice') || document.getElementById('s_sellPrice') || document.getElementById('sellPrice');
-  let qty = document.getElementById('s_qty') || document.getElementById('saleQty') || document.getElementById('s_quantity') || document.getElementById('qty');
-  let sel = document.getElementById('s_item') || document.getElementById('saleItem') || document.getElementById('s_product');
-  // Fallback: if IDs not found, use the big select
-  if(!sel){
-    document.querySelectorAll('select').forEach(s=>{ if(s.options.length > 5) sel = s; });
-  }
-  return {price, qty, sel};
-}
+// ===== v16.6 FINAL - BY REAL IDs s_price / s_qty / s_item - REPLACES v16.5 =====
+function setupEmptySale(){
+  let price = document.getElementById('s_price');
+  let qty = document.getElementById('s_qty');
+  let sel = document.getElementById('s_item');
+  if(!price || !qty || !sel) return false;
 
-function fixEmptyById(){
-  let {price, qty, sel} = getSaleInputs();
-  if(!price){
-    // DIAGNOSTIC - tells us truth, no guessing
-    // Open Console (F12) and you will see what IDs really exist
-    return;
+  // 1. KILL app's buggy listener by cloning s_item
+  if(!sel.dataset.fixed){
+    let fresh = sel.cloneNode(true);
+    fresh.dataset.fixed = '1';
+    sel.parentNode.replaceChild(fresh, sel);
+    sel = fresh;
+    price = document.getElementById('s_price');
+    qty = document.getElementById('s_qty');
   }
 
-  // 1. If you have NOT typed, force EMPTY - background placeholder only
-  if(price.dataset.userTyped !== '1' && document.activeElement !== price){
-    if(price.value !== ''){
+  function setEmpty(){
+    if(price.dataset.userTyped !== '1'){
       price.value = '';
-      // Tell your app Total is now $0, not $2
-      let totEl = document.getElementById('saleTotal');
-      if(totEl) totEl.innerText = 'Total: $0.00';
-      // Trigger recalc so app knows it's empty
-      price.dispatchEvent(new Event('input', {bubbles:true}));
-      price.dispatchEvent(new Event('change', {bubbles:true}));
+      let opt = sel.options[sel.selectedIndex];
+      let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
+      price.placeholder = m ? m[1] + ' - type to override' : '0.00 - type to override';
+      let tot = document.getElementById('saleTotal');
+      if(tot) tot.innerText = 'Total: $0.00';
     }
-    // Background faint text - what you asked for
-    let opt = sel ? sel.options[sel.selectedIndex] : null;
-    let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
-    price.placeholder = m ? m[1] + ' - type to override' : '0.00 - type to override';
-  }
-
-  if(qty && qty.dataset.userTyped !== '1' && document.activeElement !== qty){
-    if(qty.value !== ''){
+    if(qty.dataset.userTyped !== '1'){
       qty.value = '';
-      qty.dispatchEvent(new Event('input', {bubbles:true}));
-      qty.dispatchEvent(new Event('change', {bubbles:true}));
+      qty.placeholder = '0 - type qty';
     }
-    qty.placeholder = '0 - type qty';
   }
 
-  // 2. Once you TYPE / CLICK, we never touch it again
+  sel.addEventListener('change', function(){
+    price.dataset.userTyped = '';
+    qty.dataset.userTyped = '';
+    setEmpty();
+  });
+
   if(!price.dataset.hooked){
     price.dataset.hooked = '1';
     price.addEventListener('input', ()=>{ price.dataset.userTyped = '1'; });
     price.addEventListener('focus', ()=>{ price.dataset.userTyped = '1'; });
     price.addEventListener('blur', ()=>{ if(price.value==='') price.dataset.userTyped=''; });
   }
-  if(qty && !qty.dataset.hooked){
+  if(!qty.dataset.hooked){
     qty.dataset.hooked = '1';
     qty.addEventListener('input', ()=>{ qty.dataset.userTyped = '1'; });
     qty.addEventListener('focus', ()=>{ qty.dataset.userTyped = '1'; });
     qty.addEventListener('blur', ()=>{ if(qty.value==='') qty.dataset.userTyped=''; });
   }
 
-  // 3. New item = EMPTY again
-  if(sel && !sel.dataset.hooked){
-    sel.dataset.hooked = '1';
-    sel.addEventListener('change', ()=>{
-      if(price){ price.dataset.userTyped=''; price.value=''; price.dispatchEvent(new Event('input',{bubbles:true})); }
-      if(qty){ qty.dataset.userTyped=''; qty.value=''; qty.dispatchEvent(new Event('input',{bubbles:true})); }
-      setTimeout(fixEmptyById, 100);
-    });
-  }
+  setEmpty();
+  return true;
 }
 
-fixEmptyById();
-setTimeout(fixEmptyById, 500);
-setTimeout(fixEmptyById, 1000);
-setTimeout(fixEmptyById, 2000);
-setInterval(fixEmptyById, 300);
-console.log('v16.5 BY ID ON');
-</script>
-  <script>
-// ===== DIAGNOSTIC - SHOW REAL IDs - NO GUESSING =====
-setTimeout(()=>{
-  let out = 'INPUTS FOUND:\n\n';
-  document.querySelectorAll('input').forEach((inp, i)=>{
-    out += i + '. id=[' + (inp.id || 'NO-ID') + '] name=[' + (inp.name || '') + '] placeholder=[' + (inp.placeholder || '') + '] value=[' + inp.value + ']\n';
-  });
-  out += '\nSELECTS:\n';
-  document.querySelectorAll('select').forEach((s,i)=>{
-    out += i + '. id=[' + (s.id || 'NO-ID') + '] options=' + s.options.length + ' selected=[' + (s.options[s.selectedIndex] ? s.options[s.selectedIndex].text : '') + ']\n';
-  });
-  out += '\nLABELS:\n';
-  document.querySelectorAll('label').forEach((l,i)=>{
-    out += i + '. [' + l.innerText.trim() + '] -> parent has input? ' + (l.parentElement.querySelector('input') ? 'YES id=' + l.parentElement.querySelector('input').id : 'NO') + '\n';
-  });
-  // Show it in a box you can copy on phone - no F12 needed
-  let box = document.createElement('div');
-  box.style.cssText = 'position:fixed;top:10px;left:10px;right:10px;z-index:99999;background:white;color:black;padding:15px;border:3px solid red;max-height:80vh;overflow:auto;white-space:pre-wrap;font-size:13px;';
-  box.innerText = out + '\n\n--- COPY THIS AND SEND TO ME ---';
-  let closeBtn = document.createElement('button');
-  closeBtn.innerText = 'CLOSE - COPY TEXT FIRST';
-  closeBtn.style.cssText = 'background:red;color:white;padding:10px;margin-top:10px;width:100%;';
-  closeBtn.onclick = ()=>{ box.remove(); };
-  box.appendChild(closeBtn);
-  document.body.appendChild(box);
-  console.log(out);
-}, 1500);
-console.log('DIAGNOSTIC ON');
+setupEmptySale();
+setTimeout(setupEmptySale, 1000);
+setTimeout(setupEmptySale, 3000);
+setTimeout(setupEmptySale, 5000);
+setInterval(()=>{
+  let sel = document.getElementById('s_item');
+  if(sel && !sel.dataset.fixed) setupEmptySale();
+  let p = document.getElementById('s_price');
+  let q = document.getElementById('s_qty');
+  if(p && p.dataset.userTyped !== '1' && document.activeElement !== p && p.value !== '') p.value = '';
+  if(q && q.dataset.userTyped !== '1' && document.activeElement !== q && q.value !== '') q.value = '';
+}, 500);
+console.log('v16.6 FINAL BY REAL IDs ON - REPLACES v16.5');
 </script>
   </body>
   </html>
