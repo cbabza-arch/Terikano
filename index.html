@@ -1975,70 +1975,84 @@ console.log('v18.1 CLEAR EVERYTHING ON');
 </script>
 
 <script>
-// ===== v16.4 FINAL - EMPTY DEFAULT, APP CANNOT PUT $2 BACK - REPLACES v16.3 =====
-function fixEmptyDefaults(){
-  let priceInput = null, qtyInput = null, sel = null;
-  document.querySelectorAll('select').forEach(s=>{ if(s.options.length > 5) sel = s; });
-  document.querySelectorAll('label').forEach(l=>{
-    if(l.innerText.includes('Sell Price')){ let p = l.parentElement.querySelector('input'); if(p) priceInput = p; }
-    if(l.innerText.trim() === 'Qty'){ let q = l.parentElement.querySelector('input'); if(q) qtyInput = q; }
-  });
-  if(!priceInput) return;
-
-  // 1. If user has NOT typed yet, force EMPTY - kill app's $2.00
-  if(priceInput.dataset.typed !== '1'){
-    if(document.activeElement !== priceInput){
-      // Clear ANY auto value - $2.00, $10.00, $1.00 - all cleared until YOU type
-      if(priceInput.value !== ''){
-        priceInput.value = '';
-      }
-    }
-    // Show faint placeholder from selected item
-    if(sel){
-      let opt = sel.options[sel.selectedIndex];
-      let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
-      priceInput.placeholder = m ? 'e.g. ' + m[1] + ' - type to override' : '0.00 - type to override';
-    } else {
-      priceInput.placeholder = '0.00 - type to override';
-    }
+// ===== v16.5 - USE REAL IDs - s_price / s_qty - NO LABEL GUESSING =====
+// Your app uses s_ IDs: s_customer, s_pay, s_note - so price/qty are s_price / s_qty
+function getSaleInputs(){
+  let price = document.getElementById('s_price') || document.getElementById('salePrice') || document.getElementById('s_sellPrice') || document.getElementById('sellPrice');
+  let qty = document.getElementById('s_qty') || document.getElementById('saleQty') || document.getElementById('s_quantity') || document.getElementById('qty');
+  let sel = document.getElementById('s_item') || document.getElementById('saleItem') || document.getElementById('s_product');
+  // Fallback: if IDs not found, use the big select
+  if(!sel){
+    document.querySelectorAll('select').forEach(s=>{ if(s.options.length > 5) sel = s; });
   }
-  if(qtyInput && qtyInput.dataset.typed !== '1'){
-    if(document.activeElement !== qtyInput){
-      if(qtyInput.value !== '') qtyInput.value = '';
-    }
-    qtyInput.placeholder = '0 - type qty';
+  return {price, qty, sel};
+}
+
+function fixEmptyById(){
+  let {price, qty, sel} = getSaleInputs();
+  if(!price){
+    // DIAGNOSTIC - tells us truth, no guessing
+    // Open Console (F12) and you will see what IDs really exist
+    return;
   }
 
-  // 2. Mark as typed when user types - then we NEVER touch it again
-  if(!priceInput.dataset.listened){
-    priceInput.dataset.listened = '1';
-    priceInput.addEventListener('input', function(){ this.dataset.typed = '1'; });
-    priceInput.addEventListener('focus', function(){ this.dataset.typed = '1'; });
-  }
-  if(qtyInput && !qtyInput.dataset.listened){
-    qtyInput.dataset.listened = '1';
-    qtyInput.addEventListener('input', function(){ this.dataset.typed = '1'; });
-    qtyInput.addEventListener('focus', function(){ this.dataset.typed = '1'; });
+  // 1. If you have NOT typed, force EMPTY - background placeholder only
+  if(price.dataset.userTyped !== '1' && document.activeElement !== price){
+    if(price.value !== ''){
+      price.value = '';
+      // Tell your app Total is now $0, not $2
+      let totEl = document.getElementById('saleTotal');
+      if(totEl) totEl.innerText = 'Total: $0.00';
+      // Trigger recalc so app knows it's empty
+      price.dispatchEvent(new Event('input', {bubbles:true}));
+      price.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+    // Background faint text - what you asked for
+    let opt = sel ? sel.options[sel.selectedIndex] : null;
+    let m = opt ? opt.text.match(/\$([\d.]+)/) : null;
+    price.placeholder = m ? m[1] + ' - type to override' : '0.00 - type to override';
   }
 
-  // 3. When item changes, RESET typed flag so new item starts EMPTY again
-  if(sel && !sel.dataset.listened){
-    sel.dataset.listened = '1';
-    sel.addEventListener('change', function(){
-      if(priceInput){ priceInput.dataset.typed = ''; priceInput.value = ''; }
-      if(qtyInput){ qtyInput.dataset.typed = ''; qtyInput.value = ''; }
-      setTimeout(fixEmptyDefaults, 50);
+  if(qty && qty.dataset.userTyped !== '1' && document.activeElement !== qty){
+    if(qty.value !== ''){
+      qty.value = '';
+      qty.dispatchEvent(new Event('input', {bubbles:true}));
+      qty.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+    qty.placeholder = '0 - type qty';
+  }
+
+  // 2. Once you TYPE / CLICK, we never touch it again
+  if(!price.dataset.hooked){
+    price.dataset.hooked = '1';
+    price.addEventListener('input', ()=>{ price.dataset.userTyped = '1'; });
+    price.addEventListener('focus', ()=>{ price.dataset.userTyped = '1'; });
+    price.addEventListener('blur', ()=>{ if(price.value==='') price.dataset.userTyped=''; });
+  }
+  if(qty && !qty.dataset.hooked){
+    qty.dataset.hooked = '1';
+    qty.addEventListener('input', ()=>{ qty.dataset.userTyped = '1'; });
+    qty.addEventListener('focus', ()=>{ qty.dataset.userTyped = '1'; });
+    qty.addEventListener('blur', ()=>{ if(qty.value==='') qty.dataset.userTyped=''; });
+  }
+
+  // 3. New item = EMPTY again
+  if(sel && !sel.dataset.hooked){
+    sel.dataset.hooked = '1';
+    sel.addEventListener('change', ()=>{
+      if(price){ price.dataset.userTyped=''; price.value=''; price.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(qty){ qty.dataset.userTyped=''; qty.value=''; qty.dispatchEvent(new Event('input',{bubbles:true})); }
+      setTimeout(fixEmptyById, 100);
     });
   }
 }
 
-// Run NOW, run after app loads, and KEEP CHECKING every 300ms so app cannot put $2 back
-fixEmptyDefaults();
-setTimeout(fixEmptyDefaults, 500);
-setTimeout(fixEmptyDefaults, 1000);
-setTimeout(fixEmptyDefaults, 2000);
-setInterval(fixEmptyDefaults, 300);
-console.log('v16.4 FINAL EMPTY DEFAULT ON');
+fixEmptyById();
+setTimeout(fixEmptyById, 500);
+setTimeout(fixEmptyById, 1000);
+setTimeout(fixEmptyById, 2000);
+setInterval(fixEmptyById, 300);
+console.log('v16.5 BY ID ON');
 </script>
   </body>
   </html>
